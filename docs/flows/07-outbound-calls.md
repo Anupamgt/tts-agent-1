@@ -6,8 +6,9 @@
 |---|---|---|
 | Reminder | Booking exists | Evening before, inside the call window (and a morning SMS) |
 | Delay update | Estimated delay passes the threshold | When the shift is decided (SMS first; call only if the patient is within an hour of leaving) |
-| Reschedule notice | The system moved a visit to another day (delay cap reached, or doctor absent; see 09) | Straight away, inside the call window, with the "rescheduled" SMS |
-| Reschedule offer | Staff prefer to let the patient choose (e.g. a priority visit that cannot be seen today) | As soon as staff ask |
+| Delay choice | Two delay messages already sent and the doctor is still slipping (09 D10) | Straight away: keep the place, move to the next free slot, or cancel |
+| Reschedule offer | Doctor absent or session cancelled (09 X5), or staff ask | Straight away; patient picks a slot or asks for a refund (10) |
+| Payment follow-up | Caller chose UPI on the call (10 part B) | WhatsApp message with the link, not a call; one reminder |
 | Doctor changed | An any-doctor visit moved to another pool doctor | SMS only; a call only if it is less than an hour before the window |
 | Callback result | Staff resolved a message, refill or question | After staff mark it ready |
 | Follow-up reminder | Doctor set a follow-up date at checkout | Evening before |
@@ -37,7 +38,7 @@ flowchart TD
 
     O7 --> O8{"Caller reaction"}
     O8 -->|"confirms or fine"| O9["Mark confirmed, close"]
-    O8 -->|"cannot come"| O10["Offer reschedule now"]
+    O8 -->|"cannot come, or wants a different slot"| O10["Offer reschedule now<br/>paid visits: or a refund (10 part D)"]
     O10 --> BK(["04 Reschedule flow, already verified by the outbound identity check"])
     O8 -->|"wants to cancel"| CN(["04 Cancel flow"])
     O8 -->|"has a question"| O11["Answer from clinic info or offer inbound-style handling (00)"]

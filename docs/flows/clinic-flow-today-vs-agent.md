@@ -30,8 +30,9 @@ flowchart TB
 - Caller hears a window, e.g. "come between 10:00 and 10:30".
 - Named-doctor bookings stay with that doctor and wait if the doctor runs late. Any-doctor bookings (general check-ups, flexible follow-ups) roll over to another doctor in the pool (decided).
 - The delay estimate is hybrid: it follows the planned schedule by default, and the doctor's or assistant's "Call next" taps correct it with real timing (decided).
-- Past a threshold (proposed: 20 min), later windows shift and patients get a delay SMS. After 2 messages, the visit moves to the doctor's next available slot and the patient is told once (decided).
+- Past a threshold (proposed: 20 min), later windows shift and patients get a delay SMS. After 2 messages, the agent calls and asks the patient: keep the place, move to the next free slot, or cancel (decided).
 - Patients who have already arrived are never moved; they wait.
-- Priority visits ("urgent" in the clinic's words) cost an extra fee and are seen before regular patients. Emergencies are separate: never booked, 112/108 and a console alert.
+- Priority visits ("urgent" in the clinic's words) are offered by specialists only, cost an extra fee and are seen before regular patients. Emergencies are separate: never booked, 112/108 and a console alert.
+- Fees (priority, or an appointment fee the clinic sets) are agreed on the call and paid by UPI link on WhatsApp or cash at the desk. If the doctor cannot see the patient, rescheduling is offered first, then a partial or full refund (decided; see `10-payments-and-refunds.md`).
 - Unsold priority places are released for regular booking before the session (proposed: 2 hours before; doctor can change).
 - Full detail: `03-appointment-booking.md` and `09-day-of-operations.md`.

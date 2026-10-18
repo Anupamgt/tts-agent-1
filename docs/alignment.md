@@ -6,7 +6,7 @@ Purpose: make sure everyone means the same thing before building. Each row point
 
 1. Read `flows/README.md` (decisions, settings table and tool list): 5 min.
 2. Read `00-call-router` main diagram, then the interrupt diagram: 5 min.
-3. Walk the three flows that carry the most risk: `01 A` (emergency), `03` (booking and part P), `09` (day of operations): 15 min.
+3. Walk the flows that carry the most risk: `01 A` (emergency), `03` (booking and part P), `09` (day of operations), `10` (payments and refunds): 20 min.
 4. Skim `06` (handoff) and `07` (outbound): 5 min.
 5. Go through section A below and mark each open row Agree / Change / Defer.
 
@@ -16,21 +16,22 @@ Status: **Decided** (you confirmed it), **Proposed** (my default, not yet confir
 
 | # | Decision | Status | What it says now | Look here | Still to answer |
 |---|---|---|---|---|---|
-| 1 | Arrival windows and doctor choice | **Decided** | Named-doctor or specialist bookings stay with that doctor; if the doctor runs late, patients wait. General check-ups and "any doctor" follow-ups roll over to another pool doctor (A1 to A2) | `03` B2, NM, AD, FU, B21; `09` D6, D7, X3, X4 | 1a. Roll over only when the doctor is **absent**, or also when **running late**? (flows assume both). 1b. Two doctors of the same specialty: pool them? |
+| 1 | Arrival windows and doctor choice | **Decided** | Named-doctor or specialist bookings stay with that doctor; if the doctor runs late, patients wait. General check-ups and "any doctor" follow-ups roll over to another pool doctor (A1 to A2), both when the doctor is absent and when running late (1a, decided) | `03` B2, NM, AD, FU, B21; `09` D6, D7, X3, X4 | 1b. Two doctors of the same specialty: pool them? (see note below) |
 | 2 | Unsold priority places released to regular booking | Proposed | 2 hours before the session | `03` part P rules; settings table | Agree? |
-| 3 | What "urgent" means | **Decided** | A paid priority visit: extra fee, seen before regular patients. Emergencies are separate and never booked | `01` term table and part B; `03` part P (P4, P5, P10); `09` A3b, D8p | 3a. Fee per doctor (amounts). 3b. Pay at the desk (demo) or UPI link? 3c. Refund rule when the doctor is absent or very late. 3d. Agree that the agent mentions priority only when asked, or when regular places are full? |
+| 3 | What "urgent" means | **Decided** | A paid priority visit: extra fee, seen before regular patients, offered only by specialists and super-specialists. Emergencies are separate and never booked | `01` term table and part B; `03` part P; `09` A3b | 3d. Agree that the agent mentions priority only when asked, or when regular places are full? |
+| 3+ | Fees, payment and refunds | **Decided** (structure) | Clinic can set an appointment fee per doctor. Fees are agreed on the call and paid by a UPI link sent as a WhatsApp follow-up, or cash at the desk. If the doctor is not available: offer rescheduling first; if the patient persists, partial or full refund | `10` parts A, B, C (doctor not available), D (patient cancels); `03` B17f; `09` X5-X12, D14 | 3e. Refund shares: clinic-caused full? late cancellation 50% under 24 h? 3f. Staff approve every refund? 3g. Unpaid UPI link after an hour: keep booking (pay at desk) or release it? |
 | 4 | Emergency script wording and numbers | Open | 112 and 108, plus a mental-health helpline | `01` A (E1, SH) | Clinic sign-off on the script and numbers |
 | 5 | Medical advice boundary | Proposed | Always declined; offer visit or callback | `01` C (M1-M4) | Agree? |
-| 6 | Verification | **Decided** | Name + patient ID from the card; name + date of birth if the ID is not known. IDs are digits with a check digit | `02` V1-V7c | 6a. Does the partner clinic already print patient IDs? What format? |
+| 6 | Verification | **Decided** | Name + patient ID from the card; name + date of birth if the ID is not known. New IDs are digits with a check digit; existing IDs are kept and matched without punctuation; institution clinics can also match on the card holder's institute ID + relation | `02` V1-V7c and rules | 6a. Sample slip received but too low-resolution to read: send a clearer photo with name and phone covered |
 | 7 | Relatives calling for a patient | **Decided** | Limited mode: book, change, cancel, leave a message | `02` V13, V14 | None |
 | 8 | Staff-on-desk switch and transfer | Proposed | Console switch decides transfer vs callback | `06` H2 | Agree? |
 | 9 | Callback priorities and targets | Proposed | P1 15 min (emergency, self-harm); P2 2 h or before the session ends (same-day requests); P3 next session | `06` table | Agree? |
 | 10 | Refill requests | Proposed | Logged only; doctor decides; "visit required" list | `05` M3-M6 | Agree? |
 | 11 | Reports and lab results | Proposed | Never read aloud; point to the clinic's own channel | `05` P0-P7 | Agree? |
-| 12 | Delay messages | **Decided** | At most 2 SMS. After that the visit moves to the doctor's next available slot and the patient is told once (SMS, plus a call if it moves to another day). Arrived patients are never moved; priority visits are never moved to another day without staff | `09` D8-D11; `04` T4-T8 | 12a. My reading of "next available": later **today** if the shifted session still fits them, otherwise the **next session**. Right? |
+| 12 | Delay messages | **Decided** | At most 2 SMS. After that the agent calls and asks what the patient wants: keep the place, move to the next free slot (later today or next session), or cancel with a refund if they paid. Arrived patients are never moved | `09` D8-D17; `04` T4-T8 | Proposed fallback if not reached: keep their place if it still fits today, else hold the next free slot and text them. Agree? |
 | 13 | "Next patient" signal | **Decided** | Hybrid: planned schedule by default; the doctor (phone or tablet in the cabin) or an assistant outside the cabin taps "Call next" to correct it | `09` N1-N7 | 13a. What did "a 30 minute window for each patient" mean? (see note below) |
 | 14 | Walk-ins | Proposed | Added in console, counted against the current window; staff may sell a priority place | `09` A5-A11 | Agree? |
-| 15 | Doctor absent / session cancelled | Proposed | Any-doctor: moved to another pool doctor. Named: moved to the same doctor's next slot with SMS and a call. Priority: staff decide | `09` X0-X8; `07` | Agree? |
+| 15 | Doctor absent / session cancelled | **Decided** (with 3+) | Any-doctor: moved to another pool doctor. Named and priority: call offering the doctor's next slots; if the patient wants the money back, refund (10 part C) | `09` X0-X12; `07`; `10` C | None |
 | 16 | New patient data collected | Proposed | Name, age or date of birth, confirmed phone; patient ID created and sent by SMS | `03` B15; `02` rules | Agree? |
 | 17 | Reminder policy | Proposed | Evening before, inside 9 am to 9 pm; consent at booking; 2 retries | `07` O1, O2, RT | Agree? |
 | 18 | Backend or calendar failure | Proposed | Never retry a write blindly; check first; fall back to callback | `08` F6-F11 | Agree? |
@@ -43,6 +44,13 @@ Status: **Decided** (you confirmed it), **Proposed** (my default, not yet confir
 - **Reading 2:** each patient gets their own 30-minute slot, so capacity becomes 1 per window. That suits long consultations (specialists), but a general OPD would see only 6 patients in a 3-hour session.
 
 Capacity and consult time are per-doctor settings, so both readings work in the schema. The question is which one the demo clinic uses.
+
+**Note on 1b.** Say the clinic has two child specialists, Dr Kaur and Dr Gill, and a caller asks for "a child specialist" without naming either. The agent books the one with the earliest window, Dr Kaur. Then Dr Kaur is held up:
+
+- **Not pooled (current rule):** the booking is pinned to Dr Kaur, so the patient waits for her, even if Dr Gill is free in the next room.
+- **Pooled:** "a child specialist" is treated like "any doctor" within paediatrics, so the patient moves to Dr Gill and gets an SMS.
+
+Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-up still asks "same doctor as last time?". Recommendation: pool when the caller did not name a doctor. They asked for a skill, not a person, and the clinic gets fewer idle specialists. It only matters if the clinic has two doctors of the same specialty.
 
 ## B. Caveats you should hold in mind
 
@@ -58,10 +66,15 @@ Capacity and consult time are per-doctor settings, so both readings work in the 
 ### From the latest decisions
 - **Priority visits:**
   - Selling a fee on a call to someone who may be unwell can look like upselling. The flows mention priority only when asked or when regular places are full, never in reply to symptoms. Keep that rule.
-  - With payment at the desk, a priority booker who does not turn up blocks a priority place for free. A UPI link fixes that but adds a payment provider. If links go in SMS, the link domain must be registered with the DLT template.
-  - Refunds need a rule before launch (doctor absent, or so late the patient leaves).
+  - With cash at the desk, a priority booker who does not turn up blocks a priority place for free. UPI links reduce that; the "payment needed to keep the booking" setting closes it, at the cost of losing callers who would have paid in cash.
+- **Payments add three outside dependencies:**
+  - A **WhatsApp Business account** (through Meta or a provider) with approved utility templates for the payment link, reminder, receipt and refund update, plus the patient's agreement to receive WhatsApp messages. Template approval takes time; apply early.
+  - A **payment gateway** that issues UPI payment links and refunds, with its own business KYC. For the demo, use its test mode so no real money moves.
+  - If a link goes by **SMS** instead, the link's domain must be registered with the DLT template.
+- **Refunds move money, so a person approves them by default.** The agent only raises the request with the amount the clinic's policy gives. The database refuses refunds that would add up to more than was paid.
+- **Asking the patient after 2 delay messages** costs an outbound call per affected patient, and unreachable patients still need a default. The fallback keeps their place if it still fits today, and otherwise holds the next free slot.
 - **Rollover (any-doctor):** patients may be surprised to see a different doctor. They are told by SMS each time; a message that arrives late is the main risk.
-- **Moving visits after 2 delay messages:** someone who misses the SMS may still turn up. That is why moves to another day also get a call, and why arrived patients are never moved.
+- **The sample patient slip** looks like a campus health centre's OPD slip (institute ID, relation such as "self", doctor, booking date and time). It was not committed to the repo because it holds personal details. If the partner is an institution health centre, check whether fees and priority visits apply there at all.
 - **Schedule-only estimates cannot see delays.** Without taps, the system assumes the doctor is on time. It sends no automatic delay SMS and the agent says it has no live update, but the feature only works if someone taps. The best fix is making "Call next" replace something the doctor already does, such as a bell or calling names.
 - **Patient IDs over the phone:** digits only and a check digit make them speakable, but elderly callers may not have the card. The date-of-birth fallback will be used often.
 
@@ -82,7 +95,7 @@ Capacity and consult time are per-doctor settings, so both readings work in the 
 ### Technical honesty
 - Everything in `docs/flows` is a design, not tested behaviour. No part has run against a real clinic or real callers.
 - The delay formula and all default numbers are guesses to be tuned with real data.
-- The schema's rules are tested (`db/tests/schema.test.mjs`, 54 checks on an in-process Postgres). The backend jobs that use them (delay check, rollover, auto-move) are not written yet.
+- The schema's rules are tested (`db/tests/schema.test.mjs`, 72 checks on an in-process Postgres). The backend jobs that use them (delay check, rollover, delay-choice calls, payment links, refunds) are not written yet.
 - Correction from earlier planning: a time-range exclusion constraint only stops double booking for one-patient slots. With multi-patient windows the schema uses a capacity trigger with a row lock.
 
 ## C. Inputs needed from the partner clinic
@@ -92,8 +105,9 @@ Capacity and consult time are per-doctor settings, so both readings work in the 
 | Doctors, specialties, weekly session times | schedule templates, `03` B2 |
 | Which doctors can stand in for each other (pools) | `03` AD; `09` D7, X4 |
 | Average consultation length per doctor, and patients per session | window size, capacity, schedule fallback (`09` N3) |
-| Priority fee per doctor, payment method, refund rule | `03` part P; `09` D8q, X6 |
-| Do patient cards with IDs exist? ID format | `02` V1-V5 |
+| Priority fee per specialist, appointment fee per doctor, refund shares | `03` part P; `10` |
+| WhatsApp Business number, payment gateway account (or test mode for the demo) | `10` parts A, B |
+| Patient card or slip: a clear photo with personal details covered (ID format, institute ID, relation) | `02` V1-V5 |
 | Share of walk-ins vs phone bookings | capacity, priority places |
 | How bookings are taken today (register, app, none) | migration, `03` |
 | Fee list, address, parking, holidays, services | info flow (`05`) |
@@ -116,7 +130,8 @@ Capacity and consult time are per-doctor settings, so both readings work in the 
 | Google Workspace account and Calendar API credentials | calendar mirror |
 | SMS provider choice for the demo (or a mock outbox) | `send_sms` |
 | Where the backend runs during the demo (tunnel vs deployed copy) | reliability |
-| The sub-questions in section A: 1a, 1b, 3a-3d, 6a, 12a, 13a | flows and backend jobs depend on them |
+| The remaining sub-questions in section A: 1b, 3d, 3e-3g, 6a, 12 fallback, 13a | flows and backend jobs depend on them |
+| Payment gateway and WhatsApp provider choice for the demo | `create_payment_link`, WhatsApp templates |
 | Edge cases you want covered ("we'll define later") | `08` table is a starter list |
 | GTM direction: cloud vs hosted DB, pricing model | later; does not block the build |
 
@@ -126,7 +141,10 @@ Capacity and consult time are per-doctor settings, so both readings work in the 
 - The agent never says "urgent" to callers; it says "priority visit".
 - A priority visit is mentioned only when the caller asks to be seen first, or when regular places are full, and never in reply to symptoms.
 - Priority bookings need a clear "yes" to the fee on the call; the time of that "yes" is stored.
-- Priority visits are never moved to another day by the system; staff decide.
+- Rescheduling is offered at most twice before a refund; once the patient asks for their money back, the agent stops offering.
+- Refunds need staff approval by default; the agent never promises more than the policy gives.
+- An unpaid UPI link gets one reminder, then the booking switches to "pay at the desk" (unless the clinic requires payment to keep it).
+- No patient is moved without being asked, except when they cannot be reached (then their place is kept, or the next free slot is held for them).
 - Patients who have arrived are never moved.
 - Follow-ups: the agent asks "same doctor as last time, or any doctor?"
 - A patient ID is never read aloud after date-of-birth verification; it is sent by SMS to the registered number.

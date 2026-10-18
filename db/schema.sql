@@ -4,10 +4,14 @@
 -- Personal data: names, phone numbers, dates of birth. No medical records in v1.
 --
 -- Decisions reflected here (docs/alignment.md):
---   1  named-doctor bookings stay with the doctor; any-doctor bookings belong to a pool and can roll over
---   3  "urgent" = paid priority visit (booking_priority 'priority'); emergencies are not bookings
---   6  verification by name + patient ID (patients.patient_code, numeric with a Luhn check digit)
---   12 at most 2 delay SMS, then the visit moves to the next available window (booking_changes)
+--   1  named-doctor bookings stay with the doctor; any-doctor bookings belong to a pool and roll over
+--      (absent or running late)
+--   3  "urgent" = paid priority visit (booking_priority 'priority'), specialists only; emergencies are
+--      not bookings. Clinics may also set an appointment fee per doctor. Fees are paid by UPI link
+--      (WhatsApp follow-up) or cash at the desk; refunds follow the clinic's policy (payments, refunds)
+--   6  verification by name + patient ID (patients.patient_code; new IDs numeric with a Luhn check
+--      digit; existing and institutional IDs kept as they are, plus card-holder ID and relation)
+--   12 at most 2 delay SMS, then the agent asks the patient: keep, move or cancel (after_cap_action)
 --   13 hybrid "next patient": queue_events from doctor / assistant / reception, schedule fallback
 
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -16,7 +20,14 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE TYPE visit_type        AS ENUM ('first_visit', 'follow_up', 'general_checkup', 'other');
 CREATE TYPE booking_mode      AS ENUM ('named_doctor', 'any_doctor');
 CREATE TYPE booking_priority  AS ENUM ('routine', 'priority');
-CREATE TYPE payment_status    AS ENUM ('not_required', 'pending', 'paid', 'waived', 'refunded');
+CREATE TYPE payment_status    AS ENUM ('not_required', 'pending', 'paid', 'waived',
+                                       'partially_refunded', 'refunded');
+CREATE TYPE payment_method    AS ENUM ('upi_link', 'cash_desk');
+CREATE TYPE payment_state     AS ENUM ('link_sent', 'pending', 'paid', 'expired', 'failed', 'cancelled');
+CREATE TYPE refund_reason     AS ENUM ('doctor_unavailable', 'cancelled_due_to_delay',
+                                       'patient_cancelled_early', 'patient_cancelled_late', 'staff_goodwill');
+CREATE TYPE refund_state      AS ENUM ('requested', 'approved', 'rejected', 'processed', 'failed');
+CREATE TYPE message_channel   AS ENUM ('sms', 'whatsapp');
 CREATE TYPE booking_status    AS ENUM ('held', 'booked', 'arrived', 'in_consult', 'done',
                                        'cancelled', 'no_show', 'rescheduled');
 CREATE TYPE booking_source    AS ENUM ('agent', 'console', 'walk_in', 'follow_up', 'system');
@@ -32,7 +43,7 @@ CREATE TYPE callback_status   AS ENUM ('open', 'in_progress', 'done', 'unreachab
 CREATE TYPE ticket_type       AS ENUM ('refill', 'message', 'report_query');
 CREATE TYPE ticket_status     AS ENUM ('new', 'seen', 'approved', 'declined', 'answered');
 CREATE TYPE sms_status        AS ENUM ('queued', 'sent', 'delivered', 'failed');
-CREATE TYPE outbound_kind     AS ENUM ('reminder', 'delay_update', 'reschedule_notice', 'reschedule_offer',
+CREATE TYPE outbound_kind     AS ENUM ('reminder', 'delay_choice', 'reschedule_offer',
                                        'doctor_changed', 'callback_result', 'follow_up_reminder');
 CREATE TYPE outbound_status   AS ENUM ('scheduled', 'calling', 'confirmed', 'rescheduled',
                                        'cancelled', 'unreached', 'skipped', 'opted_out');
@@ -87,14 +98,20 @@ CREATE TABLE clinic_settings (
     window_capacity            int  NOT NULL DEFAULT 4   CHECK (window_capacity > 0),
     priority_places_per_window int  NOT NULL DEFAULT 1   CHECK (priority_places_per_window >= 0),
     priority_release_minutes   int  NOT NULL DEFAULT 120 CHECK (priority_release_minutes >= 0),
-    priority_payment_method    text NOT NULL DEFAULT 'desk' CHECK (priority_payment_method IN ('desk', 'upi_link')),
+    upi_link_valid_minutes     int  NOT NULL DEFAULT 30  CHECK (upi_link_valid_minutes > 0),
+    upi_reminders              int  NOT NULL DEFAULT 1   CHECK (upi_reminders >= 0),
+    payment_required_to_keep   boolean NOT NULL DEFAULT false,  -- false: unpaid UPI switches to desk
+    refund_full_hours_before   int  NOT NULL DEFAULT 24  CHECK (refund_full_hours_before >= 0),
+    refund_late_cancel_percent int  NOT NULL DEFAULT 50  CHECK (refund_late_cancel_percent BETWEEN 0 AND 100),
+    refund_clinic_caused_percent int NOT NULL DEFAULT 100 CHECK (refund_clinic_caused_percent BETWEEN 0 AND 100),
+    refund_needs_approval      boolean NOT NULL DEFAULT true,
     hold_seconds               int  NOT NULL DEFAULT 90,
     same_day_cutoff_minutes    int  NOT NULL DEFAULT 30,
     delay_sms_threshold_min    int  NOT NULL DEFAULT 20,
     delay_sms_min_change_min   int  NOT NULL DEFAULT 15,
     delay_sms_cap              int  NOT NULL DEFAULT 2,     -- decided
-    after_cap_action           text NOT NULL DEFAULT 'move_to_next_available'   -- decided
-                               CHECK (after_cap_action IN ('move_to_next_available', 'silent_shift')),
+    after_cap_action           text NOT NULL DEFAULT 'ask_patient'   -- decided: keep, move or cancel
+                               CHECK (after_cap_action IN ('ask_patient', 'move_to_next_available', 'silent_shift')),
     next_tap_watchdog_min      int  NOT NULL DEFAULT 30,
     no_show_grace_min          int  NOT NULL DEFAULT 30,
     max_offer_rounds           int  NOT NULL DEFAULT 3,
@@ -124,7 +141,8 @@ CREATE TABLE doctors (
     clinic_id           bigint NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
     name                text NOT NULL,
     specialty           text,
-    priority_fee_inr    numeric(10,2) CHECK (priority_fee_inr >= 0),  -- NULL = no priority visits
+    priority_fee_inr    numeric(10,2) CHECK (priority_fee_inr >= 0),  -- NULL = no priority visits (general doctors)
+    appointment_fee_inr numeric(10,2) CHECK (appointment_fee_inr > 0), -- NULL = no fee needed to book
     planned_consult_min numeric(5,2) CHECK (planned_consult_min > 0), -- NULL = window / capacity
     google_calendar_id  text,        -- doctor's personal calendar: read for busy time only
     clinic_calendar_id  text,        -- shared "Clinic bookings" calendar: written as a mirror
@@ -183,8 +201,14 @@ CREATE SEQUENCE patient_code_seq START 100001;
 CREATE TABLE patients (
     id                  bigserial PRIMARY KEY,
     clinic_id           bigint NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
-    patient_code        text NOT NULL,       -- the "patient ID" on the card (decision 6)
-    patient_code_digits text GENERATED ALWAYS AS (regexp_replace(patient_code, '[^0-9]', '', 'g')) STORED,
+    patient_code        text NOT NULL,       -- the "patient ID" / registration number on the card (decision 6)
+    -- what spoken input is matched against: letters and digits only, upper case ("MC/2024/118" -> "MC2024118")
+    patient_code_norm   text GENERATED ALWAYS AS (upper(regexp_replace(patient_code, '[^A-Za-z0-9]', '', 'g'))) STORED,
+    -- institution health centres: the card holder's institute ID (employee / roll number), shared by
+    -- dependants, plus this patient's relation to the holder
+    holder_code         text,
+    holder_code_norm    text GENERATED ALWAYS AS (upper(regexp_replace(holder_code, '[^A-Za-z0-9]', '', 'g'))) STORED,
+    holder_relation     text CHECK (holder_relation IN ('self', 'spouse', 'child', 'parent', 'other')),
     full_name           text NOT NULL,
     name_phonetic       text,                -- e.g. double metaphone, for fuzzy match
     date_of_birth       date,
@@ -194,7 +218,8 @@ CREATE TABLE patients (
     created_at          timestamptz NOT NULL DEFAULT now(),
     UNIQUE (clinic_id, patient_code)
 );
-CREATE INDEX patients_code_digits_idx ON patients (clinic_id, patient_code_digits);
+CREATE INDEX patients_code_norm_idx   ON patients (clinic_id, patient_code_norm);
+CREATE INDEX patients_holder_idx      ON patients (clinic_id, holder_code_norm);
 CREATE INDEX patients_name_idx        ON patients (clinic_id, lower(full_name));
 CREATE INDEX patients_phon_idx        ON patients (clinic_id, name_phonetic);
 
@@ -290,10 +315,11 @@ CREATE TABLE bookings (
     pool_id               bigint REFERENCES doctor_pools(id),       -- any_doctor only
     visit_type            visit_type NOT NULL DEFAULT 'first_visit',
     priority              booking_priority NOT NULL DEFAULT 'routine',
-    priority_fee_inr      numeric(10,2),         -- fee quoted on the call (snapshot)
-    fee_consent_at        timestamptz,           -- when the caller said yes to the fee
+    priority_fee_inr      numeric(10,2) CHECK (priority_fee_inr >= 0),    -- quoted on the call (snapshot)
+    appointment_fee_inr   numeric(10,2) CHECK (appointment_fee_inr > 0),  -- quoted on the call (snapshot)
+    fee_consent_at        timestamptz,           -- when the caller said yes to the fees
+    payment_method        payment_method,        -- chosen on the call: UPI link or cash at the desk
     payment_status        payment_status NOT NULL DEFAULT 'not_required',
-    payment_ref           text,
     status                booking_status NOT NULL,
     source                booking_source NOT NULL,
     reason_category       text,                  -- short category only, nothing medical in detail
@@ -314,11 +340,17 @@ CREATE TABLE bookings (
     created_at            timestamptz NOT NULL DEFAULT now(),
     CHECK ((status = 'held') = (hold_expires_at IS NOT NULL)),
     CHECK ((booking_mode = 'any_doctor') = (pool_id IS NOT NULL)),
-    -- routine visits carry no fee; priority visits always carry the quoted fee
-    CHECK ((priority = 'routine' AND payment_status = 'not_required' AND priority_fee_inr IS NULL)
-        OR (priority = 'priority' AND payment_status <> 'not_required' AND priority_fee_inr IS NOT NULL)),
-    -- a priority visit booked by the agent needs the caller's recorded yes to the fee
-    CHECK (priority = 'routine' OR source <> 'agent' OR fee_consent_at IS NOT NULL)
+    -- priority visits always carry the quoted priority fee; routine visits never do
+    CHECK ((priority = 'priority') = (priority_fee_inr IS NOT NULL)),
+    -- something to pay -> payment is tracked; nothing to pay -> not required (or waived by staff)
+    CHECK ((COALESCE(priority_fee_inr, 0) + COALESCE(appointment_fee_inr, 0) > 0
+              AND payment_status <> 'not_required')
+        OR (COALESCE(priority_fee_inr, 0) + COALESCE(appointment_fee_inr, 0) = 0
+              AND payment_status IN ('not_required', 'waived'))),
+    -- a fee booked by the agent needs the caller's recorded yes and a chosen way to pay
+    CHECK (COALESCE(priority_fee_inr, 0) + COALESCE(appointment_fee_inr, 0) = 0
+        OR source <> 'agent'
+        OR (fee_consent_at IS NOT NULL AND payment_method IS NOT NULL))
 );
 CREATE INDEX bookings_window_idx  ON bookings (window_id);
 CREATE INDEX bookings_patient_idx ON bookings (patient_id, status);
@@ -358,6 +390,18 @@ BEGIN
             SELECT 1 FROM doctor_pool_members m
              WHERE m.pool_id = NEW.pool_id AND m.doctor_id = NEW.doctor_id) THEN
         RAISE EXCEPTION 'doctor % is not in pool %', NEW.doctor_id, NEW.pool_id USING ERRCODE = 'P0001';
+    END IF;
+
+    -- A doctor who requires an appointment fee: the agent must have quoted it (staff may waive).
+    IF TG_OP = 'INSERT' AND NEW.source = 'agent' AND NEW.appointment_fee_inr IS NULL
+       AND EXISTS (SELECT 1 FROM doctors d WHERE d.id = NEW.doctor_id AND d.appointment_fee_inr IS NOT NULL) THEN
+        RAISE EXCEPTION 'doctor % requires an appointment fee', NEW.doctor_id USING ERRCODE = 'P0001';
+    END IF;
+
+    -- Priority visits only with doctors who offer them (specialists).
+    IF NEW.priority = 'priority' AND TG_OP = 'INSERT' AND NEW.source = 'agent'
+       AND EXISTS (SELECT 1 FROM doctors d WHERE d.id = NEW.doctor_id AND d.priority_fee_inr IS NULL) THEN
+        RAISE EXCEPTION 'doctor % does not offer priority visits', NEW.doctor_id USING ERRCODE = 'P0001';
     END IF;
 
     IF NEW.status NOT IN ('held', 'booked', 'arrived', 'in_consult') THEN
@@ -457,7 +501,7 @@ CREATE TABLE verification_attempts (
     call_id     bigint NOT NULL REFERENCES calls(id) ON DELETE CASCADE,
     patient_id  bigint REFERENCES patients(id),          -- null when nothing matched
     attempt_no  int NOT NULL,
-    method      text NOT NULL CHECK (method IN ('name_patient_id', 'name_dob', 'phone_last4')),
+    method      text NOT NULL CHECK (method IN ('name_patient_id', 'name_holder_id', 'name_dob', 'phone_last4')),
     result      text NOT NULL CHECK (result IN ('matched', 'no_match', 'ambiguous', 'bad_check_digit', 'failed')),
     created_at  timestamptz NOT NULL DEFAULT now()
 );
@@ -511,22 +555,96 @@ CREATE TABLE emergency_alerts (
     created_at       timestamptz NOT NULL DEFAULT now()
 );
 
--- ---------------------------------------------------------------- SMS and outbound
-CREATE TABLE sms_templates (
-    key              text NOT NULL,                       -- booking_confirmed, reminder, delay_update, ...
-    language         text NOT NULL,                       -- en, hi (Unicode template)
-    dlt_template_id  text,                                -- null in the demo
-    category         text NOT NULL DEFAULT 'service_implicit',
-    body             text NOT NULL,                       -- with {#var#} placeholders
-    PRIMARY KEY (key, language)
+-- ---------------------------------------------------------------- payments and refunds (decision 3)
+-- One row per attempt to collect a fee: a UPI link (WhatsApp follow-up) or cash at the desk.
+CREATE TABLE payments (
+    id                   bigserial PRIMARY KEY,
+    booking_id           bigint NOT NULL REFERENCES bookings(id),
+    amount_inr           numeric(10,2) NOT NULL CHECK (amount_inr > 0),
+    method               payment_method NOT NULL,
+    status               payment_state NOT NULL DEFAULT 'pending',
+    provider             text,                    -- payment gateway name; null for cash
+    provider_link_id     text,
+    link_url             text,
+    provider_payment_id  text UNIQUE,             -- idempotency key for the gateway's webhook
+    expires_at           timestamptz,             -- UPI links only
+    reminders_sent       int NOT NULL DEFAULT 0,
+    paid_at              timestamptz,
+    collected_by         bigint REFERENCES staff_users(id),   -- cash only
+    created_at           timestamptz NOT NULL DEFAULT now(),
+    CHECK ((method = 'upi_link') = (expires_at IS NOT NULL)),
+    CHECK ((status = 'paid') = (paid_at IS NOT NULL))
+);
+CREATE INDEX payments_booking_idx ON payments (booking_id);
+CREATE INDEX payments_expiry_idx  ON payments (status, expires_at);
+
+CREATE TABLE refunds (
+    id                   bigserial PRIMARY KEY,
+    payment_id           bigint NOT NULL REFERENCES payments(id),
+    amount_inr           numeric(10,2) NOT NULL CHECK (amount_inr > 0),
+    reason               refund_reason NOT NULL,
+    policy_note          text,                    -- e.g. 'patient cancelled 6 h before: 50%'
+    status               refund_state NOT NULL DEFAULT 'requested',
+    requested_by         text NOT NULL CHECK (requested_by IN ('agent', 'staff', 'system')),
+    call_id              bigint REFERENCES calls(id),   -- the call where it was requested, if any
+    approved_by          bigint REFERENCES staff_users(id),
+    approved_at          timestamptz,
+    provider_refund_id   text UNIQUE,
+    processed_at         timestamptz,
+    created_at           timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE sms_messages (
+-- Money rules: only a paid payment can be refunded, and refunds that are not rejected or
+-- failed can never add up to more than was paid. Locks the payment row against races.
+CREATE FUNCTION enforce_refund_cap() RETURNS trigger AS $$
+DECLARE
+    p          payments%ROWTYPE;
+    refunded   numeric;
+BEGIN
+    SELECT * INTO p FROM payments WHERE id = NEW.payment_id FOR UPDATE;
+    IF p.status <> 'paid' THEN
+        RAISE EXCEPTION 'payment % is not paid (status %)', p.id, p.status USING ERRCODE = 'P0001';
+    END IF;
+    IF NEW.status IN ('rejected', 'failed') THEN
+        RETURN NEW;
+    END IF;
+    SELECT COALESCE(sum(amount_inr), 0) INTO refunded
+      FROM refunds r
+     WHERE r.payment_id = NEW.payment_id
+       AND r.id IS DISTINCT FROM NEW.id
+       AND r.status NOT IN ('rejected', 'failed');
+    IF refunded + NEW.amount_inr > p.amount_inr THEN
+        RAISE EXCEPTION 'refunds of % would exceed the % paid on payment %',
+                        refunded + NEW.amount_inr, p.amount_inr, p.id USING ERRCODE = 'P0001';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER refunds_cap
+    BEFORE INSERT OR UPDATE OF amount_inr, status ON refunds
+    FOR EACH ROW EXECUTE FUNCTION enforce_refund_cap();
+
+-- ---------------------------------------------------------------- messages (SMS and WhatsApp) and outbound calls
+CREATE TABLE message_templates (
+    key              text NOT NULL,                       -- booking_confirmed, payment_link, ...
+    language         text NOT NULL,                       -- en, hi (Unicode template)
+    channel          message_channel NOT NULL,
+    provider_template_id text,                            -- DLT template ID (SMS) or approved WhatsApp template name
+    category         text NOT NULL,                       -- SMS: service_implicit; WhatsApp: utility
+    body             text NOT NULL,                       -- SMS: {#var#} placeholders; WhatsApp: {{1}}, {{2}}
+    PRIMARY KEY (key, language, channel)
+);
+
+CREATE TABLE messages (
     id                   bigserial PRIMARY KEY,
     clinic_id            bigint NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+    channel              message_channel NOT NULL,
     patient_id           bigint REFERENCES patients(id),
     booking_id           bigint REFERENCES bookings(id),
     callback_id          bigint REFERENCES callbacks(id),
+    payment_id           bigint REFERENCES payments(id),
+    refund_id            bigint REFERENCES refunds(id),
     template_key         text NOT NULL,
     language             text NOT NULL,
     to_number            text NOT NULL,
@@ -536,7 +654,7 @@ CREATE TABLE sms_messages (
     error                text,
     created_at           timestamptz NOT NULL DEFAULT now(),
     sent_at              timestamptz,
-    FOREIGN KEY (template_key, language) REFERENCES sms_templates (key, language)
+    FOREIGN KEY (template_key, language, channel) REFERENCES message_templates (key, language, channel)
 );
 
 CREATE TABLE outbound_jobs (

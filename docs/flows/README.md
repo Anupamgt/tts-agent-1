@@ -13,7 +13,8 @@ Read in this order. Every file is a Mermaid diagram plus the rules the diagram c
 | 06 | [human-handoff-and-callbacks](06-human-handoff-and-callbacks.md) | Transfer, no-staff fallback, callback queue and priorities |
 | 07 | [outbound-calls](07-outbound-calls.md) | Reminders, delay updates, reschedule offers, retries, privacy |
 | 08 | [error-handling](08-error-handling.md) | Speech failures, silence, tool and calendar failures, dropped calls |
-| 09 | [day-of-operations](09-day-of-operations.md) | Check-in, walk-ins, "next patient", delay estimate, doctor absent |
+| 09 | [day-of-operations](09-day-of-operations.md) | Check-in, walk-ins, "Call next", delay estimate, asking the patient after 2 delay messages, doctor absent |
+| 10 | [payments-and-refunds](10-payments-and-refunds.md) | Appointment and priority fees, UPI link on WhatsApp or cash, unpaid links, refund tree |
 
 ## Conventions
 
@@ -36,20 +37,24 @@ Read in this order. Every file is a Mermaid diagram plus the rules the diagram c
 | `create_message_ticket` | Message or refill request for the doctor, shown in the console |
 | `create_callback` | Callback request with priority and preferred time |
 | `flag_emergency` | Console alert with a transcript snippet |
+| `create_payment_link` | UPI link for an agreed fee, sent as a WhatsApp follow-up (SMS fallback) |
+| `request_refund` | Refund request with the amount the clinic's policy gives; staff approve in the console |
 | `send_sms` | Send an approved DLT template |
 | `transfer_call` | Bolna Transfer Call tool |
 
-Backend jobs (not called by the agent): delay check and window shifting, pool reassignment, auto-reschedule after the delay-message cap, priority place release, hold cleanup, outbound scheduler.
+Backend jobs (not called by the agent): delay check and window shifting, pool reassignment, delay-choice calls after the message cap, priority place release, hold cleanup, payment-link expiry and reminders, payment and refund webhooks, outbound scheduler.
 
 ## Decided
 
 | Topic | Decision |
 |---|---|
-| Doctor choice | Named or specialist bookings stay with that doctor and wait if the doctor runs late. General check-ups and "any doctor" follow-ups roll over to another doctor in the pool (03, 09) |
-| "Urgent" | Means a paid priority visit (seen before regular patients). Emergencies are separate (01) |
+| Doctor choice | Named or specialist bookings stay with that doctor and wait if the doctor runs late. General check-ups and "any doctor" follow-ups roll over to another doctor in the pool, when the doctor is absent or running late (03, 09) |
+| "Urgent" | Means a paid priority visit (seen before regular patients), offered only by specialists and super-specialists. Emergencies are separate (01) |
+| Fees and payment | Clinic can set an appointment fee per doctor. Fees are agreed on the call, paid by UPI link on WhatsApp or cash at the desk (10) |
+| Refunds | Doctor not available: offer rescheduling first; if the patient still wants the money back, partial or full refund (10) |
 | Verification | Name + patient ID; name + date of birth if the ID is not known (02) |
 | Relatives | Limited mode (02) |
-| Delay messages | At most 2; after that the visit moves to the doctor's next available slot and the patient is told once (09) |
+| Delay messages | At most 2; after that the agent asks the patient: keep the place, move to the next free slot, or cancel (09) |
 | "Next patient" | Hybrid: schedule-based by default, corrected by the doctor's or assistant's "Call next" taps (09) |
 
 ## Settings (editable per clinic or doctor; proposed values unless marked decided)
@@ -57,15 +62,17 @@ Backend jobs (not called by the agent): delay check and window shifting, pool re
 | Setting | Value |
 |---|---|
 | Window length / capacity / priority places | 30 min / 4 patients / 1 priority place (proposed) |
-| Priority fee | Set per doctor; empty means that doctor offers no priority visits (clinic to give amounts) |
-| Priority payment | At the desk on arrival (proposed for the demo) |
+| Priority fee | Set per doctor, specialists only; empty means no priority visits (clinic to give amounts) |
+| Appointment fee | Set per doctor; empty means none |
+| Payment | UPI link on WhatsApp (valid 30 min, one reminder) or cash at the desk (decided); unpaid links keep the booking and switch to desk payment (proposed) |
+| Refunds | Patient cancels 24 h+ before: full; later: 50%; clinic-caused: full; staff approve (proposed values) |
 | Priority places released to regular booking | 2 hours before the session (proposed) |
 | Planned consult time for the schedule fallback | Window length / capacity, so 7.5 min (proposed; per-doctor override) |
 | Hold on a window while booking | 90 seconds |
 | Same-day routine booking cutoff | window must start 30+ min from now |
 | Delay SMS threshold | doctor 20+ min behind |
 | Delay SMS cap | 2 per patient per visit (decided) |
-| After the cap | Move to the doctor's next available window, one "rescheduled" SMS, plus a call if it moves to another day (decided) |
+| After the cap | Call and ask the patient: keep, move or cancel. Not reached: keep their place if it still fits today, otherwise hold the next free slot and text them (decided; fallback proposed) |
 | "Call next" watchdog | console warning after 30 min without a tap; estimate becomes "schedule only" |
 | Max offer rounds per booking | 3 |
 | Verification attempts | 2 |

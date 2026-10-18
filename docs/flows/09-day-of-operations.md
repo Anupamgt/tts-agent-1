@@ -3,8 +3,9 @@
 Decided:
 
 - **"Next patient" is hybrid.** The system assumes the planned schedule by default. The doctor (from a phone or tablet in the cabin) or an assistant outside the cabin taps "Call next" to correct it with real timing.
-- **Delay messages stop at 2.** After that, the patient is moved to the doctor's next available slot and told once.
+- **Delay messages stop at 2.** After that, the agent calls and asks the patient what they want: keep their place and come later, move to the doctor's next available slot, or cancel (with a refund if they paid).
 - **Patients who have arrived wait.** The system never moves them.
+- **Any-doctor visits roll over** to another pool doctor when the assigned doctor is absent or running late.
 
 ## Patient arrives
 
@@ -13,8 +14,8 @@ flowchart TD
     A0(["Patient arrives at the desk"]) --> A1{"Has a booking today?"}
     A1 -->|"yes"| A2["Staff open the record<br/>search by patient ID, name or phone"]
     A2 --> A3["Complete the file: fee, vitals if taken,<br/>confirm details, write the patient ID on the card"]
-    A3 --> A3b{"Priority visit?"}
-    A3b -->|"yes"| A3c["Collect the priority fee, mark paid"]
+    A3 --> A3b{"Fee still unpaid?<br/>(priority or appointment fee)"}
+    A3b -->|"yes"| A3c["Collect cash or show a UPI QR,<br/>mark paid"]
     A3b -->|"no"| A4
     A3c --> A4
     A4["Tap 'Arrived'<br/>queue order: priority first, then arrival order"]
@@ -75,22 +76,25 @@ flowchart TD
     D6 -->|"any doctor"| D7{"Another pool doctor has a place<br/>at or before the shifted time?"}
     D7 -->|"yes"| D7a["Move to that doctor<br/>send_sms 'doctor changed'"]
     D7 -->|"no"| D8
-    D6 -->|"named doctor"| D8
-    D6 -->|"priority"| D8p{"Can still be seen today?"}
-    D8p -->|"yes"| D5a
-    D8p -->|"no"| D8q["Console alert: staff decide<br/>rebook, keep, or refund the fee"]
+    D6 -->|"named doctor or priority"| D8
 
     D8{"Delay messages already sent<br/>for this visit?"}
     D8 -->|"0 or 1"| D9{"Shifted window still inside<br/>today's session?"}
     D9 -->|"yes"| D9a["send_sms 'delay update' with the new window"]
     D9 -->|"no"| D10
-    D8 -->|"2"| D10["Move to the doctor's next available window<br/>(later today if it fits, else the next session;<br/>any-doctor: any pool doctor)"]
-    D10 --> D11["send_sms 'rescheduled'<br/>outbound call if it moved to another day (07)<br/>no more delay messages for this visit"]
+    D8 -->|"2"| D10["Outbound call (07): ask the patient<br/>'Dr X is about 50 minutes behind. Would you like to<br/>come at 7:40, move to the next free slot, or cancel?'"]
+    D10 --> D11{"Patient's choice"}
+    D11 -->|"keep my place"| D12["Keep the shifted window<br/>no more delay messages; agent answers live"]
+    D11 -->|"move"| D13["Offer the doctor's next available slots<br/>(later today or next session;<br/>any-doctor: any pool doctor)<br/>book the one they pick, send_sms 'rescheduled'"]
+    D11 -->|"cancel"| D14["Cancel; if they paid,<br/>refund as clinic-caused (10 part C)"]
+    D11 -->|"not reached after retries"| D15{"Shifted window still<br/>inside today's session?"}
+    D15 -->|"yes"| D16["Keep their place, send_sms 'delay update' once more<br/>console marks 'unconfirmed'"]
+    D15 -->|"no"| D17["Hold the doctor's next available slot for them<br/>send_sms 'slot kept for you, call to change'<br/>staff callback P2"]
 
     classDef agent fill:#e1f5ee,stroke:#0f6e56;
     classDef human fill:#eef1fb,stroke:#534ab7;
-    class D7a,D9a,D10,D11 agent;
-    class D8q human;
+    class D7a,D9a,D10,D12,D13 agent;
+    class D14,D16,D17 human;
 ```
 
 ## Doctor absent, session changes, end of day
@@ -104,10 +108,16 @@ flowchart TD
     X4 --> X4b{"Room found?"}
     X4b -->|"no"| X5
     X4b -->|"yes"| X8
-    X3 -->|"named doctor"| X5["Move to the same doctor's next available window<br/>send_sms 'rescheduled' + outbound call (07)"]
-    X3 -->|"priority"| X6["Staff decide: rebook as priority,<br/>or refund the fee"]
-    X5 --> X8["Rebooked, cancelled, or still open<br/>shown per patient"]
-    X6 --> X8
+    X3 -->|"named doctor or priority"| X5["Outbound call (07): offer the same doctor's<br/>next available slots; patient picks"]
+    X5 --> X6{"Patient's choice"}
+    X6 -->|"new slot"| X9["Rebook, any fee carries over<br/>send_sms 'rescheduled'"]
+    X6 -->|"wants money back"| X10["Refund as clinic-caused (10 part C)"]
+    X6 -->|"cancel, nothing paid"| X11["Cancel, send_sms 'cancelled'"]
+    X6 -->|"not reached"| X12["Hold the next available slot<br/>send_sms 'slot kept for you, call to change'<br/>staff callback P2"]
+    X9 --> X8["Rebooked, refunded, cancelled, or still open<br/>shown per patient"]
+    X10 --> X8
+    X11 --> X8
+    X12 --> X8
     X1 --> X7["Windows of that session disappear<br/>from the agent immediately"]
 
     Y0(["End of session"]) --> Y1["Unarrived bookings marked no-show<br/>after the window ends plus 30 min"]
@@ -116,7 +126,7 @@ flowchart TD
     Y3 --> Y4["Open callbacks and unreached patients carry over to tomorrow"]
 
     classDef human fill:#eef1fb,stroke:#534ab7;
-    class X1,X6,Y1 human;
+    class X1,X10,X12,Y1 human;
 ```
 
 ## Console screens this implies
@@ -126,9 +136,10 @@ flowchart TD
 | Live queue | Today's windows, who has arrived (priority marked), who is with the doctor, "Call next" button, delay estimate with "live" or "schedule only" |
 | Doctor view | Single big "Call next" button and the next patient's name or ID; works on a phone |
 | Bookings | Calendar-style view by doctor and window; named vs any-doctor; create, move, cancel; payment status |
+| Payments and refunds | UPI links sent, paid, expired; cash collected; refund requests to approve, change or reject |
 | Callbacks | Priority-sorted queue with transcript snippet, caller number, reason, verification status |
 | Messages and refills | Tickets for the doctor to approve or answer |
 | Emergency alerts | Latest flags, with a clear acknowledge action |
 | Calls | Every call with transcript, language, tags, outcome, recording link |
 | SMS outbox | Sent and failed messages, template used |
-| Settings | Windows, capacity, priority places and fee per doctor, release time, doctor pools, staff-on-desk switch, clinic info, thresholds |
+| Settings | Windows, capacity, priority places, priority and appointment fees per doctor, payment and refund rules, release time, doctor pools, staff-on-desk switch, clinic info, thresholds |

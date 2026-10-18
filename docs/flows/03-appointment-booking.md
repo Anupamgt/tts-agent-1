@@ -4,7 +4,8 @@ Decided:
 
 - **Named-doctor bookings:** the caller chose a doctor by name, or a specialist. The visit stays with that doctor. If the doctor runs late, the patient waits, and the window shifts in time.
 - **Any-doctor bookings:** general check-ups and follow-ups where the doctor does not matter. The visit belongs to a pool of doctors. If the assigned doctor is not available, the visit rolls over to another doctor in the pool (A1 to A2).
-- **Priority visits:** what the clinic calls "urgent". The patient pays an extra fee to be seen before regular patients (part P).
+- **Priority visits:** what the clinic calls "urgent". The patient pays an extra fee to be seen before regular patients (part P). Only specialists and super-specialists offer them.
+- **Appointment fee:** a clinic can require a fee to book a particular doctor. It is agreed on the call and paid by UPI link (WhatsApp) or cash at the desk (10).
 
 ## Main booking flow
 
@@ -65,14 +66,18 @@ flowchart TD
 
     B16["Read back: patient name, doctor,<br/>day and date, arrival window"]
     B16 --> B17{"Caller confirms?"}
-    B17 -->|"yes"| B18["create_booking"]
+    B17 -->|"yes"| B17f{"Does this doctor require<br/>an appointment fee?"}
+    B17f -->|"no"| B18["create_booking"]
+    B17f -->|"yes"| FEE["10 part A: state the fee, get a clear yes,<br/>UPI link on WhatsApp or cash at the desk"]
+    FEE -->|"agreed"| B18
+    FEE -->|"declined"| REL
     B17 -->|"fix something"| B17a["Correct the detail, read back again"]
     B17a --> B16
     B17 -->|"cancel"| REL["Release the hold"]
     REL --> B11b
 
     B18 --> B19{"Result"}
-    B19 -->|"ok"| B20["send_sms 'booking confirmed'<br/>new patients: includes the patient ID<br/>calendar mirror updated in the background"]
+    B19 -->|"ok"| B20["send_sms 'booking confirmed'<br/>new patients: includes the patient ID<br/>UPI chosen: WhatsApp payment link (10 part B)<br/>calendar mirror updated in the background"]
     B19 -->|"conflict"| B19a["Hold lost, re-offer (back to B8)"]
     B19 -->|"error"| B19b["'I could not complete that right now.'<br/>create_callback priority P2, confirm callback"]
     B20 --> B21{"Booking type"}
@@ -91,24 +96,23 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    P0(["Caller wants a priority visit"]) --> P1{"This doctor (or pool)<br/>offers priority visits?"}
-    P1 -->|"no"| P1a["Say so, continue with a regular booking (B6)"]
+    P0(["Caller wants a priority visit"]) --> P1{"Is the doctor a specialist<br/>or super-specialist with a priority fee?"}
+    P1 -->|"no (general doctors)"| P1a["Say priority visits are only for specialists,<br/>continue with a regular booking (B6)"]
     P1 -->|"yes"| P2["get_available_windows: priority places<br/>for the requested day"]
     P2 --> P3{"Priority place free?"}
     P3 -->|"no"| P3a["Offer the nearest day with a priority place,<br/>or a regular window"]
     P3a --> P3b{"Caller choice"}
     P3b -->|"nearest priority day"| P4
     P3b -->|"regular window"| P1a
-    P3 -->|"yes"| P4["State the fee and what it buys, plainly:<br/>'A priority visit costs Rs X extra, paid at the desk.<br/>You will be seen before regular patients once you arrive.<br/>Shall I book it?'"]
-    P4 --> P5{"Caller gives a clear yes to the fee?"}
-    P5 -->|"no, or unsure"| P1a
-    P5 -->|"yes"| P6["hold_window on the priority place"]
-    P6 --> P7["02 Verification, or new patient details (B14, B15)"]
-    P7 --> P8["Read back: patient, doctor, day, window,<br/>'priority visit, Rs X extra, pay at the desk'"]
+    P3 -->|"yes"| P4["hold_window on the priority place"]
+    P4 --> P7["02 Verification, or new patient details (B14, B15)"]
+    P7 --> P8["Read back: patient, doctor, day, window,<br/>'priority visit: seen before regular patients once you arrive'"]
     P8 --> P9{"Confirms?"}
     P9 -->|"no"| REL2["Release the hold, offer a regular window"]
-    P9 -->|"yes"| P10["create_booking with priority,<br/>fee and the time of the caller's yes saved<br/>payment: pending until paid at the desk"]
-    P10 --> P11["send_sms 'priority booking confirmed'<br/>with the fee"]
+    P9 -->|"yes"| P5["10 part A: priority fee (plus any appointment fee),<br/>clear yes, UPI link on WhatsApp or cash at the desk"]
+    P5 -->|"declined"| REL2
+    P5 -->|"agreed"| P10["create_booking with priority,<br/>fees and the time of the caller's yes saved<br/>payment pending until paid"]
+    P10 --> P11["send_sms 'priority booking confirmed' with the fee<br/>UPI chosen: WhatsApp payment link"]
     P11 --> P12(["Back to router"])
 
     classDef agent fill:#e1f5ee,stroke:#0f6e56;
@@ -121,12 +125,14 @@ flowchart TD
 - **Named-doctor:** never moved to another doctor by the system. If the doctor runs late, later windows shift and the patient waits (delay rules in 09). If the patient cannot be seen today, the visit moves to the same doctor's next available window.
 - **Any-doctor:** the agent books the earliest window across the pool and says which doctor it is "currently" with. On the day, the visit can move to another pool doctor (see 09). The patient is told by SMS whenever the doctor changes.
 - **Follow-ups:** the agent asks once whether the caller wants the same doctor as last time. The last doctor comes from booking history, not from medical records.
-- **Specialty requests** are pinned to the doctor offered at booking, as decided. Open question: should two doctors of the same specialty form a pool?
+- **Rollover** (decided): any-doctor visits move to another pool doctor both when the assigned doctor is absent and when they are running late.
+- **Specialty requests** are pinned to the doctor offered at booking, as decided. Open question 1b: should two doctors of the same specialty form a pool? (see alignment)
 - **Priority visits:**
+  - Only specialists and super-specialists offer them; general doctors have no priority fee and no priority places.
   - The fee is read out before booking, and the booking needs a clear "yes" to that fee. The time of the "yes" and the call ID are stored.
-  - Payment is at the desk in the demo (status "pending" until staff mark it paid). A UPI link by SMS is a later option.
+  - Payment: UPI link sent as a WhatsApp follow-up, or cash at the desk (10). Status stays "pending" until the provider confirms or staff mark it paid.
   - Priority patients are seen before regular patients who have already arrived, in their own arrival order.
-  - Priority places are reserved per window (default 1). Unsold places go back to regular booking before the session (proposed: 2 hours).
+  - Priority places are reserved per window for those doctors (default 1). Unsold places go back to regular booking before the session (proposed: 2 hours).
   - The system never moves a priority visit to another day by itself. Staff decide (09).
 - Maximum two options per offer, maximum three offer rounds. After that, a person takes over.
 - Same-day routine bookings are only offered for windows that start at least 30 minutes from now (proposed).

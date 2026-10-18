@@ -22,12 +22,12 @@ flowchart TD
     V0["An action needs verification"] --> V1["'Please tell me the patient's full name<br/>and the patient ID on the card.'"]
     V1 --> V2{"Caller has the patient ID?"}
 
-    V2 -->|"yes"| V3["Read the ID back in groups of 2 or 3 digits<br/>'Is that 12 34 567?'"]
-    V3 --> V3b{"Confirmed, and the check digit is valid?"}
+    V2 -->|"yes"| V3["Read the ID back in groups of 2 or 3 characters<br/>'Is that 12 34 567?'"]
+    V3 --> V3b{"Confirmed, and valid?<br/>(check digit for new IDs)"}
     V3b -->|"no"| V3c["Ask for the ID once more, digit by digit"]
     V3c --> V3
-    V3b -->|"yes"| V4["match_patient with name + patient ID"]
-    V4 --> V5{"ID exists and the name matches it?"}
+    V3b -->|"yes"| V4["match_patient with name + patient ID<br/>(or card-holder ID at institution clinics)"]
+    V4 --> V5{"ID exists and the name matches<br/>a patient under it?"}
     V5 -->|"yes"| V9
     V5 -->|"no"| V8
 
@@ -63,7 +63,9 @@ flowchart TD
 
 ## Rules
 
-- **Patient ID format:** digits only, so it can be spoken in English, Hindi or mixed, with a final check digit. For example, `123456` plus check digit `6` gives `1234566`. The check digit catches most single misheard digits and swapped neighbours before the database is even asked. If the clinic already has IDs with letters or slashes, the system matches on the digits in them and the read-back includes the letters.
+- **Patient ID format (new IDs):** digits only, so it can be spoken in English, Hindi or mixed, with a final check digit. For example, `123456` plus check digit `6` gives `1234566`. The check digit catches most single misheard digits and swapped neighbours before the database is even asked.
+- **Existing clinic IDs** are kept as they are. Matching ignores spaces, slashes and dashes and compares letters and digits, so "MC slash 2024 slash 118" finds `MC/2024/118`. Letters are read back one by one ("C for Chennai").
+- **Institution health centres** (like the sample slip shared: a campus health centre) may identify patients by the card holder's institute ID, such as an employee or roll number, plus a relation (self, spouse, child). Several family members then share one ID, so the name decides which of them is calling about. The schema stores this as a card-holder ID and relation next to the patient's own registration number. Confirm against a clearer copy of the slip.
 - **New patients** get a patient ID the moment the agent creates their record. It goes into the booking SMS, and staff write it on the card at the first visit.
 - **The ID is never read aloud** to someone who verified by date of birth. It is sent by SMS to the registered number instead, so it reaches the patient's own phone.
 - **Name and ID must agree.** A valid ID with a different name is a failed attempt (it may belong to another family member). The agent does not reveal whose ID it is.

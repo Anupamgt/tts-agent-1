@@ -58,8 +58,8 @@ flowchart TD
     C3 -->|"no"| C3a(["Keep the booking, ask if anything else"])
     C3 -->|"yes"| C4["cancel_booking<br/>window released immediately"]
     C4 --> C5["send_sms 'cancelled'"]
-    C5 --> C6{"Cancelling a priority visit,<br/>or a follow-up the doctor requested?"}
-    C6 -->|"yes"| C7["Priority: say how the fee is handled (clinic's refund rule).<br/>Follow-up: mention the doctor wanted this visit.<br/>Offer to rebook now; flag in console for staff"]
+    C5 --> C6{"A fee was paid,<br/>or the doctor asked for this follow-up?"}
+    C6 -->|"yes"| C7["Paid: refund as a patient cancellation (10 part D),<br/>say the amount the policy gives.<br/>Follow-up: mention the doctor wanted this visit.<br/>Offer to rebook now; flag in console for staff"]
     C6 -->|"no"| C8["'Would you like to book another day?'"]
     C7 --> C8
     C8 -->|"yes"| BK(["03 Booking"])
