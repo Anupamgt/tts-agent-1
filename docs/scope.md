@@ -8,7 +8,7 @@ Phone help desk voice agent for a real local clinic, shipped end to end for a ha
 ## Decisions so far
 - Voice stack: Bolna (single multilingual agent). Languages: English, Hindi, Hinglish.
 - Database: Postgres (local for dev, behind a tunnel or deployed; cloud/hosted options are a later GTM discussion).
-- Bookings: arrival windows with live delay updates and a reserved urgent pool (see flows/clinic-flow-today-vs-agent.md).
+- Bookings: arrival windows with live delay updates and a reserved urgent pool (see flows/clinic-flow-today-vs-agent.md and the detailed trees in flows/README.md).
 - Calendar: Postgres is source of truth, bookings mirrored to a separate Google Calendar, doctors' personal busy time read as unavailable (hybrid option 4).
 - SMS: demo DLT templates (service implicit): booking confirmed, reminder, delay update, rescheduled, cancelled, callback queued. Hindi versions need separate Unicode templates.
 - Agent never diagnoses or gives medical advice; discloses it is an AI at call start; emergency phrases trigger a fixed 112/108 script and a console alert.
