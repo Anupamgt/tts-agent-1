@@ -1,0 +1,19 @@
+<!-- @dsCard group="Queue" height=420 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>PatientCard — preview</title></head>
+<body>
+<div id="root" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:16px;align-items:start"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(B.PatientCard, { name: 'Meera Iyer', patientId: 'HC/2026/0412', status: 'held', statusNote: 'caller on the line', priority: true, source: 'agent', fee: { state: 'due', amount: 700 } }),
+    h(B.PatientCard, { name: 'Kabir Iyer', patientId: 'HC/2026/0413', age: 8, status: 'booked', priority: true, relative: true, relativeLabel: 'Booked by Meera', fee: { state: 'paid', amount: 700 } }),
+    h(B.PatientCard, { name: 'Fatima Shaikh', patientId: '264 158 7', status: 'booked', statusNote: 'Delay SMS 1/2', anyDoctor: true, source: 'agent', action: { label: 'Mark arrived' } }),
+    h(B.PatientCard, { name: 'Asha Rani', patientId: '482 915 6', status: 'arrived', statusNote: '5:48 pm' }),
+    h(B.PatientCard, { name: 'Rohan Mehta', patientId: '736 204 9', status: 'in_consult', statusNote: 'since 6:02 pm', source: 'agent' }),
+    h(B.PatientCard, { name: 'Neha Joshi', patientId: '648 031 3', status: 'cancelled', note: 'Dr Kaur unavailable Thursday · refund requested ₹700' }),
+    h(B.PatientCard, { lang: 'hi', name: 'Fatima Shaikh', patientId: '264 158 7', status: 'booked', statusLabel: 'बुक हो गया', statusNote: 'देरी SMS 1/2', anyDoctor: true, anyDoctorLabel: 'कोई भी डॉक्टर', source: 'agent', sourceLabel: 'एजेंट से', action: { label: 'पहुँच गए' } })));
+</script>
+</body>
+</html>

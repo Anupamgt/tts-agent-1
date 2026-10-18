@@ -1,0 +1,25 @@
+<!-- @dsCard group="Queue" height=420 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>WindowBlock — preview</title></head>
+<body>
+<div id="root" style="display:flex;flex-wrap:wrap;gap:16px;padding:16px;align-items:flex-start"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  function col(children) { return h('div', { style: { width: 340, display: 'flex', flexDirection: 'column', gap: 8 } }, children); }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    col([
+      h(B.DoctorChip, { key: 'c', name: 'Dr Sharma', delayMin: 25 }),
+      h(B.WindowBlock, { key: 'w', label: '5:30–6:00 pm', shifted: '5:55–6:25 pm', capacity: 4, taken: 3, isNow: true },
+        h(B.PatientCard, { name: 'Rohan Mehta', patientId: '736 204 9', status: 'in_consult', statusNote: 'since 6:02 pm', source: 'agent' }),
+        h(B.PatientCard, { name: 'Asha Rani', patientId: '482 915 6', status: 'arrived', statusNote: '5:48 pm' }),
+        h(B.PatientCard, { name: 'Sunil Kumar', patientId: '519 387 5', status: 'arrived', statusNote: '6:05 pm', source: 'walk_in' }))
+    ]),
+    col([
+      h(B.DoctorChip, { key: 'c', name: 'Dr Kaur', delayMin: 10 }),
+      h(B.WindowBlock, { key: 'w', label: '6:00–6:30 pm', capacity: 4, priorityPlaces: 1, taken: 0, priorityTaken: 1, note: '3 regular places free' },
+        h(B.PatientCard, { name: 'Kabir Iyer', patientId: 'HC/2026/0413', age: 8, status: 'booked', priority: true, relative: true, relativeLabel: 'Booked by Meera', fee: { state: 'paid', amount: 700 } }))
+    ])));
+</script>
+</body>
+</html>

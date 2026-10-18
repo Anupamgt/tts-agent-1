@@ -1,0 +1,16 @@
+<!-- @dsCard group="Alerts" height=300 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CallbackRow — preview</title></head>
+<body>
+<div id="root" style="padding:16px"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h('div', { style: { border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' } },
+    h(B.CallbackRow, { priority: 'P1', caller: 'Unknown caller', number: '+91 98777 77777', language: 'Hinglish', reason: 'Emergency flagged (medical). Acknowledged 6:09 pm.', dueText: 'overdue 4 min', overdue: true }),
+    h(B.CallbackRow, { priority: 'P2', caller: 'Gurpreet Singh', number: '+91 98555 55555', language: 'Hinglish', verified: true, reason: 'Wants to be seen today; nothing free after 6 pm.', dueText: 'due by 7:30 pm', dueSoon: true }),
+    h(B.CallbackRow, { priority: 'P3', caller: 'Unknown caller', number: '+91 98999 99999', language: 'HI', reason: 'Verification failed twice; wants to change a booking.', dueText: 'next session', differsFromCaller: true }),
+    h(B.CallbackRow, { priority: 'P2', caller: 'Fatima Shaikh', number: '+91 98444 44444', language: 'HI', verified: true, lang: 'hi', reason: 'देरी वाली कॉल पर बात नहीं हो पाई; अगला खाली समय रखा गया है।', dueText: 'due in 40 min' })));
+</script>
+</body>
+</html>

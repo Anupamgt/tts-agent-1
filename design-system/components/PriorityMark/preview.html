@@ -1,0 +1,16 @@
+<!-- @dsCard group="Status" height=64 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>PriorityMark — preview</title></head>
+<body>
+<div id="root" class="bn-row"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(B.PriorityMark, { level: 'P1' }),
+    h(B.PriorityMark, { level: 'P1', quiet: true }),
+    h(B.PriorityMark, { level: 'P2' }),
+    h(B.PriorityMark, { level: 'P3' })));
+</script>
+</body>
+</html>

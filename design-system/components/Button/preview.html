@@ -1,0 +1,22 @@
+<!-- @dsCard group="Actions" height=136 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Button — preview</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h('div', { className: 'bn-row' },
+      h(B.Button, { variant: 'primary', icon: 'check' }, 'Confirm booking'),
+      h(B.Button, null, 'Reschedule'),
+      h(B.Button, { variant: 'quiet', icon: 'phone' }, 'Play call'),
+      h(B.Button, { variant: 'danger' }, 'Cancel booking'),
+      h(B.Button, { disabled: true }, 'Refund')),
+    h('div', { className: 'bn-row', style: { paddingTop: 0 } },
+      h(B.Button, { variant: 'primary', lang: 'hi' }, 'बुकिंग पक्की करें'),
+      h(B.Button, { lang: 'hi' }, 'दूसरा समय'),
+      h(B.Button, { variant: 'primary', size: 'lg', icon: 'phone' }, 'Call back'))));
+</script>
+</body>
+</html>

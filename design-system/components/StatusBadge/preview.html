@@ -1,0 +1,26 @@
+<!-- @dsCard group="Status" height=104 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>StatusBadge — preview</title></head>
+<body>
+<div id="root"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h('div', { className: 'bn-row' },
+      h(B.StatusBadge, null, 'Booked'),
+      h(B.StatusBadge, { tone: 'held' }, 'Held by agent'),
+      h(B.StatusBadge, { tone: 'info' }, 'Arrived'),
+      h(B.StatusBadge, { tone: 'ok' }, 'Paid ₹700'),
+      h(B.StatusBadge, { tone: 'attention' }, 'Fee due ₹200'),
+      h(B.StatusBadge, { tone: 'priority' }, 'Priority'),
+      h(B.StatusBadge, { tone: 'emergency' }, 'Emergency')),
+    h('div', { className: 'bn-row', style: { paddingTop: 0 } },
+      h(B.StatusBadge, { tone: 'info', lang: 'hi' }, 'पहुँच गए'),
+      h(B.StatusBadge, { tone: 'ok', lang: 'hi' }, 'भुगतान हो गया ₹700'),
+      h(B.StatusBadge, { tone: 'attention', lang: 'hi' }, 'फ़ीस बाकी ₹200'),
+      h(B.StatusBadge, { tone: 'priority', lang: 'hi' }, 'प्राथमिकता'),
+      h(B.StatusBadge, { tone: 'emergency', lang: 'hi' }, 'आपातकाल'))));
+</script>
+</body>
+</html>

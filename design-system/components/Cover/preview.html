@@ -1,0 +1,76 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bolnai Helpdesk</title>
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--surface); color:var(--ink); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:480px; height:288px; }
+  .brand { fill:var(--accent); }
+  .tint { fill:var(--accent-soft); }
+  .deep { fill:var(--ink); }
+  .warn { fill:var(--attention); }
+  .blk { rx:var(--radius-lg); }
+  .tile { rx:var(--radius-md); }
+  .place { rx:var(--radius-sm); }
+  .disc { rx:var(--space-2); }
+  .taken { fill:var(--accent); }
+  .free { fill:var(--surface); }
+  .prio-taken { fill:var(--priority); }
+  .prio-free { fill:var(--priority-soft); stroke:var(--priority); stroke-width:1.5px; }
+  .words { position:absolute; left:var(--space-6); bottom:var(--space-6); max-width:440px; }
+  .name { margin:0; font-size:88px; line-height:.95; font-weight:600; letter-spacing:-.01em; color:var(--ink); }
+  .tag { margin:var(--space-3) 0 0 2px; font-size:14px; line-height:20px; color:var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      accent 112×232 slab bled off the top (the one interactive hue, the brand) · accent-soft 144×208 tint carrying the pattern · ink 184×192 bleeding off the right and bottom · attention 48×24 once (it only ever means "look soon") — about a third of 960×288
+  arrangement one tall accent slab with satellites, tops stepping down left to right, the slab's tile and the tint sharing a bottom line space-5 above the edge, space-4 gutters
+  pattern     arrival-window places, from WindowBlock ("accent squares are taken, violet circles are priority places"): 6 windows × 4 places, fill thinning down the evening, the 4th place a violet disc, as in the component
+  scales      places 16 (space-4) at a space-6 pitch, inset space-4 in the tint; gutters space-4; corners radius-lg on blocks, radius-md on the tile, radius-sm on places, discs rx space-2 (half of 16)
+-->
+<rect class="brand blk" x="24" y="-16" width="112" height="232" rx="10"/>
+<rect class="warn tile" x="24" y="232" width="48" height="24" rx="6"/>
+<rect class="tint blk" x="152" y="48" width="144" height="208" rx="10"/>
+<rect class="deep blk" x="312" y="112" width="184" height="192" rx="10"/>
+<rect class="place taken" x="168" y="64" width="16" height="16" rx="4"/>
+<rect class="place taken" x="200" y="64" width="16" height="16" rx="4"/>
+<rect class="place taken" x="232" y="64" width="16" height="16" rx="4"/>
+<rect class="place disc prio-taken" x="264" y="64" width="16" height="16" rx="8"/>
+<rect class="place taken" x="168" y="96" width="16" height="16" rx="4"/>
+<rect class="place taken" x="200" y="96" width="16" height="16" rx="4"/>
+<rect class="place taken" x="232" y="96" width="16" height="16" rx="4"/>
+<rect class="place disc prio-taken" x="264" y="96" width="16" height="16" rx="8"/>
+<rect class="place taken" x="168" y="128" width="16" height="16" rx="4"/>
+<rect class="place taken" x="200" y="128" width="16" height="16" rx="4"/>
+<rect class="place taken" x="232" y="128" width="16" height="16" rx="4"/>
+<rect class="place disc prio-free" x="264.75" y="128.75" width="14.5" height="14.5" rx="8"/>
+<rect class="place taken" x="168" y="160" width="16" height="16" rx="4"/>
+<rect class="place taken" x="200" y="160" width="16" height="16" rx="4"/>
+<rect class="place free" x="232" y="160" width="16" height="16" rx="4"/>
+<rect class="place disc prio-free" x="264.75" y="160.75" width="14.5" height="14.5" rx="8"/>
+<rect class="place taken" x="168" y="192" width="16" height="16" rx="4"/>
+<rect class="place free" x="200" y="192" width="16" height="16" rx="4"/>
+<rect class="place free" x="232" y="192" width="16" height="16" rx="4"/>
+<rect class="place disc prio-free" x="264.75" y="192.75" width="14.5" height="14.5" rx="8"/>
+<rect class="place free" x="168" y="224" width="16" height="16" rx="4"/>
+<rect class="place free" x="200" y="224" width="16" height="16" rx="4"/>
+<rect class="place free" x="232" y="224" width="16" height="16" rx="4"/>
+<rect class="place disc prio-free" x="264.75" y="224.75" width="14.5" height="14.5" rx="8"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Bolnai<br>Helpdesk</h1>
+<p class="tag">The clinic desk, beside the phone agent.</p>
+</div>
+</div>
+</body>
+</html>

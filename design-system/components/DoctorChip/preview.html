@@ -1,0 +1,18 @@
+<!-- @dsCard group="Status" height=112 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DoctorChip — preview</title></head>
+<body>
+<div id="root" class="bn-row"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(B.DoctorChip, { name: 'Dr Sharma', delayMin: 25 }),
+    h(B.DoctorChip, { name: 'Dr Verma', basis: 'schedule', title: 'No tap from the cabin for 32 min' }),
+    h(B.DoctorChip, { name: 'Dr Kaur', delayMin: 10 }),
+    h(B.DoctorChip, { name: 'Dr Verma', status: 'paused' }),
+    h(B.DoctorChip, { name: 'Dr Sharma', status: 'planned', startsAt: '5:00 pm' }),
+    h(B.DoctorChip, { name: 'Dr Verma', status: 'cancelled' })));
+</script>
+</body>
+</html>

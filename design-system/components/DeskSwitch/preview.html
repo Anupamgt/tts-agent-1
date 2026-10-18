@@ -1,0 +1,20 @@
+<!-- @dsCard group="Actions" height=136 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DeskSwitch — preview</title></head>
+<body>
+<div id="root" class="bn-row"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  function Demo() {
+    var a = React.useState(true), b = React.useState(false), c = React.useState(true);
+    return h(React.Fragment, null,
+      h(B.DeskSwitch, { on: a[0], onChange: a[1] }),
+      h(B.DeskSwitch, { on: b[0], onChange: b[1] }),
+      h(B.DeskSwitch, { on: c[0], onChange: c[1], lang: 'hi', label: 'डेस्क पर स्टाफ़',
+        onText: 'कॉल डेस्क फ़ोन पर ट्रांसफ़र होंगी', offText: 'कॉल करने वालों को कॉलबैक मिलेगा' }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

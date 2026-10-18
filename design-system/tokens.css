@@ -1,0 +1,67 @@
+/* Bolnai Helpdesk — generated from tokens.json */
+@font-face { font-family: "Anek Latin"; src: url("fonts/anek-latin-wght.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Anek Devanagari"; src: url("fonts/anek-devanagari-wght.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+:root, [data-theme="light"] {
+  --canvas: #edf2f4;
+  --surface: #ffffff;
+  --surface-sunken: #e2e9ec;
+  --line: #cbd5da;
+  --line-strong: #738590;
+  --ink: #13232b;
+  --ink-muted: #4a5c66;
+  --accent: #0a5c70;
+  --accent-strong: #074657;
+  --accent-soft: #d8eaf0;
+  --on-accent: #ffffff;
+  --focus-ring: var(--accent);
+  --link: var(--accent);
+  --emergency: #b42318;
+  --emergency-soft: #fde8e6;
+  --on-emergency: #ffffff;
+  --attention: #e8a317;
+  --attention-ink: #7a4a00;
+  --attention-soft: #fdf0d5;
+  --ok: #2f8a63;
+  --ok-ink: #14603e;
+  --ok-soft: #dcf1e6;
+  --priority: #6b3d9b;
+  --priority-soft: #efe6f8;
+  --on-priority: #ffffff;
+  --neutral-soft: #e3eaee;
+  --shadow-raised: 0 1px 2px rgba(19, 35, 43, 0.08), 0 1px 1px rgba(19, 35, 43, 0.04);
+  --shadow-overlay: 0 12px 32px rgba(19, 35, 43, 0.18), 0 2px 6px rgba(19, 35, 43, 0.08);
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --touch-min: 44px;
+  --call-next: 128px;
+  --place: 14px;
+  --font-sans: "Anek Latin", "Anek Devanagari", "Noto Sans", system-ui, sans-serif;
+  --font-deva: "Anek Devanagari", "Anek Latin", "Noto Sans Devanagari", system-ui, sans-serif;
+}
+.heading-lg { font-family: var(--font-sans); font-size: 24px; line-height: 30px; font-weight: 600; }
+.heading { font-family: var(--font-sans); font-size: 18px; line-height: 24px; font-weight: 600; }
+.body { font-family: var(--font-sans); font-size: 15px; line-height: 22px; font-weight: 400; }
+.body-strong { font-family: var(--font-sans); font-size: 15px; line-height: 22px; font-weight: 600; }
+.label { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; letter-spacing: 0.01em; }
+.caption { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 400; }
+.figure-lg { font-family: var(--font-sans); font-size: 28px; line-height: 32px; font-weight: 600; }
+.call-next { font-family: var(--font-sans); font-size: 32px; line-height: 36px; font-weight: 700; }
+.hi-heading { font-family: var(--font-deva); font-size: 19px; line-height: 28px; font-weight: 600; }
+.hi-body { font-family: var(--font-deva); font-size: 16px; line-height: 26px; font-weight: 400; }
+.hi-body-strong { font-family: var(--font-deva); font-size: 16px; line-height: 26px; font-weight: 600; }
+.hi-label { font-family: var(--font-deva); font-size: 14px; line-height: 22px; font-weight: 500; letter-spacing: 0; }
+.hi-caption { font-family: var(--font-deva); font-size: 13px; line-height: 20px; font-weight: 400; }
+.hi-call-next { font-family: var(--font-deva); font-size: 28px; line-height: 40px; font-weight: 700; }

@@ -1,0 +1,21 @@
+<!-- @dsCard group="Alerts" height=300 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>EmergencyBanner — preview</title></head>
+<body>
+<div id="root" class="bn-stack"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(B.EmergencyBanner, {
+      kind: 'medical', isNew: true, time: '6:08 pm', number: '+91 98777 77777',
+      snippet: 'Papa ko seene mein dard ho raha hai, saans phool rahi hai',
+      agentNote: 'Agent said 112 / 108 · transferring to the desk'
+    }),
+    h(B.EmergencyBanner, {
+      kind: 'self_harm', time: '5:21 pm', number: '+91 98888 88888',
+      agentNote: 'Agent gave 112 and Tele-MANAS 14416 · P1 callback created'
+    })));
+</script>
+</body>
+</html>

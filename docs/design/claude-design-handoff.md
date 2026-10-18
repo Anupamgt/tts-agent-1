@@ -2,13 +2,15 @@
 
 Status: v1 brief, Oct 2026. Source of truth for behaviour is `docs/flows/` and `db/schema.sql` in this repo; this brief translates them into screens. Anything marked *open* is not decided yet: design it so it can go either way.
 
+**Design system:** use the **Bolnai Helpdesk** design system (in your Claude account's design systems: https://claude.ai/artifact/Tjkq5Qy2Ac4VLZWS7eWuRk). A snapshot lives in `design-system/` in this repo (tokens, components, fonts, `tokens.css`). It sets the look (calm clinical: grey-blue canvas, deep teal-blue accent, violet for priority visits, red only for emergencies), the type (Anek Latin + Anek Devanagari, with Hindi styles), and ten console components (Button, Call next, Staff-on-desk switch, Status badge, Priority mark, Doctor chip, Arrival window, Patient card, Emergency banner, Callback row). Build screens from it; where a piece is missing, compose it from the same tokens.
+
 ---
 
 ## 0. Kickoff prompt (paste this into Claude Design with this file attached)
 
 > Design the staff console for a voice-AI phone help desk at a small Indian clinic. An AI agent answers the clinic's phone in English, Hindi and Hinglish, books visits, and hands anything it cannot do to the staff through this console. Use the attached brief: it lists the users, every screen with its data and states, the status vocabulary, formatting rules and fictional sample data.
 >
-> Start with the five P0 screens in section 5: Today (desktop, 1440 wide), Doctor view (phone, 390 wide), the emergency alert, Callbacks, and Call detail. Use the sample data in section 11 so the screens look real. Show the important states for each screen (empty, live, warning). Keep it calm, fast to scan, and usable by a receptionist who is being interrupted every 30 seconds. After P0, continue with the P1 screens.
+> Use the "Bolnai Helpdesk" design system for colours, type and components. Start with the five P0 screens in section 5: Today (desktop, 1440 wide), Doctor view (phone, 390 wide), the emergency alert, Callbacks, and Call detail. Use the sample data in section 11 so the screens look real. Show the important states for each screen (empty, live, warning). Keep it calm, fast to scan, and usable by a receptionist who is being interrupted every 30 seconds. After P0, continue with the P1 screens.
 
 ---
 
@@ -28,7 +30,7 @@ Status: v1 brief, Oct 2026. Source of truth for behaviour is `docs/flows/` and `
 | Cabin assistant (if the clinic has one) | Phone or tablet outside the doctor's cabin | Calls patients in | Tap "Next"; see the queue for one doctor |
 | Clinic admin or owner | Desktop | Occasional | Settings, fees, refunds approval, day summary |
 
-Staff are bilingual (English and Hindi), comfortable with WhatsApp, not with complex software. *Open:* is the console UI English only, or does it need a Hindi toggle? Design labels short enough to translate.
+Staff are bilingual (English and Hindi), comfortable with WhatsApp, not with complex software. **Decided:** the console supports Hindi UI text from day one (an English / हिंदी toggle per user). Design labels short enough to translate, and use the design system's `hi-*` type styles for Hindi.
 
 ## 3. Design principles
 
@@ -327,8 +329,8 @@ Calls today: 31 handled by the agent, 4 transferred, 3 callbacks created, 1 emer
 - **Capacity model (13a):** shared 30-minute windows of 4 patients (assumed here) or one patient per 30 minutes. The window block must work for both (show places as `n/4` or a single slot).
 - **Same-specialty pooling (1b):** if yes, "Any paediatrician" appears as a pool option for specialists too.
 - **Unpaid UPI link (3g):** keep the booking and switch to "pay at desk" (assumed) or release the place.
-- **Console language:** English only, or a Hindi toggle.
-- **Brand:** none yet. Either neutral and clinical, or the existing "Synopsis" design system. Decide before visual polish.
+- ~~Console language~~ **Decided:** Hindi UI text supported from day one (toggle per user).
+- ~~Brand~~ **Decided:** the new "Bolnai Helpdesk" design system, calm clinical, light theme only for now. The product name "Bolnai" is set in plain type (no logo yet) and the clinic's name leads. Dark, high-contrast and waiting-room TV themes are not in v1.
 - **Token numbers at the desk:** does the clinic want a printed token number (equal to the queue position) on the slip?
 
 ## 14. Out of scope for this console

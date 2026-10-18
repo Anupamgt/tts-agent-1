@@ -1,0 +1,30 @@
+<!-- @dsCard group="Actions" height=340 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>CallNextButton — preview</title></head>
+<body>
+<div id="root" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,420px));align-items:start"></div>
+<script>
+  var B = window.Bolnai, h = React.createElement;
+  function Demo() {
+    var q = [
+      { name: 'Asha Rani', meta: '482 915 6 · arrived 5:48 pm' },
+      { name: 'Sunil Kumar', meta: '519 387 5 · walk-in · arrived 6:05 pm' }
+    ];
+    var s = React.useState(0), i = s[0], set = s[1];
+    var next = q[i];
+    return h(React.Fragment, null,
+      h(B.CallNextButton, {
+        nextName: next ? next.name : '', nextMeta: next ? next.meta : '',
+        footer: i ? 'Last called 6:12 pm' : 'With Rohan Mehta since 6:02 pm',
+        onClick: function () { set(i + 1); }
+      }),
+      h(B.CallNextButton, {
+        lang: 'hi', label: 'अगले मरीज़ को बुलाएँ', nextLabel: 'अगला',
+        nextName: 'आशा रानी', nextMeta: '482 915 6 · 5:48 pm पहुँचीं'
+      }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>
