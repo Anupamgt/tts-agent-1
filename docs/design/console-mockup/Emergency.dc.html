@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Emergency alert</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:1440px;height:1170px;display:flex;flex-direction:column;background:#fff;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
+
+  <div role="alert" style="width:1440px;height:190px;flex:none;box-sizing:border-box;background:#c81d1d;color:#fff;padding:16px 24px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span style="font-size:12px;font-weight:700;line-height:16px;padding:2px 8px;border:1.5px solid #fff;border-radius:2px;white-space:nowrap">Emergency · Medical</span>
+      <span style="font-size:13px;font-weight:700">New · 6:11 pm · 1 min ago</span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="flex:none"><path d="M2 6h3l4-3v10l-4-3H2Z" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5" fill="none" stroke="#fff" stroke-width="1.4"/></svg><span>Sound on until acknowledged</span></span>
+    </div>
+    <div style="display:flex;align-items:stretch;gap:20px;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:4px;width:250px;flex:none">
+        <span style="font-size:11px;line-height:14px">Caller · tap to call</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:700;line-height:28px;white-space:nowrap">+91 98777 77777</span>
+        <span style="font-size:12px;line-height:16px">Language: Hinglish</span>
+      </div>
+      <div style="flex:1;min-width:0;box-sizing:border-box;background:#fff;color:#111;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;gap:4px">
+        <span style="font-size:11px;line-height:14px;color:#55534e">Transcript snippet · the full transcript opens on the call</span>
+        <span style="font-size:13px;line-height:18px"><b>Caller</b>  …papa ko seene mein dard ho raha hai, jaldi batayiye…</span>
+        <span style="font-size:13px;line-height:18px"><b>Agent</b>  Abhi 112 ya 108 par call kijiye.</span>
+      </div>
+      <div style="width:300px;flex:none;display:flex;flex-direction:column;justify-content:center;gap:5px;font-size:12px;line-height:16px">
+        <span>Agent told the caller to ring 112 / 108</span>
+        <span>Transfer to desk: no answer</span>
+        <span>P1 callback created · due by 6:26 pm</span>
+        <span>Acknowledging records who and when</span>
+      </div>
+      <div style="width:210px;flex:none;display:flex;flex-direction:column;justify-content:center;gap:8px">
+        <button style="height:48px;border:2px solid #fff;background:#fff;color:#c81d1d;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;border-radius:0">Acknowledge</button>
+        <div style="display:flex;gap:8px">
+          <button style="flex:1;height:40px;border:2px solid #fff;background:transparent;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:0">Call back now</button>
+          <button style="flex:1;height:40px;border:2px solid #fff;background:transparent;color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;border-radius:0">Open call</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width:1440px;height:980px;flex:none;display:flex">
+    <div style="width:176px;height:980px;flex:none">
+      <dc-import name="Rail" active="today" callbacks="5" hint-size="176px,980px"></dc-import>
+    </div>
+    <div style="width:1264px;height:980px;flex:none;display:flex;flex-direction:column">
+      <div style="width:1264px;height:100px;flex:none">
+        <dc-import name="TopBar" time="6:11 pm" p1="1" hint-size="1264px,100px"></dc-import>
+      </div>
+      <div style="width:1264px;height:880px;flex:none">
+        <dc-import name="TodayBody" hint-size="1264px,880px"></dc-import>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1170}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

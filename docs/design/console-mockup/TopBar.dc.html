@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Top bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:1264px;height:100px;box-sizing:border-box;display:flex;flex-direction:column;background:#fff;color:#111;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif;border-bottom:1px solid #1a1a1a">
+  <div style="height:56px;flex:none;box-sizing:border-box;padding:0 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #d4d2cc">
+    <div style="display:flex;flex-direction:column;gap:2px;width:190px;flex:none">
+      <span style="font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:17px;line-height:20px;white-space:nowrap">Demo Family Clinic</span>
+      <span style="display:flex;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:16px;color:#55534e"><span>Mon, 19 Oct</span><span>·</span><span>{{time}}</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex:none">
+      <div style="display:flex;flex-direction:column;gap:1px">
+        <span style="font-size:13px;font-weight:700;line-height:16px;white-space:nowrap">Staff on desk</span>
+        <span style="font-size:10px;line-height:13px;color:#55534e;white-space:nowrap">Calls ring the desk phone</span>
+      </div>
+      <div role="group" aria-label="Staff on desk" style="display:flex;border:1px solid #1a1a1a;height:40px;box-sizing:border-box">
+        <button aria-pressed="true" style="width:64px;border:0;background:#111;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border-radius:0">On</button>
+        <button aria-pressed="false" style="width:64px;border:0;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Away</button>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #1a1a1a">
+      <input aria-label="Search patients" placeholder="Patient ID, name or phone" style="flex:1;min-width:0;border:0;outline:0;background:transparent;font-family:inherit;font-size:13px;color:#111">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">/</span>
+    </label>
+    <div style="display:flex;gap:8px;flex:none">
+      <div style="display:flex;flex-direction:column;justify-content:center;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d4d2cc;min-width:100px">
+        <span style="font-size:10px;line-height:12px;color:#55534e;white-space:nowrap">Open callbacks</span>
+        <span style="display:flex;gap:10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;line-height:16px">
+          <sc-if value="{{hasP1}}" hint-placeholder-val="{{false}}"><span style="display:flex;gap:4px;color:#c81d1d"><span>P1</span><span>{{p1}}</span></span></sc-if>
+          <sc-if value="{{noP1}}" hint-placeholder-val="{{true}}"><span style="display:flex;gap:4px"><span>P1</span><span>{{p1}}</span></span></sc-if>
+          <span style="display:flex;gap:4px"><span>P2</span><span>3</span></span>
+        </span>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d4d2cc">
+        <span style="font-size:10px;line-height:12px;color:#55534e;white-space:nowrap">Refunds to approve</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;line-height:16px">1</span>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d4d2cc">
+        <span style="font-size:10px;line-height:12px;color:#55534e;white-space:nowrap">Failed messages</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;line-height:16px">3</span>
+      </div>
+    </div>
+  </div>
+  <div style="height:43px;flex:none;box-sizing:border-box;padding:0 24px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:11px;color:#55534e;white-space:nowrap">In session</span>
+    <div style="display:flex;align-items:center;gap:8px;height:32px;box-sizing:border-box;padding:0 12px;border:1px solid #1a1a1a;white-space:nowrap;font-size:12px">
+      <span style="font-weight:700">Dr Sharma</span>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:13px">+25 min</span>
+      <span style="display:flex;align-items:center;gap:4px;color:#55534e"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>live</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;height:32px;box-sizing:border-box;padding:0 12px;border:1.5px solid #d9741e;white-space:nowrap;font-size:12px">
+      <span style="font-weight:700">Dr Verma</span>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:13px">on time</span>
+      <span style="display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" style="flex:none"><path d="M6 1.2 11.2 10.8H.8Z" fill="none" stroke="#d9741e" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.8v2.8" stroke="#d9741e" stroke-width="1.4"/><circle cx="6" cy="9.1" r=".7" fill="#d9741e"/></svg><span>schedule only</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;height:32px;box-sizing:border-box;padding:0 12px;border:1px solid #1a1a1a;white-space:nowrap;font-size:12px">
+      <span style="font-weight:700">Dr Kaur</span>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:13px">+10 min</span>
+      <span style="display:flex;align-items:center;gap:4px;color:#55534e"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>live</span></span>
+    </div>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#55534e;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:#16781b"></span><span>Agent: 2 calls in progress</span></span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"time":{"editor":"text","default":"6:10 pm"},"p1":{"editor":"int","default":0,"min":0},"$preview":{"width":1264,"height":100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p1 = Number(this.props.p1 ?? 0);
+    return { time: this.props.time ?? '6:10 pm', p1: p1, hasP1: p1 > 0, noP1: p1 <= 0 };
+  }
+}
+</script>
+</body>
+</html>

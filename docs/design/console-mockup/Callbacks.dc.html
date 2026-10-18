@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Callbacks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:1440px;height:980px;display:flex;background:#fff;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
+  <div style="width:176px;height:980px;flex:none">
+    <dc-import name="Rail" active="callbacks" hint-size="176px,980px"></dc-import>
+  </div>
+  <div style="width:1264px;height:980px;flex:none;display:flex;flex-direction:column">
+    <div style="width:1264px;height:100px;flex:none">
+      <dc-import name="TopBar" time="6:10 pm" hint-size="1264px,100px"></dc-import>
+    </div>
+
+    <div style="width:1264px;height:880px;flex:none;box-sizing:border-box;padding:20px 24px;display:flex;gap:20px">
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <h1 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:22px;line-height:28px">Callbacks</h1>
+            <span style="font-size:12px;color:#55534e">4 open · sorted by priority, then waiting time</span>
+          </div>
+          <div style="display:flex;gap:8px;font-size:11px;color:#55534e">
+            <span style="padding:2px 8px;border:1px solid #d4d2cc;border-radius:2px;white-space:nowrap">P1 · within 15 min</span>
+            <span style="padding:2px 8px;border:1px solid #d4d2cc;border-radius:2px;white-space:nowrap">P2 · within 2 h</span>
+            <span style="padding:2px 8px;border:1px solid #d4d2cc;border-radius:2px;white-space:nowrap">P3 · next session</span>
+          </div>
+        </div>
+
+        <div style="border:1px solid #1a1a1a;display:flex;flex-direction:column">
+
+          <div style="display:flex;border-bottom:1px solid #d4d2cc">
+            <div style="width:6px;flex:none;background:#c81d1d"></div>
+            <div style="flex:1;min-width:0;display:flex;gap:14px;padding:12px 14px">
+              <span style="width:36px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#111;color:#fff;border-radius:2px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">P2</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:700">Amit Rao</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1d4f7a">+91 98700 12345</span></div>
+                <span style="font-size:13px;line-height:18px">Booking failed on the call · wants Dr Sharma tomorrow evening</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">EN</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Verified</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Via agent · open call</span>
+                </div>
+              </div>
+              <div style="width:132px;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;font-weight:700;line-height:20px;color:#c81d1d">10 min overdue</span>
+                <span style="font-size:11px;line-height:14px;color:#55534e">was due 6:00 pm</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;border-bottom:1px solid #d4d2cc">
+            <div style="width:6px;flex:none;background:#d9741e"></div>
+            <div style="flex:1;min-width:0;display:flex;gap:14px;padding:12px 14px">
+              <span style="width:36px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#111;color:#fff;border-radius:2px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">P2</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:700">Dev Bansal</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1d4f7a">+91 98600 44444</span></div>
+                <span style="font-size:13px;line-height:18px">Transfer to desk failed · asked about Dr Kaur's timings</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Hinglish</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Not verified</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Via agent · open call</span>
+                </div>
+              </div>
+              <div style="width:132px;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;font-weight:700;line-height:20px">20 min left</span>
+                <span style="font-size:11px;line-height:14px;color:#55534e">due 6:30 pm</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;border-bottom:1px solid #d4d2cc;background:#f5f4f0;outline:2px solid #1a1a1a;outline-offset:-2px">
+            <div style="width:6px;flex:none"></div>
+            <div style="flex:1;min-width:0;display:flex;gap:14px;padding:12px 14px">
+              <span style="width:36px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#111;color:#fff;border-radius:2px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">P2</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:700">Gurpreet Singh</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1d4f7a">+91 98555 55555</span></div>
+                <span style="font-size:13px;line-height:18px">Wants to be seen today · nothing free at his time</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">Hinglish</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">Verified</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">Via agent · open call</span>
+                </div>
+              </div>
+              <div style="width:132px;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;font-weight:700;line-height:20px">1 h 20 min left</span>
+                <span style="font-size:11px;line-height:14px;color:#55534e">due 7:30 pm</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;border-bottom:1px solid #d4d2cc">
+            <div style="width:6px;flex:none"></div>
+            <div style="flex:1;min-width:0;display:flex;gap:14px;padding:12px 14px">
+              <span style="width:36px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #1a1a1a;border-radius:2px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">P3</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:700;color:#55534e">Unknown caller</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1d4f7a">+91 98100 56789</span></div>
+                <span style="font-size:13px;line-height:18px">Verification failed twice · wants to change a booking</span>
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">EN</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Not verified</span>
+                  <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d9741e;border-radius:2px;color:#111">No answer ×2 · SMS sent 5:58 pm</span>
+                </div>
+              </div>
+              <div style="width:132px;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;font-weight:700;line-height:20px">Next session</span>
+                <span style="font-size:11px;line-height:14px;color:#55534e">no deadline today</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:8px 14px;background:#f5f4f0;border-bottom:1px solid #d4d2cc;font-size:11px;color:#55534e">Done today · 1</div>
+
+          <div style="display:flex;opacity:.75">
+            <div style="width:6px;flex:none"></div>
+            <div style="flex:1;min-width:0;display:flex;gap:14px;padding:12px 14px">
+              <span style="width:36px;height:24px;flex:none;display:flex;align-items:center;justify-content:center;border:1px solid #bcb9b0;border-radius:2px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:#55534e">P1</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:700;color:#55534e">Emergency · medical</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">+91 98••• ••333</span></div>
+                <span style="font-size:13px;line-height:18px;color:#55534e">Acknowledged 5:21 pm by Simran Arora · reached 5:24 pm</span>
+              </div>
+              <div style="width:132px;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right">
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;font-weight:700;line-height:20px;color:#16781b">Done</span>
+                <span style="font-size:11px;line-height:14px;color:#55534e">within 15 min</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <aside style="width:440px;flex:none;box-sizing:border-box;border:1px solid #1a1a1a;padding:20px;display:flex;flex-direction:column;gap:14px;align-self:flex-start">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+            <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:24px;line-height:30px">Gurpreet Singh</h2>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">100 005 8</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #1a1a1a;background:#111;color:#fff;border-radius:2px">P2 · open</span>
+            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Hinglish</span>
+            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Verified</span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #1a1a1a">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:11px;color:#55534e">Tap to call</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:20px;font-weight:700;line-height:26px;color:#1d4f7a">+91 98555 55555</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;font-weight:700">1 h 20 min left</span>
+            <span style="font-size:11px;color:#55534e">due 7:30 pm</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:18px">
+          <div style="display:flex;gap:10px"><span style="width:120px;flex:none;color:#55534e">Wanted</span><span>To be seen today, any doctor</span></div>
+          <div style="display:flex;gap:10px"><span style="width:120px;flex:none;color:#55534e">Preferred time</span><span>After 7:00 pm</span></div>
+          <div style="display:flex;gap:10px"><span style="width:120px;flex:none;color:#55534e">Previous attempts</span><span>None yet</span></div>
+        </div>
+
+        <div style="background:#f5f4f0;padding:10px 12px;display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:11px;line-height:14px;color:#55534e">Transcript snippet · 5:52 pm</span>
+          <span style="font-size:13px;line-height:18px"><b>Caller</b>  Aaj doctor se milna hai, 7 baje ke baad koi time hai?</span>
+          <span style="font-size:13px;line-height:18px"><b>Agent</b>  Us time par jagah nahi dikh rahi. Staff aapko 7:30 pm se pehle call karenge.</span>
+          <span style="font-size:12px;color:#1d4f7a;text-decoration:underline">Via agent · open call</span>
+        </div>
+
+        <button style="height:48px;border:1px solid #111;background:#111;color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;border-radius:0">Calling…</button>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;color:#55534e">Outcome</span>
+          <div style="display:flex;gap:8px">
+            <button style="flex:1;height:44px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Reached</button>
+            <button style="flex:1;height:44px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">No answer</button>
+            <button style="flex:1;height:44px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Wrong number</button>
+          </div>
+        </div>
+
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:#55534e">Note
+          <textarea placeholder="Add a note" style="height:64px;box-sizing:border-box;padding:8px 10px;border:1px solid #1a1a1a;border-radius:0;font-family:inherit;font-size:13px;color:#111;resize:none"></textarea>
+        </label>
+
+        <button style="height:44px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;border-radius:0">Book for them</button>
+      </aside>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

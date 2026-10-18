@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>States</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:1440px;height:760px;box-sizing:border-box;padding:24px;display:flex;gap:16px;background:#f5f4f0;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
+
+  <section style="flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
+    <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Today · running 60+ min late</div>
+    <div style="padding:12px 14px;border-bottom:1px solid #1a1a1a;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:24px">Dr Sharma</h2>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:24px;line-height:28px">+65 min</span>
+      </div>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#55534e"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>live · windows shifted</span></span>
+      <div style="box-sizing:border-box;border:2px solid #1d4f7a;padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:13px;font-weight:700;line-height:18px">Offer reschedule to affected patients?</span>
+        <span style="font-size:12px;line-height:16px;color:#55534e">3 patients waiting more than 60 min past their window.</span>
+        <div style="display:flex;gap:8px">
+          <button style="flex:1;height:44px;border:1px solid #111;background:#111;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border-radius:0">Offer reschedule</button>
+          <button style="height:44px;padding:0 14px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Not now</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;white-space:nowrap"><span style="color:#55534e;text-decoration:line-through">6:00–6:30 pm</span><span>→</span><span style="font-weight:700;font-size:13px">7:05–7:35 pm</span></div>
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:14px;font-weight:700">Fatima Shaikh</span><span style="font-size:12px;color:#55534e">29 yrs</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Delay SMS 2/2</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #16781b;border-radius:2px;color:#16781b">Delay call: chose to keep place</span></div>
+      </div>
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:14px;font-weight:700">Sunil Kumar</span><span style="font-size:12px;color:#55534e">52 yrs</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Delay SMS 2/2</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d9741e;border-radius:2px">Delay call: unconfirmed</span></div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;white-space:nowrap;margin-top:6px"><span style="color:#55534e;text-decoration:line-through">6:30–7:00 pm</span><span>→</span><span style="font-weight:700;font-size:13px">7:35–8:05 pm</span></div>
+      <div style="height:28px;box-sizing:border-box;display:flex;align-items:center;padding:0 10px;border:1px dashed #bcb9b0;font-size:12px;color:#55534e">4 places free · session ends 8:00 pm</div>
+    </div>
+  </section>
+
+  <section style="flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid #bcb9b0;background:#fff">
+    <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #bcb9b0;font-size:11px;color:#55534e">Today · doctor absent</div>
+    <div style="padding:12px 14px;border-bottom:1px solid #bcb9b0;display:flex;flex-direction:column;gap:8px;background:#f5f4f0">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:24px;color:#55534e">Dr Verma</h2>
+        <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px solid #55534e;border-radius:2px;font-size:11px;color:#55534e;text-decoration:line-through">Session cancelled</span>
+      </div>
+      <span style="font-size:12px;line-height:16px;color:#55534e">Cancelled by Simran Arora at 6:12 pm · 3 bookings affected</span>
+    </div>
+    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+      <span style="font-size:11px;color:#55534e">Affected bookings · outreach status</span>
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
+        <span style="font-size:14px;font-weight:700">Ishaan Rao</span>
+        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Any doctor</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">moved from Dr Verma</span></div>
+        <span style="font-size:12px;line-height:16px">Now with Dr Sharma, 6:55–7:25 pm · SMS sent</span>
+      </div>
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
+        <span style="font-size:14px;font-weight:700">Meera Iyer</span>
+        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Named doctor</span></div>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;line-height:16px"><span style="width:6px;height:6px;border-radius:50%;background:#16781b"></span><span>Agent calling now · attempt 1 of 2</span></span>
+      </div>
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
+        <span style="font-size:14px;font-weight:700">Neha Joshi</span>
+        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Named doctor</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d9741e;border-radius:2px">Refund requested ₹700</span></div>
+        <span style="font-size:12px;line-height:16px">Doctor unavailable: full refund · waiting in Payments</span>
+        <button style="align-self:flex-start;height:44px;padding:0 14px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Open refund</button>
+      </div>
+    </div>
+  </section>
+
+  <section style="flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
+    <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Today · session ended</div>
+    <div style="padding:12px 14px;border-bottom:1px solid #1a1a1a;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:24px">Dr Sharma</h2>
+        <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px solid #1a1a1a;border-radius:2px;font-size:11px">Ended 8:20 pm</span>
+      </div>
+      <span style="font-size:12px;line-height:16px;color:#55534e">Average delay today: 25 min · 3 done · 1 no-show</span>
+    </div>
+    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;align-items:baseline;justify-content:space-between;color:#55534e"><span style="font-size:14px;font-weight:700">Rohan Mehta</span><span style="font-size:12px">Done · 6:12 pm</span></div>
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;align-items:baseline;justify-content:space-between;color:#55534e"><span style="font-size:14px;font-weight:700">Asha Rani</span><span style="font-size:12px">Done · 6:30 pm</span></div>
+      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;align-items:baseline;justify-content:space-between;color:#55534e"><span style="font-size:14px;font-weight:700">Sunil Kumar</span><span style="font-size:12px">Done · 6:41 pm</span></div>
+      <div style="box-sizing:border-box;border:1px dashed #bcb9b0;padding:8px 10px;display:flex;flex-direction:column;gap:4px;color:#55534e">
+        <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:14px;font-weight:700;text-decoration:line-through">Fatima Shaikh</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #55534e;border-radius:2px">No-show</span></div>
+        <span style="font-size:12px;line-height:16px">Window 6:25–6:55 pm · Delay SMS 2/2 · marked at 8:20 pm</span>
+      </div>
+    </div>
+  </section>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px">
+    <section style="display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
+      <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Callbacks · empty</div>
+      <div style="padding:24px 14px;display:flex;flex-direction:column;gap:6px">
+        <span style="font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:26px">No callbacks. Nice.</span>
+        <span style="font-size:12px;line-height:18px;color:#55534e">New ones appear here as calls come in. P1 within 15 min, P2 within 2 h, P3 next working session.</span>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
+      <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Alerts · today</div>
+      <div style="padding:12px 14px;border-bottom:1px solid #d4d2cc;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:700">Medical · 6:11 pm</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #c81d1d;border-radius:2px;color:#c81d1d;font-weight:700">New</span></div>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1d4f7a">+91 98777 77777</span>
+        <span style="font-size:12px;line-height:16px;color:#55534e">Waiting for acknowledgement</span>
+      </div>
+      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:5px;color:#55534e">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:700">Medical · 5:19 pm</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px">Acknowledged</span></div>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px">+91 98••• ••333</span>
+        <span style="font-size:12px;line-height:16px">By Simran Arora at 5:21 pm · callback done</span>
+      </div>
+    </section>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

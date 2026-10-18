@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Today live queue</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:1440px;height:980px;display:flex;background:#fff;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
+  <div style="width:176px;height:980px;flex:none">
+    <dc-import name="Rail" active="today" hint-size="176px,980px"></dc-import>
+  </div>
+  <div style="width:1264px;height:980px;flex:none;display:flex;flex-direction:column">
+    <div style="width:1264px;height:100px;flex:none">
+      <dc-import name="TopBar" time="6:10 pm" hint-size="1264px,100px"></dc-import>
+    </div>
+    <div style="width:1264px;height:880px;flex:none">
+      <dc-import name="TodayBody" hint-size="1264px,880px"></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
