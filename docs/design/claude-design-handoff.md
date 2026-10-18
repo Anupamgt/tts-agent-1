@@ -231,7 +231,7 @@ Words to use: "priority visit", never "urgent". "Arrival window", not "slot" or 
 - Date: `Mon, 19 Oct`. Relative where helpful: "2 min ago", "in 12 min".
 - Money: `₹700`, Indian digit grouping (`₹1,50,000`).
 - Phone: `+91 98111 11111`.
-- Patient ID: new IDs are 7 digits, shown in groups `100 001 7`; existing clinic IDs exactly as printed (`HC/2026/0412`).
+- Patient ID: new IDs are 7 random digits, shown in groups `482 915 6`; existing clinic IDs exactly as printed (`HC/2026/0412`).
 - Names: Latin script by default; long names truncate with full name on hover.
 - Language tags: `EN`, `HI`, `Hinglish`.
 - Sentence case everywhere. Short labels (staff may switch to Hindi later).
@@ -250,6 +250,26 @@ Words to use: "priority visit", never "urgent". "Arrival window", not "slot" or 
 - Show when the agent is on a call right now ("Agent: 2 calls in progress"), optional.
 - Banners (stackable, dismissible except emergency): emergency (red, sticky), "No update from Dr Verma's cabin for 32 min", "Calendar out of sync", "3 messages failed", "Offline: changes will sync".
 - Every list needs designed empty, loading and error states.
+
+## 9b. Sign-in, roles and security moments (from `docs/security/threat-model.md`)
+
+Screens to add:
+
+- **Sign in:** individual staff accounts. On the shared desk PC, a "switch user" with a 4–6 digit PIN, so receptionists never share one login. Admins use two-factor sign-in. Phones (doctor, cabin assistant) stay signed in briefly; admins can sign a device out remotely.
+- **Auto-lock:** the desk screen locks after a few minutes idle, showing only the clinic name and the emergency banner (alerts must still be visible when locked).
+- **Roles:** receptionist, cabin assistant, doctor, admin. Design what each one sees using the permission matrix in the threat model (S-06). For example, the cabin assistant sees one doctor's queue only, and only admins see Settings, approve refunds and waive fees.
+
+Moments that need explicit UI:
+
+- **Refund approval:** shows who requested it and why, the policy amount, and the amount paid. The Approve button is disabled for the person who raised it ("Another admin must approve this"). Changing the amount needs a note.
+- **Fee waiver:** admin only, with a required reason. The waiver shows on the booking timeline with name and time.
+- **Callback to a different number:** a callback marked "different from caller" shows both numbers. The Call button asks "Call +91 … ? The patient called from +91 …".
+- **Verification lockout:** a patient or number locked after repeated failed checks shows a lock badge ("Phone verification paused: 5 failed attempts today"), with a staff action to clear it after checking in person.
+- **Abuse limits:** when a number hits the daily booking limit, or a patient hits the upcoming-visits limit, the console shows a quiet banner with the number and its bookings, so staff can spot fake bookings.
+- **Plain text only:** transcripts, AI summaries and caller-spelled names render as plain text, labelled "caller said" or "AI summary". Nothing in them is a button or link.
+- **Recordings:** play inside the console after sign-in; there is no raw provider link to copy.
+- **Exports:** admin only, and every export is logged.
+- **Audit:** every booking, payment and patient page shows a small "history" link (who viewed, changed, approved).
 
 ## 10. Demo moments to prototype (the story the judges see)
 
@@ -275,14 +295,14 @@ Patients (all fictional):
 
 | Name | Patient ID | Phone | Notes |
 |---|---|---|---|
-| Asha Rani | 100 001 7 | +91 98111 11111 | shares phone with Rohan |
-| Rohan Mehta | 100 002 5 | +91 98111 11111 | relation: child |
+| Asha Rani | 482 915 6 | +91 98111 11111 | shares phone with Rohan |
+| Rohan Mehta | 736 204 9 | +91 98111 11111 | relation: child |
 | Meera Iyer | HC/2026/0412 | +91 98222 22222 | institute card holder EMP-1042, self |
 | Kabir Iyer (8) | HC/2026/0413 | +91 98222 22222 | dependant of EMP-1042, child |
-| Sunil Kumar | 100 003 3 | +91 98333 33333 | walk-in |
-| Fatima Shaikh | 100 004 1 | +91 98444 44444 | any-doctor general check-up |
-| Gurpreet Singh | 100 005 8 | +91 98555 55555 | P2 callback: wants to be seen today |
-| Neha Joshi | 100 006 6 | +91 98666 66666 | refund requested ₹700 (Dr Kaur unavailable Thursday) |
+| Sunil Kumar | 519 387 5 | +91 98333 33333 | walk-in |
+| Fatima Shaikh | 264 158 7 | +91 98444 44444 | any-doctor general check-up |
+| Gurpreet Singh | 903 672 4 | +91 98555 55555 | P2 callback: wants to be seen today |
+| Neha Joshi | 648 031 3 | +91 98666 66666 | refund requested ₹700 (Dr Kaur unavailable Thursday) |
 
 Bookings for Today screen:
 - Dr Sharma 5:30–6:00 pm (shifted to 5:55–6:25 pm): Rohan Mehta (in consult, via agent), Asha Rani (arrived 5:48 pm), Sunil Kumar (walk-in, arrived 6:05 pm), 1 place free.

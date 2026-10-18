@@ -71,6 +71,8 @@ flowchart TD
 
 Cancelling is never made hard: no penalty talk, no pressure. Late cancellations are only noted for the clinic's records.
 
+The "cancelled" and "rescheduled" SMS always go to the patient's registered number, even when a relative made the change. If someone misused the patient's details, the patient finds out (security review S-05).
+
 ## Status and "is the doctor running late"
 
 ```mermaid

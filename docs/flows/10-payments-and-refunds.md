@@ -112,6 +112,9 @@ No-shows get no refund request. Staff can still grant a goodwill refund from the
 - **Links go only to the number on the booking**, never to a number read out on the call, and never in a voicemail.
 - **One reminder** for an unpaid link. After that, the fee is collected at the desk, unless the clinic requires payment to keep the booking.
 - **Rescheduling is offered at most twice** before a refund. Once the patient asks for the money back, the agent stops offering.
+- **Refunds only go back the way the money came** (security review S-04): through the gateway to the original UPI payment, or as cash at the desk against the patient card. Nobody, including staff, can send a refund to a different UPI ID or account.
+- **No payment details on calls** (S-04, S-13): the agent never asks for or accepts card numbers, UPI IDs, PINs or OTPs. Every payment and refund message says: "We never ask for your UPI PIN or OTP. You never need a PIN to receive a refund."
+- **Approval:** when the clinic requires it (default), an admin who did not raise the request approves each refund. Fee waivers are staff-only and record who and why.
 - **The agent never says a refund is done.** It says a request has been raised, gives the clinic's usual timeline, and staff approve. The database refuses refunds that would add up to more than was paid.
 - **Refund rules** (proposed values, clinic to confirm; all are settings):
 

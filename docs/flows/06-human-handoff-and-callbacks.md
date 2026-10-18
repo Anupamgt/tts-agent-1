@@ -60,5 +60,6 @@ flowchart TD
 - Bolna's documentation does not say what happens when the destination does not answer. Test this on the real telephony setup before the demo. If the transfer cannot be detected as failed, the post-call webhook creates the callback automatically for any call tagged "transfer requested" that ended with no human conversation.
 - After hours, the agent does not pretend someone will answer. It says when the clinic opens and when the callback will happen.
 - The caller is never told "I cannot help you" without an alternative: transfer, callback, or SMS.
+- **Callback numbers** (security review S-08): the default is the number the caller rang from. If the caller asks for a different number, the agent reads it back, the callback is marked "different from caller", and staff confirm before dialling. Only Indian numbers are accepted. International or premium-rate numbers are refused politely.
 - The console callback queue is sorted by priority, then by waiting time. Each item shows reason, caller number, verified status, language, and the transcript.
 - A callback is closed by staff with an outcome (reached, no answer, wrong number). No answer after two attempts creates an SMS and leaves the item open.

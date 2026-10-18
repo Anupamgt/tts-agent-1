@@ -115,6 +115,14 @@ CREATE TABLE clinic_settings (
     next_tap_watchdog_min      int  NOT NULL DEFAULT 30,
     no_show_grace_min          int  NOT NULL DEFAULT 30,
     max_offer_rounds           int  NOT NULL DEFAULT 3,
+    -- abuse limits on agent-made bookings (security review S-03)
+    max_upcoming_per_patient   int  NOT NULL DEFAULT 3  CHECK (max_upcoming_per_patient > 0),
+    max_agent_bookings_per_number_day int NOT NULL DEFAULT 4 CHECK (max_agent_bookings_per_number_day > 0),
+    -- verification lockout across calls (S-05): failures per number or per patient in 24 h
+    verification_lockout_failures int NOT NULL DEFAULT 5 CHECK (verification_lockout_failures > 0),
+    -- retention (S-07; proposed values, clinic to confirm)
+    transcript_retention_days  int  NOT NULL DEFAULT 180 CHECK (transcript_retention_days > 0),
+    recording_retention_days   int  NOT NULL DEFAULT 30  CHECK (recording_retention_days > 0),
     verification_attempts      int  NOT NULL DEFAULT 2,
     p1_callback_minutes        int  NOT NULL DEFAULT 15,
     p2_callback_minutes        int  NOT NULL DEFAULT 120,
@@ -196,8 +204,6 @@ CREATE TABLE restricted_medicines (   -- "visit required" list for the refill fl
 );
 
 -- ---------------------------------------------------------------- patients
-CREATE SEQUENCE patient_code_seq START 100001;
-
 CREATE TABLE patients (
     id                  bigserial PRIMARY KEY,
     clinic_id           bigint NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
@@ -223,15 +229,27 @@ CREATE INDEX patients_holder_idx      ON patients (clinic_id, holder_code_norm);
 CREATE INDEX patients_name_idx        ON patients (clinic_id, lower(full_name));
 CREATE INDEX patients_phon_idx        ON patients (clinic_id, name_phonetic);
 
--- New patients get a 7-digit ID: 6 from the sequence + 1 Luhn check digit (e.g. 1000011).
--- Clinics that already have their own IDs insert them as they are; matching uses the digits.
+-- New patients get a 7-digit ID: 6 RANDOM digits + 1 Luhn check digit (e.g. 4829153).
+-- Random, not sequential (security review S-05): sequential IDs let anyone who knows one ID guess
+-- the neighbours and reveal how many patients the clinic has. gen_random_uuid() uses a strong
+-- random source (core since PostgreSQL 13). Collisions are retried; the unique key is the backstop.
+-- Clinics that already have their own IDs insert them as they are; matching uses patient_code_norm.
 CREATE FUNCTION assign_patient_code() RETURNS trigger AS $$
 DECLARE
-    base text;
+    base  text;
+    tries int := 0;
 BEGIN
     IF NEW.patient_code IS NULL OR NEW.patient_code = '' THEN
-        base := nextval('patient_code_seq')::text;
-        NEW.patient_code := base || luhn_check_digit(base)::text;
+        LOOP
+            base := (100000 + (('x' || substr(md5(gen_random_uuid()::text), 1, 7))::bit(28)::int % 900000))::text;
+            NEW.patient_code := base || luhn_check_digit(base)::text;
+            EXIT WHEN NOT EXISTS (SELECT 1 FROM patients p
+                                   WHERE p.clinic_id = NEW.clinic_id AND p.patient_code = NEW.patient_code);
+            tries := tries + 1;
+            IF tries > 20 THEN
+                RAISE EXCEPTION 'could not allocate a patient ID' USING ERRCODE = 'P0001';
+            END IF;
+        END LOOP;
     END IF;
     RETURN NEW;
 END;
@@ -320,6 +338,8 @@ CREATE TABLE bookings (
     fee_consent_at        timestamptz,           -- when the caller said yes to the fees
     payment_method        payment_method,        -- chosen on the call: UPI link or cash at the desk
     payment_status        payment_status NOT NULL DEFAULT 'not_required',
+    waived_by             bigint REFERENCES staff_users(id),   -- who waived the fee (S-04)
+    waive_reason          text,
     status                booking_status NOT NULL,
     source                booking_source NOT NULL,
     reason_category       text,                  -- short category only, nothing medical in detail
@@ -350,7 +370,11 @@ CREATE TABLE bookings (
     -- a fee booked by the agent needs the caller's recorded yes and a chosen way to pay
     CHECK (COALESCE(priority_fee_inr, 0) + COALESCE(appointment_fee_inr, 0) = 0
         OR source <> 'agent'
-        OR (fee_consent_at IS NOT NULL AND payment_method IS NOT NULL))
+        OR (fee_consent_at IS NOT NULL AND payment_method IS NOT NULL)),
+    -- a waived fee always names the staff member and the reason (S-04)
+    CHECK (payment_status <> 'waived' OR (waived_by IS NOT NULL AND waive_reason IS NOT NULL)),
+    -- the agent can never waive a fee
+    CHECK (payment_status <> 'waived' OR source <> 'agent')
 );
 CREATE INDEX bookings_window_idx  ON bookings (window_id);
 CREATE INDEX bookings_patient_idx ON bookings (patient_id, status);
@@ -402,6 +426,40 @@ BEGIN
     IF NEW.priority = 'priority' AND TG_OP = 'INSERT' AND NEW.source = 'agent'
        AND EXISTS (SELECT 1 FROM doctors d WHERE d.id = NEW.doctor_id AND d.priority_fee_inr IS NULL) THEN
         RAISE EXCEPTION 'doctor % does not offer priority visits', NEW.doctor_id USING ERRCODE = 'P0001';
+    END IF;
+
+    -- Abuse limits on new agent bookings (security review S-03). Staff bookings are not limited.
+    IF TG_OP = 'INSERT' AND NEW.source = 'agent' AND NEW.status IN ('held', 'booked') THEN
+        -- one live hold per call: a single call cannot lock up several windows
+        IF NEW.status = 'held' AND NEW.created_by_call_id IS NOT NULL AND EXISTS (
+                SELECT 1 FROM bookings b
+                 WHERE b.created_by_call_id = NEW.created_by_call_id
+                   AND b.status = 'held' AND b.hold_expires_at > now()) THEN
+            RAISE EXCEPTION 'call % already holds a window', NEW.created_by_call_id USING ERRCODE = 'P0001';
+        END IF;
+
+        -- upcoming visits per patient
+        IF (SELECT count(*) FROM bookings b JOIN windows bw ON bw.id = b.window_id
+             WHERE b.patient_id = NEW.patient_id
+               AND bw.ends_at > now()
+               AND (b.status IN ('booked', 'arrived', 'in_consult')
+                    OR (b.status = 'held' AND b.hold_expires_at > now())))
+           >= (SELECT s.max_upcoming_per_patient FROM clinic_settings s
+                 JOIN doctors d ON d.clinic_id = s.clinic_id WHERE d.id = NEW.doctor_id) THEN
+            RAISE EXCEPTION 'patient % already has the maximum number of upcoming visits', NEW.patient_id
+                  USING ERRCODE = 'P0001';
+        END IF;
+
+        -- agent bookings per calling number per 24 h (fake names from one phone, SMS pumping)
+        IF NEW.created_by_call_id IS NOT NULL AND (
+            SELECT count(*) FROM bookings b JOIN calls c ON c.id = b.created_by_call_id
+             WHERE c.from_number = (SELECT from_number FROM calls WHERE id = NEW.created_by_call_id)
+               AND b.source = 'agent' AND b.status <> 'held'
+               AND b.created_at > now() - interval '24 hours')
+           >= (SELECT s.max_agent_bookings_per_number_day FROM clinic_settings s
+                 JOIN doctors d ON d.clinic_id = s.clinic_id WHERE d.id = NEW.doctor_id) THEN
+            RAISE EXCEPTION 'calling number reached the daily booking limit' USING ERRCODE = 'P0001';
+        END IF;
     END IF;
 
     IF NEW.status NOT IN ('held', 'booked', 'arrived', 'in_consult') THEN
@@ -511,7 +569,11 @@ CREATE TABLE callbacks (
     clinic_id        bigint NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
     call_id          bigint REFERENCES calls(id),
     patient_id       bigint REFERENCES patients(id),
-    phone            text NOT NULL,
+    -- Indian numbers only (S-08: no international or premium-rate callbacks)
+    phone            text NOT NULL CHECK (phone ~ '^\+91[0-9]{10}$'),
+    -- true when the caller asked to be called on a number other than the one they called from;
+    -- the console asks staff to confirm before dialling (S-08)
+    differs_from_caller boolean NOT NULL DEFAULT false,
     priority         callback_priority NOT NULL,
     reason           text NOT NULL,
     preferred_from   timestamptz,
@@ -586,13 +648,58 @@ CREATE TABLE refunds (
     policy_note          text,                    -- e.g. 'patient cancelled 6 h before: 50%'
     status               refund_state NOT NULL DEFAULT 'requested',
     requested_by         text NOT NULL CHECK (requested_by IN ('agent', 'staff', 'system')),
+    requested_by_staff_id bigint REFERENCES staff_users(id),
     call_id              bigint REFERENCES calls(id),   -- the call where it was requested, if any
     approved_by          bigint REFERENCES staff_users(id),
     approved_at          timestamptz,
     provider_refund_id   text UNIQUE,
     processed_at         timestamptz,
-    created_at           timestamptz NOT NULL DEFAULT now()
+    created_at           timestamptz NOT NULL DEFAULT now(),
+    CHECK (requested_by <> 'staff' OR requested_by_staff_id IS NOT NULL)
+    -- Deliberately no "refund to" field (S-04): refunds go back to the original payment through
+    -- the gateway, or as cash at the desk. Nobody can redirect a refund to another UPI ID.
 );
+
+-- Approval rules (S-04): when the clinic requires approval, an approved or processed refund needs an
+-- active admin as approver, who is not the staff member who asked for it.
+CREATE FUNCTION enforce_refund_approval() RETURNS trigger AS $$
+DECLARE
+    needs_approval boolean;
+    approver_role  staff_role;
+    approver_active boolean;
+BEGIN
+    IF NEW.status NOT IN ('approved', 'processed') THEN
+        RETURN NEW;
+    END IF;
+    SELECT s.refund_needs_approval INTO needs_approval
+      FROM payments p
+      JOIN bookings b        ON b.id = p.booking_id
+      JOIN doctors d         ON d.id = b.doctor_id
+      JOIN clinic_settings s ON s.clinic_id = d.clinic_id
+     WHERE p.id = NEW.payment_id;
+    IF NOT COALESCE(needs_approval, true) THEN
+        RETURN NEW;
+    END IF;
+    IF NEW.approved_by IS NULL THEN
+        RAISE EXCEPTION 'refund needs approval by an admin' USING ERRCODE = 'P0001';
+    END IF;
+    SELECT role, active INTO approver_role, approver_active FROM staff_users WHERE id = NEW.approved_by;
+    IF approver_role IS DISTINCT FROM 'admin' OR NOT approver_active THEN
+        RAISE EXCEPTION 'refunds can only be approved by an active admin' USING ERRCODE = 'P0001';
+    END IF;
+    IF NEW.approved_by = NEW.requested_by_staff_id THEN
+        RAISE EXCEPTION 'the person who requested a refund cannot approve it' USING ERRCODE = 'P0001';
+    END IF;
+    IF NEW.approved_at IS NULL THEN
+        NEW.approved_at := now();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER refunds_approval
+    BEFORE INSERT OR UPDATE OF status, approved_by ON refunds
+    FOR EACH ROW EXECUTE FUNCTION enforce_refund_approval();
 
 -- Money rules: only a paid payment can be refunded, and refunds that are not rejected or
 -- failed can never add up to more than was paid. Locks the payment row against races.
@@ -647,7 +754,7 @@ CREATE TABLE messages (
     refund_id            bigint REFERENCES refunds(id),
     template_key         text NOT NULL,
     language             text NOT NULL,
-    to_number            text NOT NULL,
+    to_number            text NOT NULL CHECK (to_number ~ '^\+91[6-9][0-9]{9}$'),   -- Indian mobiles only (S-08)
     rendered_body        text NOT NULL,
     status               sms_status NOT NULL DEFAULT 'queued',
     provider_message_id  text,
@@ -663,7 +770,7 @@ CREATE TABLE outbound_jobs (
     kind            outbound_kind NOT NULL,
     booking_id      bigint REFERENCES bookings(id),
     patient_id      bigint NOT NULL REFERENCES patients(id),
-    phone           text NOT NULL,
+    phone           text NOT NULL CHECK (phone ~ '^\+91[6-9][0-9]{9}$'),   -- Indian mobiles only (S-08)
     scheduled_for   timestamptz NOT NULL,
     attempts        int NOT NULL DEFAULT 0,
     last_attempt_at timestamptz,
@@ -676,7 +783,7 @@ CREATE INDEX outbound_due_idx ON outbound_jobs (status, scheduled_for);
 -- ---------------------------------------------------------------- audit
 CREATE TABLE audit_log (
     id          bigserial PRIMARY KEY,
-    clinic_id   bigint REFERENCES clinics(id) ON DELETE CASCADE,
+    clinic_id   bigint REFERENCES clinics(id),     -- no cascade: the log outlives deletions
     actor_type  text NOT NULL CHECK (actor_type IN ('agent', 'staff', 'system')),
     actor_id    bigint,                    -- staff_users.id when actor_type = 'staff'
     action      text NOT NULL,             -- booking.create, verification.fail, patient.view, ...
@@ -686,6 +793,34 @@ CREATE TABLE audit_log (
     details     jsonb,
     at          timestamptz NOT NULL DEFAULT now()
 );
+
+-- Append-only (S-10). The app's database role should also have INSERT and SELECT only on this table.
+CREATE FUNCTION audit_log_append_only() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'audit_log is append-only' USING ERRCODE = 'P0001';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER audit_log_no_update_delete
+    BEFORE UPDATE OR DELETE ON audit_log
+    FOR EACH ROW EXECUTE FUNCTION audit_log_append_only();
+
+CREATE TRIGGER audit_log_no_truncate
+    BEFORE TRUNCATE ON audit_log
+    FOR EACH STATEMENT EXECUTE FUNCTION audit_log_append_only();
+
+-- Failed verification attempts in the last 24 h, per calling number and per patient (S-05).
+-- The backend stops phone verification when either count reaches verification_lockout_failures.
+CREATE VIEW verification_failures_24h AS
+SELECT 'number'::text AS scope, c.from_number AS key, count(*)::int AS failures, max(va.created_at) AS last_failure
+  FROM verification_attempts va JOIN calls c ON c.id = va.call_id
+ WHERE va.result <> 'matched' AND va.created_at > now() - interval '24 hours'
+ GROUP BY c.from_number
+UNION ALL
+SELECT 'patient', va.patient_id::text, count(*)::int, max(va.created_at)
+  FROM verification_attempts va
+ WHERE va.result <> 'matched' AND va.patient_id IS NOT NULL AND va.created_at > now() - interval '24 hours'
+ GROUP BY va.patient_id;
 
 -- ---------------------------------------------------------------- views the agent and console use
 -- Open places per window, routine and priority shown separately. Expired holds do not count.

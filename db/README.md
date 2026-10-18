@@ -60,9 +60,21 @@ erDiagram
 - **Console data:** `callbacks` (priority queue), `message_tickets` (refill and messages), `emergency_alerts` (acknowledge), `messages` (SMS and WhatsApp outbox), `payments` and `refunds`, `audit_log` (who did what).
 - **Views:** `window_availability` (open routine and priority places per window, delay shift applied), `pool_window_availability` (the same across a pool), `session_queue` (waiting-room order).
 
+## Security hardening (docs/security/threat-model.md)
+
+- **Random patient IDs** (S-05): 6 random digits + Luhn check digit, not a sequence.
+- **Abuse limits on agent bookings** (S-03): one live hold per call; `max_upcoming_per_patient` (3); `max_agent_bookings_per_number_day` (4). Staff bookings are not limited.
+- **Money** (S-04): refunds have no destination field (they go back to the original payment); approved or processed refunds need an active admin who did not request them (`refund_needs_approval`); staff requests name the staff member; waivers need `waived_by` and `waive_reason`, and the agent can never waive.
+- **Numbers** (S-08): outbound jobs and messages only to Indian mobiles; callbacks only to Indian numbers; `callbacks.differs_from_caller` for staff confirmation.
+- **Verification lockout data** (S-05): view `verification_failures_24h` (per number and per patient); threshold `verification_lockout_failures` (5).
+- **Audit log** (S-10): append-only (UPDATE, DELETE, TRUNCATE refused).
+- **Retention settings** (S-07): `transcript_retention_days` (180), `recording_retention_days` (30); the purge job is still to build.
+- Tests: 112 checks in `tests/schema.test.mjs`.
+
 ## Known gaps
 
 - A cleanup job must cancel expired holds every minute; until then they block the same patient from re-booking that window.
 - No medical records, prescriptions or billing tables: out of scope for v1.
-- Personal data (names, dates of birth, phone numbers, transcripts) needs a retention rule and encryption at rest before real use.
+- Encryption at rest, the retention purge job, and database role grants (INSERT/SELECT only on `audit_log`) are deployment work.
+- The per-call verified session (S-01) lives in the backend, not the database.
 - Row-level security and per-clinic isolation are not set up (single clinic in the demo).

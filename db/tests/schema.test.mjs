@@ -43,9 +43,18 @@ const PRIO = [['priority', 'priority_fee_inr', 'appointment_fee_inr', 'fee_conse
               [`'priority'`, 500, 200, 'now()', `'cash_desk'`, `'pending'`]];
 
 // ---- patient IDs (decision 6)
-await expect('generated patient IDs carry a valid check digit',
-  `SELECT patient_code, luhn_valid(patient_code) AS valid FROM patients WHERE full_name IN ('Asha Demo', 'Rohan Demo') ORDER BY id`,
-  [{ patient_code: '1000017', valid: true }, { patient_code: '1000025', valid: true }]);
+await expect('generated patient IDs are 7 digits with a valid check digit',
+  `SELECT bool_and(patient_code ~ '^[0-9]{7}$' AND luhn_valid(patient_code)) AS ok FROM patients
+    WHERE full_name IN ('Asha Demo', 'Rohan Demo') OR full_name LIKE 'P%'`, [{ ok: true }]);
+await db.exec(`INSERT INTO patients (clinic_id, full_name) SELECT 1, 'R' || g FROM generate_series(1, 200) g`);
+await expect('200 generated IDs are unique and valid',
+  `SELECT count(DISTINCT patient_code)::int AS n, bool_and(luhn_valid(patient_code)) AS ok FROM patients WHERE full_name ~ '^R[0-9]+$'`,
+  [{ n: 200, ok: true }]);
+await expect('generated IDs are not sequential (S-05)',
+  `SELECT (count(*) FILTER (WHERE d = 1) < 5) AS random_enough FROM (
+     SELECT left(patient_code, 6)::int - lag(left(patient_code, 6)::int) OVER (ORDER BY id) AS d
+       FROM patients WHERE full_name ~ '^R[0-9]+$') t`, [{ random_enough: true }]);
+const ashaCode = (await one(`SELECT patient_code FROM patients WHERE full_name = 'Asha Demo'`)).patient_code;
 await expect('one misheard digit fails the check', `SELECT luhn_valid('1000027') AS v`, [{ v: false }]);
 await expect('swapped neighbouring digits fail the check', `SELECT luhn_valid('1000071') AS v`, [{ v: false }]);
 await expect('non-digit input is simply invalid', `SELECT luhn_valid('AB-12') AS v`, [{ v: false }]);
@@ -56,7 +65,7 @@ await expect('card holder and dependant share the institute ID',
   `SELECT full_name, holder_relation FROM patients WHERE holder_code_norm = 'EMP1042' ORDER BY full_name`,
   [{ full_name: 'Kabir Demo', holder_relation: 'child' }, { full_name: 'Meera Demo', holder_relation: 'self' }]);
 await rejects('duplicate patient ID rejected',
-  `INSERT INTO patients (clinic_id, patient_code, full_name) VALUES (1, '1000017', 'Dup')`, [], 'duplicate');
+  `INSERT INTO patients (clinic_id, patient_code, full_name) VALUES (1, $1, 'Dup')`, [ashaCode], 'duplicate');
 await rejects('unknown holder relation rejected',
   `INSERT INTO patients (clinic_id, full_name, holder_code, holder_relation) VALUES (1, 'X', 'EMP-1', 'cousin')`, [], 'check constraint');
 
@@ -82,8 +91,16 @@ await ok('Kaur routine 3', book(P(3), 13, 3, ...APPT));
 await rejects('Kaur routine 4 blocked: last place is the priority place', book(P(4), 13, 3, ...APPT), [], 'is full');
 await ok('Kaur priority with both fees agreed (cash at desk)', book(P(4), 13, 3, ...PRIO));
 await rejects('second priority in the same window blocked', book(P(5), 13, 3, ...PRIO), [], 'no priority place');
-await ok('staff can book a waived visit without the fee',
-  `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source, payment_status) VALUES (${P(6)}, 14, 3, 'booked', 'console', 'waived')`);
+const RECEPTION = `(SELECT id FROM staff_users WHERE role = 'receptionist' LIMIT 1)`;
+const ADMIN = `(SELECT id FROM staff_users WHERE role = 'admin' LIMIT 1)`;
+await rejects('a waiver without who and why rejected (S-04)',
+  `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source, payment_status) VALUES (${P(6)}, 14, 3, 'booked', 'console', 'waived')`, [], 'check constraint');
+await rejects('the agent can never waive a fee',
+  `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source, payment_status, waived_by, waive_reason)
+   VALUES (${P(6)}, 2, 1, 'booked', 'agent', 'waived', ${RECEPTION}, 'caller asked')`, [], 'check constraint');
+await ok('staff can book a waived visit, with who and why',
+  `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source, payment_status, waived_by, waive_reason)
+   VALUES (${P(6)}, 14, 3, 'booked', 'console', 'waived', ${RECEPTION}, 'clinic staff family')`);
 
 // release of unsold priority places (Kaur window 15)
 for (const n of [7, 8, 9]) await ok(`Kaur window 15 routine (P${n})`, book(P(n), 15, 3, ...APPT));
@@ -103,14 +120,29 @@ await rejects('refund on an unpaid payment rejected',
 await ok('gateway confirms payment', `UPDATE payments SET status = 'paid', paid_at = now(), provider_payment_id = 'pay_demo_1' WHERE id = $1`, [pay]);
 await ok('partial refund 350 requested (late cancellation, 50%)',
   `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by, policy_note) VALUES ($1, 350, 'patient_cancelled_late', 'agent', '50% under 24 h')`, [pay]);
+await rejects('staff refund request must name the staff member',
+  `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by) VALUES ($1, 100, 'staff_goodwill', 'staff')`, [pay], 'check constraint');
 await rejects('refunds beyond the amount paid rejected',
-  `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by) VALUES ($1, 400, 'staff_goodwill', 'staff')`, [pay], 'would exceed');
-await ok('a rejected refund does not count', `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by, status)
-  VALUES ($1, 700, 'staff_goodwill', 'staff', 'rejected')`, [pay]);
-await ok('remaining 350 can still be refunded',
-  `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by) VALUES ($1, 350, 'staff_goodwill', 'staff')`, [pay]);
+  `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by, requested_by_staff_id) VALUES ($1, 400, 'staff_goodwill', 'staff', ${RECEPTION})`, [pay], 'would exceed');
+await ok('a rejected refund does not count', `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by, requested_by_staff_id, status)
+  VALUES ($1, 700, 'staff_goodwill', 'staff', ${RECEPTION}, 'rejected')`, [pay]);
+await ok('remaining 350 can still be requested',
+  `INSERT INTO refunds (payment_id, amount_inr, reason, requested_by, requested_by_staff_id) VALUES ($1, 350, 'staff_goodwill', 'staff', ${RECEPTION})`, [pay]);
 await rejects('reviving the rejected refund would exceed the amount paid',
-  `UPDATE refunds SET status = 'approved' WHERE payment_id = $1 AND status = 'rejected'`, [pay], 'would exceed');
+  `UPDATE refunds SET status = 'approved', approved_by = ${ADMIN} WHERE payment_id = $1 AND status = 'rejected'`, [pay], 'would exceed');
+
+// refund approval (S-04)
+const agentRefund = (await one(`SELECT id FROM refunds WHERE payment_id = $1 AND requested_by = 'agent'`, [pay])).id;
+const staffRefund = (await one(`SELECT id FROM refunds WHERE payment_id = $1 AND requested_by = 'staff' AND status = 'requested'`, [pay])).id;
+await rejects('approving without an approver rejected', `UPDATE refunds SET status = 'approved' WHERE id = $1`, [agentRefund], 'needs approval');
+await rejects('a receptionist cannot approve a refund',
+  `UPDATE refunds SET status = 'approved', approved_by = ${RECEPTION} WHERE id = $1`, [agentRefund], 'active admin');
+await ok('an admin approves the agent-raised refund',
+  `UPDATE refunds SET status = 'approved', approved_by = ${ADMIN} WHERE id = $1`, [agentRefund]);
+await expect('approval time recorded automatically', `SELECT approved_at IS NOT NULL AS t FROM refunds WHERE id = $1`, [{ t: true }], [agentRefund]);
+await ok('admin raises a refund themselves', `UPDATE refunds SET requested_by_staff_id = ${ADMIN} WHERE id = $1`, [staffRefund]);
+await rejects('the requester cannot approve their own refund',
+  `UPDATE refunds SET status = 'approved', approved_by = ${ADMIN} WHERE id = $1`, [staffRefund], 'cannot approve it');
 await rejects('duplicate gateway payment ID rejected (webhook replay)',
   `INSERT INTO payments (booking_id, amount_inr, method, status, paid_at, provider_payment_id) VALUES ($1, 700, 'cash_desk', 'paid', now(), 'pay_demo_1')`, [kb], 'duplicate');
 
@@ -183,6 +215,70 @@ await expect('decided defaults in settings',
   [{ delay_sms_cap: 2, after_cap_action: 'ask_patient', refund_needs_approval: true }]);
 await rejects('priority places cannot exceed window capacity', `UPDATE clinic_settings SET priority_places_per_window = 9`, [], 'check constraint');
 await rejects('refund share must be a percentage', `UPDATE clinic_settings SET refund_late_cancel_percent = 150`, [], 'check constraint');
+
+// ---- security hardening (docs/security/threat-model.md)
+// A future session for Dr Verma (doctor 2) so "upcoming" checks do not depend on the clock.
+await ok('future session for abuse-limit tests',
+  `INSERT INTO doctor_sessions (doctor_id, session_date, planned_start, planned_end)
+   VALUES (2, current_date + 2, now() + interval '2 days', now() + interval '2 days 3 hours')`);
+const fs2 = (await one(`SELECT id FROM doctor_sessions WHERE doctor_id = 2 ORDER BY planned_start DESC LIMIT 1`)).id;
+await ok('six future windows with room',
+  `INSERT INTO windows (session_id, starts_at, ends_at, capacity)
+   SELECT $1, now() + interval '2 days' + make_interval(mins => 30 * n), now() + interval '2 days' + make_interval(mins => 30 * n + 30), 10
+     FROM generate_series(0, 5) n`, [fs2]);
+const fw = (await db.query(`SELECT id FROM windows WHERE session_id = $1 ORDER BY starts_at`, [fs2])).rows.map(r => r.id);
+const R = n => ids['R' + n] ?? null;
+const rid = Object.fromEntries((await db.query(`SELECT full_name, id FROM patients WHERE full_name LIKE 'R%'`)).rows.map(r => [r.full_name, r.id]));
+const call = async (num, exec) => (await one(`INSERT INTO calls (clinic_id, direction, from_number, bolna_execution_id) VALUES (1, 'inbound', $1, $2) RETURNING id`, [num, exec])).id;
+
+// one live hold per call (S-03)
+const c1 = await call('+919800011111', 'exec-hold-1');
+const hold = (p, w, c) => `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source, hold_expires_at, created_by_call_id)
+  VALUES (${p}, ${w}, 2, 'held', 'agent', now() + interval '90 seconds', ${c})`;
+await ok('first hold on a call', hold(rid.R1, fw[0], c1));
+await rejects('a second live hold on the same call rejected', hold(rid.R2, fw[1], c1), [], 'already holds');
+
+// upcoming visits per patient (S-03)
+const bookF = (p, w, c = 'NULL') => `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source, created_by_call_id)
+  VALUES (${p}, ${w}, 2, 'booked', 'agent', ${c})`;
+await ok('patient R3 upcoming 1', bookF(rid.R3, fw[0]));
+await ok('patient R3 upcoming 2', bookF(rid.R3, fw[1]));
+await ok('patient R3 upcoming 3', bookF(rid.R3, fw[2]));
+await rejects('a 4th upcoming visit by the agent rejected', bookF(rid.R3, fw[3]), [], 'maximum number of upcoming');
+await ok('staff can still book a 4th', `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source) VALUES (${rid.R3}, ${fw[3]}, 2, 'booked', 'console')`);
+
+// agent bookings per calling number per day (S-03)
+const spam = '+919800099999';
+for (let i = 0; i < 4; i++) await ok(`booking ${i + 1} from one number`, bookF(rid['R' + (10 + i)], fw[4], await call(spam, `exec-spam-${i}`)));
+await rejects('5th booking from the same number in 24 h rejected', bookF(rid.R14, fw[4], await call(spam, 'exec-spam-4')), [], 'daily booking limit');
+await ok('another number is not affected', bookF(rid.R15, fw[4], await call('+919800088888', 'exec-other')));
+
+// numbers (S-08)
+await rejects('outbound call to an international number rejected',
+  `INSERT INTO outbound_jobs (clinic_id, kind, patient_id, phone, scheduled_for) VALUES (1, 'reminder', ${rid.R1}, '+12025550100', now())`, [], 'check constraint');
+await rejects('outbound call to a landline rejected',
+  `INSERT INTO outbound_jobs (clinic_id, kind, patient_id, phone, scheduled_for) VALUES (1, 'reminder', ${rid.R1}, '+911123456789', now())`, [], 'check constraint');
+await ok('outbound call to an Indian mobile accepted',
+  `INSERT INTO outbound_jobs (clinic_id, kind, patient_id, phone, scheduled_for) VALUES (1, 'reminder', ${rid.R1}, '+919811111111', now())`);
+await rejects('SMS to an international number rejected', `INSERT INTO messages (clinic_id, channel, template_key, language, to_number, rendered_body)
+  VALUES (1, 'sms', 'reminder', 'en', '+447700900123', 'x')`, [], 'check constraint');
+await rejects('callback to an international number rejected',
+  `INSERT INTO callbacks (clinic_id, phone, priority, reason) VALUES (1, '+12025550100', 'P3', 'x')`, [], 'check constraint');
+await ok('callback to an Indian landline accepted, flagged as different from caller',
+  `INSERT INTO callbacks (clinic_id, phone, priority, reason, differs_from_caller) VALUES (1, '+911123456789', 'P3', 'x', true)`);
+
+// verification lockout data (S-05)
+const c9 = await call('+919800077777', 'exec-verify');
+for (let i = 1; i <= 3; i++)
+  await ok(`failed verification ${i}`, `INSERT INTO verification_attempts (call_id, attempt_no, method, result) VALUES ($1, ${i}, 'name_dob', 'no_match')`, [c9]);
+await expect('failures counted per calling number',
+  `SELECT failures FROM verification_failures_24h WHERE scope = 'number' AND key = '+919800077777'`, [{ failures: 3 }]);
+
+// audit log is append-only (S-10)
+await ok('audit entry written', `INSERT INTO audit_log (clinic_id, actor_type, action, entity) VALUES (1, 'staff', 'patient.view', 'patients')`);
+await rejects('audit entry cannot be edited', `UPDATE audit_log SET action = 'x'`, [], 'append-only');
+await rejects('audit entry cannot be deleted', `DELETE FROM audit_log`, [], 'append-only');
+await rejects('audit log cannot be truncated', `TRUNCATE audit_log`, [], 'append-only');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

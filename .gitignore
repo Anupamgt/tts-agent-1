@@ -1,0 +1,21 @@
+# secrets and local config (docs/security/threat-model.md S-15)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*service-account*.json
+credentials*.json
+
+# local data, recordings, exports, backups
+*.dump
+*.sql.gz
+backups/
+recordings/
+exports/
+uploads/
+
+# tooling
+node_modules/
+__pycache__/
+.DS_Store

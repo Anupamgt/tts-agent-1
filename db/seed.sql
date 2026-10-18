@@ -86,7 +86,7 @@ INSERT INTO message_templates (key, language, channel, category, body) VALUES
   ('cancelled',          'en', 'sms', 'service_implicit', 'Your visit with Dr {#var#} on {#var#} is cancelled. Call {#var#} to book again. -{#var#}'),
   ('callback_queued',    'en', 'sms', 'service_implicit', 'We received your request. Our staff will call you back by {#var#}. For emergencies, call 112. -{#var#}'),
   -- WhatsApp (utility templates, need Meta approval)
-  ('payment_link',       'en', 'whatsapp', 'utility', 'Hello {{1}}, your visit with Dr {{2}} on {{3}} needs a payment of Rs {{4}} ({{5}}). Pay by UPI here: {{6}}. The link is valid for {{7}} minutes. You can also pay in cash at the desk.'),
-  ('payment_reminder',   'en', 'whatsapp', 'utility', 'Reminder: Rs {{1}} for your visit with Dr {{2}} on {{3}} is still due. Pay here: {{4}}, or in cash at the desk.'),
+  ('payment_link',       'en', 'whatsapp', 'utility', 'Hello {{1}}, your visit with Dr {{2}} on {{3}} needs a payment of Rs {{4}} ({{5}}). Pay by UPI here: {{6}}. The link is valid for {{7}} minutes. You can also pay in cash at the desk. We never ask for your UPI PIN or OTP.'),
+  ('payment_reminder',   'en', 'whatsapp', 'utility', 'Reminder: Rs {{1}} for your visit with Dr {{2}} on {{3}} is still due. Pay here: {{4}}, or in cash at the desk. We never ask for your UPI PIN or OTP.'),
   ('payment_received',   'en', 'whatsapp', 'utility', 'Thank you. We received Rs {{1}} for your visit with Dr {{2}} on {{3}}. Receipt number {{4}}.'),
-  ('refund_update',      'en', 'whatsapp', 'utility', 'Your refund of Rs {{1}} for the visit on {{2}} has been {{3}}. UPI refunds usually reach your account in {{4}} working days.');
+  ('refund_update',      'en', 'whatsapp', 'utility', 'Your refund of Rs {{1}} for the visit on {{2}} has been {{3}}. UPI refunds usually reach your account in {{4}} working days. You never need a PIN to receive a refund, and we never ask for one.');

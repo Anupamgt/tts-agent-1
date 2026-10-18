@@ -29,12 +29,12 @@ flowchart TD
     O4 -->|"no answer or busy"| RT
     O4 -->|"voicemail or machine"| VM["Leave no medical or booking details.<br/>Only: clinic name and 'please call us back'"]
     VM --> RT
-    O4 -->|"answered"| O5["'Hello, this is an automated assistant from CLINIC.<br/>May I speak with NAME?'"]
+    O4 -->|"answered"| O5["'Hello, this is an automated assistant.<br/>May I speak with NAME?'<br/>(clinic name only after they confirm: S-12)"]
 
     O5 --> O6{"Right person?"}
     O6 -->|"wrong person or not available"| O6a["Share nothing, ask for a good time,<br/>end politely; log 'not reached'"]
     O6a --> RT
-    O6 -->|"yes, speaking"| O7["Deliver the message:<br/>doctor, date, window (reminder)<br/>or the change (delay, reschedule)"]
+    O6 -->|"yes, speaking"| O7["Say the clinic name, then the message:<br/>doctor, date, window (reminder)<br/>or the change (delay, reschedule)<br/>never ask for payment details"]
 
     O7 --> O8{"Caller reaction"}
     O8 -->|"confirms or fine"| O9["Mark confirmed, close"]

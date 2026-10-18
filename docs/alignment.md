@@ -37,6 +37,7 @@ Status: **Decided** (you confirmed it), **Proposed** (my default, not yet confir
 | 18 | Backend or calendar failure | Proposed | Never retry a write blindly; check first; fall back to callback | `08` F6-F11 | Agree? |
 | 19 | Languages | **Decided** | English, Hindi, Hinglish; others get a callback offer | `00` rules; `08` edge cases | None |
 | 20 | Call recording and AI disclosure | Proposed | Disclosed at the start of every call | `00` G | Agree? |
+| 21 | Security and abuse controls | Proposed | Full list in `docs/security/threat-model.md`. Already enforced in the database: random patient IDs, one hold per call, 3 upcoming visits per patient, 4 agent bookings per number per day, Indian numbers only for outbound contact, admin approval for refunds (not by the requester), named waivers, append-only audit log. Design rules: per-call verified session on the server, authenticated agent API, lockout after 5 failed checks, change SMS to the registered number, no payment details on calls | `security/threat-model.md`; `02` rules; `06` rules; `07` O5; `10` rules | 21a. Limits OK (3 / 4 / 5)? 21b. Who may waive a fee: admin only, or receptionists with a reason? 21c. Retention: transcripts 180 days, recordings 30 days? 21d. Approve the privacy notice wording once drafted |
 
 **Note on 13a.** "Set a 30 minute window for each patient" can mean two different things, and they change the build:
 
