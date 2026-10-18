@@ -2,11 +2,15 @@
 
 - `schema.sql` - PostgreSQL 14+ schema (needs the `btree_gist` extension)
 - `seed.sql` - one demo clinic; Dr Sharma and Dr Verma (general, "General check-up" pool, no fees), Dr Kaur (paediatrics specialist: appointment fee 200, priority fee 500); today's evening session for all three (windows 1-6, 7-12, 13-18; priority places only for Dr Kaur); two patients sharing a phone; a card holder and dependant sharing an institute ID; info answers; 10 SMS and 4 WhatsApp templates
+- `002_runtime.sql` - prototype runtime: call phase, transcript segments, decision traces, recordings, handoff, report status, previous interactions. Applied cleanly on Postgres 16 after the two files above
+- `seed_runtime.sql` - fictional caller personas, report statuses, and visit history for the prototype
 - `tests/schema.test.mjs` - 72 checks run against an in-process Postgres (PGlite): patient ID check digits, existing and institutional IDs, capacity with priority places, specialists-only priority, appointment fee and fee consent, payment rules, refund cap, message templates per channel, doctor/window consistency, pool membership and rollover, expired holds, overlapping windows, queue order, cancellation, the move after the delay cap
 
 ```
 psql "$DATABASE_URL" -f db/schema.sql
 psql "$DATABASE_URL" -f db/seed.sql
+psql "$DATABASE_URL" -f db/002_runtime.sql
+psql "$DATABASE_URL" -f db/seed_runtime.sql
 
 # tests (from any folder with @electric-sql/pglite installed)
 node db/tests/schema.test.mjs /path/to/this/repo

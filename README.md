@@ -2,6 +2,7 @@
 
 Voice AI phone help desk for a local clinic (Bolna + admin console + Google Calendar + Postgres).
 
+- `docs/prd/TECHNICAL_PRD.md` - local prototype runtime (Bolna web call, LiveKit, Kafka, traces, handoff)
 - `docs/scope.md` - agreed scope and open questions
 - `docs/flows/` - architecture, clinic flow today vs with agent, and the detailed decision trees (00 to 10, start at `docs/flows/README.md`)
 - `docs/alignment.md` - decisions to confirm (with pointers into the flows), caveats, and inputs needed
