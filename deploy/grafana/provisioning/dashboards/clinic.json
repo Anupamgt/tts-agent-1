@@ -1,0 +1,51 @@
+{
+  "uid": "clinic-voice",
+  "title": "Clinic voice prototype",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Active calls",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "sum(clinic_active_calls)", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Data-access violations, last hour",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "sum(increase(clinic_data_access_violations_total[1h]))", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Trace publish failures, last hour",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "sum(increase(clinic_trace_publish_failures_total[1h]))", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Handoff wait p95 (seconds)",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(clinic_handoff_wait_seconds_bucket[5m])))", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tool latency p95 by tool (seconds)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, tool) (rate(clinic_tool_duration_seconds_bucket[5m])))", "legendFormat": "{{tool}}", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tool error rate by tool",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "sum by (tool) (rate(clinic_tool_calls_total{ok=\"false\"}[5m]))", "legendFormat": "{{tool}}", "refId": "A"}]
+    }
+  ]
+}
