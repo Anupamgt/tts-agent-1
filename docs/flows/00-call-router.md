@@ -16,6 +16,8 @@ flowchart TD
 
     INT -->|"clinic info"| R5["05 Info"]
     INT -->|"book a new visit"| R3["03 Booking"]
+    INT -->|"priority visit, be seen first"| R3
+    INT -->|"wants to be seen today"| R1b["01 B: same-day request"]
     INT -->|"change or cancel a visit"| R4["04 Reschedule / cancel"]
     INT -->|"check my booking"| R4
     INT -->|"is the doctor running late"| R4
@@ -35,6 +37,7 @@ flowchart TD
     R3 --> WRAP
     R4 --> WRAP
     R1 --> WRAP
+    R1b --> WRAP
     WRAP{"Anything else?"}
     WRAP -->|"yes"| INT
     WRAP -->|"no"| CLOSE["Short goodbye<br/>SMS already sent if a booking changed"]
@@ -42,7 +45,7 @@ flowchart TD
 
     classDef ref fill:#eef1fb,stroke:#534ab7;
     classDef safety fill:#fde8e8,stroke:#a32d2d;
-    class R5,R3,R4,R6 ref;
+    class R5,R3,R4,R6,R1b ref;
     class R1 safety;
 ```
 

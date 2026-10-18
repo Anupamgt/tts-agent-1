@@ -1,13 +1,15 @@
 # Demo database
 
 - `schema.sql` - PostgreSQL 14+ schema (needs the `btree_gist` extension)
-- `seed.sql` - one demo clinic, doctor, today's evening session with six windows, urgent criteria, info answers and the six starter SMS templates
-
-Both files were run against an in-process Postgres (PGlite) and the capacity rules below were exercised: full windows, urgent places, urgent release, expired holds, duplicate patients, overlapping windows, cancellation freeing a place.
+- `seed.sql` - one demo clinic; Dr Sharma and Dr Verma in the "General check-up" pool, Dr Kaur (paediatrics, named bookings only); today's evening session for the two general doctors (six windows each, 1 priority place); two patients sharing a phone; info answers; nine starter SMS templates
+- `tests/schema.test.mjs` - 54 checks run against an in-process Postgres (PGlite): patient ID check digits, capacity with priority places, fee consent, priority release, doctor/window consistency, pool membership and rollover, expired holds, overlapping windows, queue order, cancellation, the delay-cap move
 
 ```
 psql "$DATABASE_URL" -f db/schema.sql
 psql "$DATABASE_URL" -f db/seed.sql
+
+# tests (from any folder with @electric-sql/pglite installed)
+node db/tests/schema.test.mjs /path/to/this/repo
 ```
 
 ## Shape
@@ -20,9 +22,12 @@ erDiagram
     clinics ||--o{ staff_users : has
     doctors ||--o{ schedule_templates : follows
     doctors ||--o{ doctor_sessions : runs
-    doctors ||--o{ urgent_criteria : defines
+    doctor_pools ||--o{ doctor_pool_members : contains
+    doctors ||--o{ doctor_pool_members : belongs_to
     doctor_sessions ||--o{ windows : split_into
+    doctor_sessions ||--o{ queue_events : records
     windows ||--o{ bookings : holds
+    bookings ||--o{ booking_changes : history
     patients ||--o{ bookings : makes
     patients ||--o{ patient_phones : reachable_on
     patients ||--o{ consents : gives
@@ -39,14 +44,18 @@ erDiagram
 ## Main ideas
 
 - **Postgres is the source of truth.** `bookings.gcal_event_id` and `gcal_sync_status` track the Google Calendar mirror, so a calendar failure never loses a booking.
-- **Windows hold several patients.** A time-range exclusion cannot protect that, so a trigger locks the window row and counts live bookings. Routine places = capacity minus urgent places, unless `urgent_released` is set. Held bookings count only while `hold_expires_at` is in the future.
+- **Windows hold several patients.** A time-range exclusion cannot protect that, so a trigger locks the window row and counts live bookings. Routine places = capacity minus priority places, unless `priority_released` is set. Held bookings count only while `hold_expires_at` is in the future.
+- **Named vs any-doctor (decision 1).** `bookings.booking_mode`; any-doctor bookings carry a `pool_id`. The same trigger checks that the booking's doctor runs the window, and that an any-doctor booking sits with a member of its pool. A rollover is an update of `window_id` and `doctor_id` together, logged in `booking_changes`. Keeping named-doctor bookings with their doctor is an application rule.
+- **Priority visits (decision 3).** `priority = 'priority'` needs the quoted fee (`priority_fee_inr`) and, when booked by the agent, the time the caller agreed (`fee_consent_at`). `payment_status` runs pending, paid, waived or refunded. Doctors with no `priority_fee_inr` show no priority places. `session_queue` orders arrived patients priority first, then by arrival.
+- **Patient IDs (decision 6).** `patients.patient_code` is generated as 6 digits plus a Luhn check digit (`1000017`), so a misheard or swapped digit is caught before lookup (`luhn_valid`). Existing clinic IDs are stored as they are; `patient_code_digits` is what spoken input is matched against.
+- **Delays and the next-patient signal (decisions 12, 13).** `queue_events` records who signalled (doctor, assistant, reception); `doctor_sessions.est_basis` says whether the estimate is live or schedule-only. `bookings.delay_sms_count` enforces the cap; the move after the cap is a new booking with `rescheduled_from`, logged as `auto_rescheduled`.
 - **Windows of one session cannot overlap**, enforced by a GiST exclusion constraint (the one place that tool fits).
 - **Provisional records:** a patient created by the agent has `file_complete = false` until staff finish the file at check-in.
 - **Shared phones:** `patient_phones` links one number to many patients, with a relation. `calls.patient_id` is set only after verification.
 - **Webhook safety:** `calls.bolna_execution_id` is unique, so a retried webhook cannot create a second call record. The raw payload is stored for debugging.
 - **Settings table** holds every proposed default from `docs/flows/README.md`, so changing a threshold is a data change, not a code change.
 - **Console data:** `callbacks` (priority queue), `message_tickets` (refill and messages), `emergency_alerts` (acknowledge), `sms_messages` (outbox), `audit_log` (who did what).
-- **View `window_availability`** gives the agent open routine and urgent places per window, with the delay shift applied.
+- **Views:** `window_availability` (open routine and priority places per window, delay shift applied), `pool_window_availability` (the same across a pool), `session_queue` (waiting-room order).
 
 ## Known gaps
 

@@ -50,8 +50,8 @@ flowchart TD
 
 | Priority | When | Target |
 |---|---|---|
-| P1 | Emergency flagged, urgent same-day with no urgent place, self-harm | Staff call within 15 minutes, console alert with sound |
-| P2 | Distress or anger, medical question, tool failure on a booking, transfer failed | Within 2 hours |
+| P1 | Emergency flagged, self-harm | Staff call within 15 minutes, console alert with sound |
+| P2 | Wants to be seen today and nothing is free; distress or anger; medical question; tool failure on a booking; transfer failed | Within 2 hours, and before today's session ends for same-day requests |
 | P3 | Messages, refills, reports, billing, verification, non-patient | Next working session, same day if before 6 pm |
 
 ## Rules

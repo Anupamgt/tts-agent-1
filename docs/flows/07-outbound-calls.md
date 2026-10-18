@@ -6,7 +6,9 @@
 |---|---|---|
 | Reminder | Booking exists | Evening before, inside the call window (and a morning SMS) |
 | Delay update | Estimated delay passes the threshold | When the shift is decided (SMS first; call only if the patient is within an hour of leaving) |
-| Reschedule offer | Doctor absent, session cancelled, or delay of 60+ min with staff approval | As soon as staff approve |
+| Reschedule notice | The system moved a visit to another day (delay cap reached, or doctor absent; see 09) | Straight away, inside the call window, with the "rescheduled" SMS |
+| Reschedule offer | Staff prefer to let the patient choose (e.g. a priority visit that cannot be seen today) | As soon as staff ask |
+| Doctor changed | An any-doctor visit moved to another pool doctor | SMS only; a call only if it is less than an hour before the window |
 | Callback result | Staff resolved a message, refill or question | After staff mark it ready |
 | Follow-up reminder | Doctor set a follow-up date at checkout | Evening before |
 

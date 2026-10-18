@@ -58,8 +58,8 @@ flowchart TD
     C3 -->|"no"| C3a(["Keep the booking, ask if anything else"])
     C3 -->|"yes"| C4["cancel_booking<br/>window released immediately"]
     C4 --> C5["send_sms 'cancelled'"]
-    C5 --> C6{"Cancelling an urgent-flagged visit,<br/>or a follow-up the doctor requested?"}
-    C6 -->|"yes"| C7["Mention the doctor wanted this visit,<br/>offer to rebook now,<br/>flag in console for staff"]
+    C5 --> C6{"Cancelling a priority visit,<br/>or a follow-up the doctor requested?"}
+    C6 -->|"yes"| C7["Priority: say how the fee is handled (clinic's refund rule).<br/>Follow-up: mention the doctor wanted this visit.<br/>Offer to rebook now; flag in console for staff"]
     C6 -->|"no"| C8["'Would you like to book another day?'"]
     C7 --> C8
     C8 -->|"yes"| BK(["03 Booking"])
@@ -77,7 +77,7 @@ Cancelling is never made hard: no penalty talk, no pressure. Late cancellations 
 flowchart TD
     T0["Caller asks about timing"] --> T1{"Asking about their own booking<br/>or about the doctor today?"}
     T1 -->|"doctor today"| T3
-    T1 -->|"own booking"| T2["Read: doctor, day, arrival window"]
+    T1 -->|"own booking"| T2["Read: doctor, day, arrival window<br/>any-doctor: the doctor it is with right now"]
     T2 --> T3{"Is the visit today?"}
     T3 -->|"no"| T9(["Close, anything else?"])
     T3 -->|"yes"| T4["get_doctor_delay"]
@@ -87,7 +87,7 @@ flowchart TD
     T7 -->|"under 20 min"| T7a["'Running on time.'<br/>give the window"]
     T7 -->|"20 min or more"| T7b["'About 30 minutes behind.<br/>Your new window is 11 to 11:30.'"]
     T5 -->|"paused or doctor absent"| T8["Say staff are updating,<br/>offer reschedule or callback"]
-    T5 -->|"estimate is stale<br/>(no 'next patient' tap for 30+ min)"| T8b["'The clinic is checking. I will ask staff to confirm.'<br/>offer callback P2"]
+    T5 -->|"schedule only<br/>(no live tap for 30+ min)"| T8b["'I do not have a live update from the doctor's room.<br/>By the schedule, your window is 11 to 11:30.'<br/>offer a staff callback (P2) if they need certainty"]
     T6 --> T9
     T7a --> T9
     T7b --> T9
@@ -104,4 +104,6 @@ Rules:
 
 - The doctor's delay is public and needs no verification; only the caller's own booking details do.
 - The agent states an estimate as an estimate ("about 30 minutes"), never a promise.
-- When the estimate is stale, the agent says so instead of guessing. A wrong delay answer is worse than none.
+- When the estimate is schedule-only (nobody has tapped "Call next" for 30 minutes), the agent says it has no live update instead of claiming the doctor is on time. A wrong delay answer is worse than none.
+- If the system has already moved the visit (delay cap or doctor absent, see 09), the agent reads the new window and doctor, and offers to change it.
+- Priority visits are rescheduled like any other visit when the caller asks; the fee carries over to the new date.
