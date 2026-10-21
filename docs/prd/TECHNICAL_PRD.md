@@ -413,7 +413,7 @@ The model never sends `patient_id`. The gateway deletes it if it appears, writes
 | `get_booking_status` | booking | verified, full or limited | Upcoming bookings for the verified patient only |
 | `get_report_status` | records | verified, **full only** | Label and status. No values exist |
 | `get_previous_interactions` | records | verified, **full only** | Up to 5 operational rows plus live bookings |
-| `create_message_ticket` | desk | verified | Refill or message. Relative flag stored |
+| `create_message_ticket` | desk | verified | Refill or message. Relative flag stored. Refills: medicine as the caller read it, doctor, days left, guardian and symptom flags; never a decision (`docs/flows/11-prescription-refills.md`) |
 | `create_callback` | desk | open call | P1, P2, or P3. Phone defaults to `calls.from_number` |
 | `flag_emergency` | desk | open call | Inserts `emergency_alerts` and a P1 desk event |
 | `request_human` | desk | open call | Section 5 |
@@ -544,8 +544,9 @@ Simulator route `POST /api/simulate/utterance` exists only when `SIMULATOR_ENABL
 | `GET /api/handoffs?status=queued` | desk | queue ordered by priority, then `queued_at` |
 | `POST /api/handoffs/{id}/accept` | desk | status `accepted`, joins the waiter in `request_human` |
 | `POST /api/handoffs/{id}/complete` | desk | `{disposition, note}` |
-| `GET /api/tickets` | desk | `message_tickets` |
-| `PATCH /api/tickets/{id}` | desk | `{status, response_note}` |
+| `GET /api/tickets` | desk | `message_tickets`. A refill's `medicine_name` is returned only to the patient's own doctor |
+| `PATCH /api/tickets/{id}` | desk | `{status: "seen"}`, or a reply to a message ticket. Never a refill decision |
+| `POST /api/tickets/{id}/refill-decision` | doctor (own patients) | `{decision, note, checks_confirmed, issued_via, pin}`. The database refuses anyone but the patient's own doctor, and an approval without an in-person visit in 180 days (S-20) |
 | `GET /api/callbacks` | desk | open callbacks |
 | `POST /v1/tools/{name}` | Bolna | section 6 |
 | `POST /v1/bolna/webhook` | Bolna | execution payload |

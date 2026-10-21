@@ -18,6 +18,7 @@ Not legal advice. The DPDP, TRAI and consumer-protection points should be checke
 |---|---|---|---|
 | S-01 | Critical | Agent tools could trust what the AI model passes in (patient IDs, amounts) | Design rule + To build |
 | S-02 | Critical | Tool, lookup and webhook endpoints are public and unauthenticated by default | To build (partly fixed in schema) |
+| S-20 | Critical | Prescription refills: any desk user could approve, the agent screened medicines itself, no real prescription or follow-up check | Fixed (schema) + Design rule + To build |
 | S-03 | High | Slot hoarding, fake bookings, SMS/WhatsApp pumping, call flooding | Fixed (schema) + Ops |
 | S-04 | High | Money fraud: redirected refunds, self-approved refunds, quiet fee waivers, refund scams | Fixed (schema) + Design rule |
 | S-05 | High | Weak phone verification: guessable answers, sequential IDs, retrying across calls | Fixed (schema) + Design rule + Accepted |
@@ -176,7 +177,9 @@ Permission matrix (proposed):
 | Waive a fee | no (proposed) | no | no | yes |
 | Raise a refund request | yes | no | no | yes |
 | Approve a refund | no | no | no | yes, not their own |
-| Approve refills, answer messages | no | no | yes | no |
+| Decide refills (approve, decline, ask to visit) | no | no | own patients only, with PIN (S-20) | no |
+| See a refill's medicine name | no | no | own patients only | no |
+| Answer messages | no | no | yes | no |
 | Acknowledge emergency alerts | yes | yes | yes | yes |
 | Settings, fees, staff accounts | no | no | no | yes |
 | Export data | no | no | no | yes |
@@ -321,6 +324,33 @@ Permission matrix (proposed):
 **Fix:**
 - `08` already falls back to taking a plain voice message, and the console creates callbacks from unprocessed calls.
 - Add an uptime monitor that alerts the team, and a health check the agent's first tool call can use.
+
+## S-20 · Critical · Prescription refills
+
+**Where:** `05` (old refill branch), `db/schema.sql` (`message_tickets`), the PRD's `PATCH /api/tickets/{id}`, the console mockup's "Approve refill" button.
+
+**Abuse and failure:**
+- Any desk user could mark a refill "approved": the PRD exposed the ticket update to the whole desk scope, the schema accepted any staff member, and the console mockup shows "Approve refill" to every role. A refill approved by a receptionist is a prescription decision by someone who is not a doctor.
+- The agent screened refills itself: it asked how the patient felt and checked a "visit required" list. Under the Telemedicine Practice Guidelines 2020, AI cannot counsel or prescribe. The list also missed brand names ("Alprax" is not "Sleeping tablets") and told drug-seekers which words to avoid.
+- Nothing checked the follow-up rule (same doctor, in-person visit within 6 months, same condition) or kept Schedule X and NDPS drugs out of phone refills.
+- "Approved" produced nothing valid: no step where the doctor issues a signed prescription with their registration number, and a planned "SMS after a decision" could be mistaken for one.
+- Weak identity for a high-risk action: anyone who knows a name and date of birth could ask for someone else's medicines, a relative could ask for a child's, and the result could be sent to a number given on the call.
+- Medicine names were visible to all desk staff, and repeat or early requests went unnoticed.
+
+**Fix:**
+- Flow `11-prescription-refills.md` replaces the old branch. The agent only takes the request (medicine as read from the strip, doctor, days left), asks nothing clinical, never hints at the outcome, and has no medicine list.
+- **Fixed (schema), tested:**
+  - Doctor accounts are tied to their doctor record.
+  - Only the patient's own doctor, from an active account, can approve, decline or ask for a visit. The agent, receptionists, admins and other doctors are refused.
+  - Approval needs a completed in-person visit with that doctor within `refill_followup_days` (180), plus the doctor's three confirmations and how the prescription was issued.
+  - A child's refill needs a registered parent or guardian.
+  - One open refill per patient, at most `refill_requests_per_30_days` (4).
+  - The medicine and the caller's words cannot be edited after the call.
+  - `runs_out_soon` is set from `refill_runout_days` (2).
+- **Design rule:** refill SMS templates carry no medicine name and go only to the registered number; the receipt SMS says it is not a prescription. Bolnai never writes, stores or sends prescriptions in v1, and never routes to a pharmacy.
+- **To build:** a doctor-only refill decision endpoint with PIN re-entry; medicine names returned only to the patient's own doctor; the console mockup's buttons gated by role. Split the PRD's `PATCH /api/tickets/{id}` so desk users can only mark a ticket seen.
+
+**Accepted:** the doctor's "not Schedule X / NDPS, same condition, enough information" check is a confirmation, not something the system can verify. Matching spoken brand names to drug schedules reliably is not possible in v1, and the decision is the doctor's by law anyway.
 
 ---
 

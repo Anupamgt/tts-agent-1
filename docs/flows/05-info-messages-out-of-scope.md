@@ -30,38 +30,29 @@ Answers come only from the clinic's own information (knowledge base and `get_cli
 
 ```mermaid
 flowchart TD
-    M0["Caller wants to leave a message,<br/>or asks for a medicine refill"] --> M1["02 Verification"]
+    M0["Caller wants to leave a message,<br/>or asks for a medicine refill"] --> M2{"Type of request"}
+    M2 -->|"refill"| RF["11 Prescription refills<br/>(the doctor decides; the agent only takes the request)"]
+    M2 -->|"question for the doctor"| M1["02 Verification"]
+    M2 -->|"report question"| RP["Reports flow below"]
     M1 --> M1a{"Verified?"}
     M1a -->|"no"| M1b["Offer staff callback to verify (P3)"]
-    M1a -->|"yes"| M2{"Type of request"}
-
-    M2 -->|"refill"| M3["Ask: medicine name as on the strip,<br/>how long since the last visit,<br/>any change in how they feel?"]
-    M3 --> M4{"Caller mentions new symptoms,<br/>side effects, or feeling worse?"}
-    M4 -->|"yes"| M4a["Do not log as a plain refill.<br/>01 C: no medical advice, offer visit or nurse callback"]
-    M4 -->|"no"| M5{"Medicine on the clinic's<br/>'visit required' list?"}
-    M5 -->|"yes (controlled or restricted)"| M5a["'The doctor needs to see you for this.'<br/>offer booking (03)"]
-    M5 -->|"no"| M6
-    M2 -->|"question for the doctor"| M7["Take the message in the caller's words,<br/>read back a short summary"]
-    M2 -->|"report question"| RP["Reports flow below"]
-    M7 --> M6
-    M6["create_message_ticket<br/>type, patient, medicine or message, caller's words,<br/>verified status, relative flag"]
+    M1a -->|"yes"| M7["Take the message in the caller's words,<br/>read back a short summary"]
+    M7 --> M6["create_message_ticket<br/>type, patient, message, caller's words,<br/>verified status, relative flag"]
     M6 --> M8["Tell the caller:<br/>who will review it and when,<br/>and how they will hear back (call or SMS)"]
     M8 --> M9(["Back to router"])
 
     classDef agent fill:#e1f5ee,stroke:#0f6e56;
     classDef human fill:#eef1fb,stroke:#534ab7;
-    classDef safety fill:#fde8e8,stroke:#a32d2d;
-    class M3,M7 agent;
-    class M6,M8 human;
-    class M4a safety;
+    class M7 agent;
+    class M6,M8,RF human;
 ```
 
 Rules:
 
-- The agent cannot approve a refill. It records the request; the doctor decides in the console.
+- Refill requests follow `11-prescription-refills.md`. The earlier version of this section (the agent asking how the patient feels and checking a "visit required" list) is withdrawn: it put the AI in a clinical role and was easy to get around.
+- The agent never answers a medical question itself; it takes the message for the doctor (`01` C).
 - Every ticket tells the caller a realistic reply time. If the clinic has not set one, the default is "within the next working session".
-- The pharmacy question from the US draft is dropped; Indian refills are normally collected from any pharmacy. Add it back if a partner clinic wants it.
-- A refill request from a relative is logged with a "requested by a relative" flag so the doctor can decide whether to contact the patient directly.
+- A message from a relative is logged with a "requested by a relative" flag so the doctor can decide whether to contact the patient directly.
 
 ## Reports and lab results
 

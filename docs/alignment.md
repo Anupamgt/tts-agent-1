@@ -6,7 +6,7 @@ Purpose: make sure everyone means the same thing before building. Each row point
 
 1. Read `flows/README.md` (decisions, settings table and tool list): 5 min.
 2. Read `00-call-router` main diagram, then the interrupt diagram: 5 min.
-3. Walk the flows that carry the most risk: `01 A` (emergency), `03` (booking and part P), `09` (day of operations), `10` (payments and refunds): 20 min.
+3. Walk the flows that carry the most risk: `01 A` (emergency), `03` (booking and part P), `09` (day of operations), `10` (payments and refunds), `11` (prescription refills): 25 min.
 4. Skim `06` (handoff) and `07` (outbound): 5 min.
 5. Go through section A below and mark each open row Agree / Change / Defer.
 
@@ -26,7 +26,7 @@ Status: **Decided** (you confirmed it), **Proposed** (my default, not yet confir
 | 7 | Relatives calling for a patient | **Decided** | Limited mode: book, change, cancel, leave a message | `02` V13, V14 | None |
 | 8 | Staff-on-desk switch and transfer | Proposed | Console switch decides transfer vs callback | `06` H2 | Agree? |
 | 9 | Callback priorities and targets | Proposed | P1 15 min (emergency, self-harm); P2 2 h or before the session ends (same-day requests); P3 next session | `06` table | Agree? |
-| 10 | Refill requests | Proposed | Logged only; doctor decides; "visit required" list | `05` M3-M6 | Agree? |
+| 10 | Prescription refills | **Decided** (doctor only; Oct 2026) | The agent only takes the request (medicine as read from the strip, doctor, days left) and asks nothing clinical. Only the patient's own doctor decides, after an in-person visit with them in the last 6 months, never for Schedule X / NDPS drugs. The doctor issues the prescription; Bolnai only sends "the doctor has responded" to the registered number. Enforced in the schema | `11` parts A and B; `security/threat-model.md` S-20 | 10a. Defaults to confirm: approved prescriptions collected at the desk or sent by the doctor; relatives may ask but are flagged, children only via a registered guardian; 2 days left = same-day callback; 4 requests per 30 days. 10b. Doctors at the partner clinic sign off on the flow |
 | 11 | Reports and lab results | Proposed | Never read aloud; point to the clinic's own channel | `05` P0-P7 | Agree? |
 | 12 | Delay messages | **Decided** | At most 2 SMS. After that the agent calls and asks what the patient wants: keep the place, move to the next free slot (later today or next session), or cancel with a refund if they paid. Arrived patients are never moved | `09` D8-D17; `04` T4-T8 | Proposed fallback if not reached: keep their place if it still fits today, else hold the next free slot and text them. Agree? |
 | 13 | "Next patient" signal | **Decided** | Hybrid: planned schedule by default; the doctor (phone or tablet in the cabin) or an assistant outside the cabin taps "Call next" to correct it | `09` N1-N7 | 13a. What did "a 30 minute window for each patient" mean? (see note below) |
@@ -91,7 +91,8 @@ Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-u
 - Patient data is personal data under India's DPDP Act (consent, purpose limits, retention, breach reporting within 72 hours under the 2025 rules; most obligations phase in over 18 months). A retention period for recordings and transcripts must be set.
 - Outbound calls and SMS: service messages still need DLT registration and consent. Production reminders likely need a 160-series number. The demo avoids this by calling only team numbers.
 - Recording: disclose it on every call and decide how long recordings are kept.
-- Medical-device or telemedicine rules are not triggered by this scope because the agent gives no clinical advice. That stops being true if scope drifts toward symptom triage. Dropping the doctor's "urgent criteria" list in favour of paid priority moves the design further from triage.
+- Medical-device rules are not triggered because the agent gives no clinical advice. That stops being true if scope drifts toward symptom triage. Dropping the doctor's "urgent criteria" list in favour of paid priority moves the design further from triage.
+- **Telemedicine rules do apply to refills.** A refill decided without a visit is the doctor's follow-up teleconsultation under the Telemedicine Practice Guidelines 2020: same doctor, in-person visit within 6 months, same condition, never Schedule X / NDPS drugs, a signed prescription with the registration number, and AI may not counsel or prescribe. Flow `11` and the schema follow this; the clinic's doctors must still sign it off.
 
 ### Technical honesty
 - Everything in `docs/flows` is a design, not tested behaviour. No part has run against a real clinic or real callers.
@@ -112,7 +113,7 @@ Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-u
 | Share of walk-ins vs phone bookings | capacity, priority places |
 | How bookings are taken today (register, app, none) | migration, `03` |
 | Fee list, address, parking, holidays, services | info flow (`05`) |
-| "Visit required" medicine list | `05` M5 |
+| Doctors' sign-off on the refill flow, and how they issue prescriptions today (pad, e-prescription, app) | `11` part B |
 | Staff phone number(s), desk hours, who answers the console | `06` H2; settings |
 | Who taps "Call next": doctor, cabin assistant, or receptionist; is there a bell or display today? | `09` N1 |
 | Current call volume, peak hours, estimated missed calls | success metrics, cost |
@@ -131,7 +132,7 @@ Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-u
 | Google Workspace account and Calendar API credentials | calendar mirror |
 | SMS provider choice for the demo (or a mock outbox) | `send_sms` |
 | Where the backend runs during the demo (tunnel vs deployed copy) | reliability |
-| The remaining sub-questions in section A: 1b, 3d, 3e-3g, 6a, 12 fallback, 13a | flows and backend jobs depend on them |
+| The remaining sub-questions in section A: 1b, 3d, 3e-3g, 6a, 10a, 12 fallback, 13a | flows and backend jobs depend on them |
 | Payment gateway and WhatsApp provider choice for the demo | `create_payment_link`, WhatsApp templates |
 | Edge cases you want covered ("we'll define later") | `08` table is a starter list |
 | GTM direction: cloud vs hosted DB, pricing model | later; does not block the build |
@@ -149,7 +150,8 @@ Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-u
 - Patients who have arrived are never moved.
 - Follow-ups: the agent asks "same doctor as last time, or any doctor?"
 - A patient ID is never read aloud after date-of-birth verification; it is sent by SMS to the registered number.
-- Pharmacy field dropped from refills.
+- Pharmacy field dropped from refills; Bolnai never sends prescriptions to pharmacies in v1 (that would need the patient's explicit consent).
+- Refill outcomes go out as SMS only, with no medicine name, and the received SMS says it is not a prescription.
 - Same-day routine bookings stop 30 minutes before the window.
 - Expired holds are released automatically after 90 seconds.
 - Hindi SMS templates are separate Unicode templates.

@@ -10,7 +10,8 @@
 | Reschedule offer | Doctor absent or session cancelled (09 X5), or staff ask | Straight away; patient picks a slot or asks for a refund (10) |
 | Payment follow-up | Caller chose UPI on the call (10 part B) | WhatsApp message with the link, not a call; one reminder |
 | Doctor changed | An any-doctor visit moved to another pool doctor | SMS only; a call only if it is less than an hour before the window |
-| Callback result | Staff resolved a message, refill or question | After staff mark it ready |
+| Callback result | Staff resolved a message or question | After staff mark it ready |
+| Refill outcome | The patient's own doctor decided a refill (11) | SMS only, to the registered number, no medicine name. The agent never calls with a refill outcome |
 | Follow-up reminder | Doctor set a follow-up date at checkout | Evening before |
 
 In the demo, outbound calls go only to numbers the team controls.

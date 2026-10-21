@@ -15,6 +15,7 @@ Read in this order. Every file is a Mermaid diagram plus the rules the diagram c
 | 08 | [error-handling](08-error-handling.md) | Speech failures, silence, tool and calendar failures, dropped calls |
 | 09 | [day-of-operations](09-day-of-operations.md) | Check-in, walk-ins, "Call next", delay estimate, asking the patient after 2 delay messages, doctor absent |
 | 10 | [payments-and-refunds](10-payments-and-refunds.md) | Appointment and priority fees, UPI link on WhatsApp or cash, unpaid links, refund tree |
+| 11 | [prescription-refills](11-prescription-refills.md) | Refill requests: what the agent may ask, the doctor-only decision in the console, the Indian rules behind it |
 
 ## Conventions
 
@@ -34,7 +35,7 @@ Read in this order. Every file is a Mermaid diagram plus the rules the diagram c
 | `create_booking` / `reschedule_booking` / `cancel_booking` | Write to Postgres (named or any-doctor, routine or priority with fee consent); the calendar mirror is updated afterwards |
 | `get_booking_status` | Upcoming bookings for a verified patient |
 | `get_doctor_delay` | Current estimated delay and session status |
-| `create_message_ticket` | Message or refill request for the doctor, shown in the console |
+| `create_message_ticket` | Message or refill request for the doctor, shown in the console. Refills: medicine as said, doctor, days left, flags; never a decision (11) |
 | `create_callback` | Callback request with priority and preferred time |
 | `flag_emergency` | Console alert with a transcript snippet |
 | `create_payment_link` | UPI link for an agreed fee, sent as a WhatsApp follow-up (SMS fallback) |
@@ -56,6 +57,7 @@ Backend jobs (not called by the agent): delay check and window shifting, pool re
 | Relatives | Limited mode (02) |
 | Delay messages | At most 2; after that the agent asks the patient: keep the place, move to the next free slot, or cancel (09) |
 | "Next patient" | Hybrid: schedule-based by default, corrected by the doctor's or assistant's "Call next" taps (09) |
+| Prescription refills | Only the patient's own doctor decides, after an in-person visit with them in the last 6 months; never Schedule X / NDPS drugs; the agent only takes the request and Bolnai never issues prescriptions (11) |
 
 ## Settings (editable per clinic or doctor; proposed values unless marked decided)
 
@@ -80,3 +82,6 @@ Backend jobs (not called by the agent): delay check and window shifting, pool re
 | Standard callback target | next business session, same day if before 6 pm |
 | Outbound call window | 9 am to 9 pm IST (also enforced by Bolna guardrails) |
 | Outbound retries | 2, at least 2 hours apart, inside the call window |
+| Refill: follow-up window | 180 days since an in-person visit with the same doctor (from the Telemedicine Practice Guidelines) |
+| Refill: "runs out soon" | 2 days or less left: same-day P2 callback (proposed) |
+| Refill requests per patient | 1 open at a time; at most 4 per 30 days (proposed) |

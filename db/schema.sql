@@ -41,7 +41,7 @@ CREATE TYPE call_direction    AS ENUM ('inbound', 'outbound');
 CREATE TYPE callback_priority AS ENUM ('P1', 'P2', 'P3');
 CREATE TYPE callback_status   AS ENUM ('open', 'in_progress', 'done', 'unreachable', 'cancelled');
 CREATE TYPE ticket_type       AS ENUM ('refill', 'message', 'report_query');
-CREATE TYPE ticket_status     AS ENUM ('new', 'seen', 'approved', 'declined', 'answered');
+CREATE TYPE ticket_status     AS ENUM ('new', 'seen', 'approved', 'declined', 'visit_requested', 'answered');
 CREATE TYPE sms_status        AS ENUM ('queued', 'sent', 'delivered', 'failed');
 CREATE TYPE outbound_kind     AS ENUM ('reminder', 'delay_choice', 'reschedule_offer',
                                        'doctor_changed', 'callback_result', 'follow_up_reminder');
@@ -130,6 +130,11 @@ CREATE TABLE clinic_settings (
     outbound_end_hour          int  NOT NULL DEFAULT 21 CHECK (outbound_end_hour BETWEEN 0 AND 23),
     outbound_max_retries       int  NOT NULL DEFAULT 2,
     outbound_retry_gap_hours   int  NOT NULL DEFAULT 2,
+    -- prescription refills (flow 11). Telemedicine Practice Guidelines 2020: a refill without a visit
+    -- is a follow-up only with the same doctor within 6 months of an in-person consultation.
+    refill_followup_days       int  NOT NULL DEFAULT 180 CHECK (refill_followup_days > 0),
+    refill_runout_days         int  NOT NULL DEFAULT 2   CHECK (refill_runout_days >= 0),  -- same-day callback at or below
+    refill_requests_per_30_days int NOT NULL DEFAULT 4   CHECK (refill_requests_per_30_days > 0),
     staff_on_desk              boolean NOT NULL DEFAULT false,   -- the switch the transfer flow checks
     staff_transfer_number      text,
     CHECK (priority_places_per_window <= window_capacity)
@@ -156,6 +161,13 @@ CREATE TABLE doctors (
     clinic_calendar_id  text,        -- shared "Clinic bookings" calendar: written as a mirror
     active              boolean NOT NULL DEFAULT true
 );
+
+-- A doctor's staff account is tied to their doctor record, so "only the patient's own doctor
+-- decides a refill" can be checked (flow 11). Every doctor account must name its doctor.
+ALTER TABLE staff_users
+    ADD COLUMN doctor_id bigint REFERENCES doctors(id),
+    ADD CONSTRAINT staff_doctor_account CHECK (role <> 'doctor' OR doctor_id IS NOT NULL);
+CREATE UNIQUE INDEX staff_one_account_per_doctor ON staff_users (doctor_id) WHERE doctor_id IS NOT NULL;
 
 -- Doctors who can stand in for each other on any-doctor bookings (decision 1).
 CREATE TABLE doctor_pools (
@@ -196,12 +208,8 @@ CREATE TABLE clinic_info (            -- answers for the info flow (05), per lan
     PRIMARY KEY (clinic_id, topic, language)
 );
 
-CREATE TABLE restricted_medicines (   -- "visit required" list for the refill flow
-    id         bigserial PRIMARY KEY,
-    clinic_id  bigint NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
-    name       text NOT NULL,
-    note       text
-);
+-- No medicine list for the agent (flow 11): the agent never screens refills. Whether a medicine can
+-- be refilled without a visit is the doctor's decision, checked in message_tickets below.
 
 -- ---------------------------------------------------------------- patients
 CREATE TABLE patients (
@@ -593,17 +601,105 @@ CREATE TABLE message_tickets (
     clinic_id             bigint NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
     call_id               bigint REFERENCES calls(id),
     patient_id            bigint NOT NULL REFERENCES patients(id),
-    doctor_id             bigint REFERENCES doctors(id),
+    doctor_id             bigint REFERENCES doctors(id),  -- refills: the doctor who decides
     type                  ticket_type NOT NULL,
-    medicine_name         text,                           -- refill only
-    body                  text,                           -- caller's words
+    medicine_name         text,                           -- refill only: as the caller read it from the strip
+    body                  text,                           -- caller's words (plain text, never a status)
     requested_by_relative boolean NOT NULL DEFAULT false,
+    requester_is_guardian boolean NOT NULL DEFAULT false, -- a registered parent or guardian (needed for minors)
+    -- refill request facts the agent may collect (flow 11 part A); no clinical questions
+    days_left             smallint CHECK (days_left >= 0),
+    runs_out_soon         boolean NOT NULL DEFAULT false, -- set by the trigger from refill_runout_days
+    new_symptoms_mentioned boolean NOT NULL DEFAULT false,-- caller volunteered it; the agent does not ask
     status                ticket_status NOT NULL DEFAULT 'new',
     response_note         text,
     responded_by          bigint REFERENCES staff_users(id),
     responded_at          timestamptz,
-    created_at            timestamptz NOT NULL DEFAULT now()
+    -- refill decision (flow 11 part B), doctor only
+    teleconsult_checks_confirmed boolean NOT NULL DEFAULT false,  -- same condition, enough information,
+                                                                  -- not Schedule X / NDPS
+    last_in_person_visit  date,                           -- filled by the trigger when approved
+    prescription_issued_via text CHECK (prescription_issued_via IN ('collect_at_desk', 'doctor_sent_to_patient')),
+    created_at            timestamptz NOT NULL DEFAULT now(),
+    CHECK (type <> 'refill' OR (medicine_name IS NOT NULL AND doctor_id IS NOT NULL)),
+    CHECK (NOT requester_is_guardian OR requested_by_relative),
+    CHECK (status <> 'approved' OR (type = 'refill' AND teleconsult_checks_confirmed
+                                    AND prescription_issued_via IS NOT NULL AND responded_by IS NOT NULL))
 );
+-- One open refill request per patient at a time.
+CREATE UNIQUE INDEX tickets_one_open_refill ON message_tickets (patient_id)
+    WHERE type = 'refill' AND status IN ('new', 'seen');
+
+-- Refill rules (flow 11, security review S-20):
+--  * a child's refill must come from a registered parent or guardian
+--  * at most refill_requests_per_30_days requests per patient
+--  * the request details cannot be edited after the call
+--  * only the patient's own doctor, from their own active account, can approve, decline or ask for a visit
+--  * approval needs a completed in-person visit with that doctor within refill_followup_days
+CREATE FUNCTION enforce_refill_rules() RETURNS trigger AS $$
+DECLARE
+    st          clinic_settings%ROWTYPE;
+    p           patients%ROWTYPE;
+    p_age       int;
+    recent      int;
+    decider     staff_users%ROWTYPE;
+    last_visit  date;
+BEGIN
+    IF NEW.type <> 'refill' THEN
+        RETURN NEW;
+    END IF;
+    SELECT * INTO st FROM clinic_settings WHERE clinic_id = NEW.clinic_id;
+
+    IF TG_OP = 'INSERT' THEN
+        SELECT * INTO p FROM patients WHERE id = NEW.patient_id;
+        p_age := COALESCE(extract(year FROM age(current_date, p.date_of_birth))::int, p.age_years);
+        IF p_age IS NOT NULL AND p_age < 18 AND NOT NEW.requester_is_guardian THEN
+            RAISE EXCEPTION 'a refill for a child must come from a registered parent or guardian' USING ERRCODE = 'P0001';
+        END IF;
+        SELECT count(*) INTO recent FROM message_tickets
+         WHERE patient_id = NEW.patient_id AND type = 'refill' AND created_at > now() - interval '30 days';
+        IF recent >= COALESCE(st.refill_requests_per_30_days, 4) THEN
+            RAISE EXCEPTION 'too many refill requests for this patient in 30 days: staff callback instead' USING ERRCODE = 'P0001';
+        END IF;
+        NEW.runs_out_soon := NEW.days_left IS NOT NULL AND NEW.days_left <= COALESCE(st.refill_runout_days, 2);
+    ELSE
+        IF NEW.patient_id <> OLD.patient_id OR NEW.medicine_name IS DISTINCT FROM OLD.medicine_name
+           OR NEW.body IS DISTINCT FROM OLD.body THEN
+            RAISE EXCEPTION 'refill request details cannot be edited after the call' USING ERRCODE = 'P0001';
+        END IF;
+    END IF;
+
+    IF NEW.status IN ('approved', 'declined', 'visit_requested')
+       AND (TG_OP = 'INSERT' OR NEW.status IS DISTINCT FROM OLD.status) THEN
+        SELECT * INTO decider FROM staff_users WHERE id = NEW.responded_by;
+        IF decider.id IS NULL OR NOT decider.active OR decider.role <> 'doctor'
+           OR decider.doctor_id IS DISTINCT FROM NEW.doctor_id THEN
+            RAISE EXCEPTION 'only the patient''s own doctor can decide a refill' USING ERRCODE = 'P0001';
+        END IF;
+        IF NEW.responded_at IS NULL OR TG_OP = 'UPDATE' THEN
+            NEW.responded_at := now();
+        END IF;
+    END IF;
+
+    IF NEW.status = 'approved' AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'approved') THEN
+        SELECT max(s.session_date) INTO last_visit
+          FROM bookings b
+          JOIN windows w         ON w.id = b.window_id
+          JOIN doctor_sessions s ON s.id = w.session_id
+         WHERE b.patient_id = NEW.patient_id AND b.doctor_id = NEW.doctor_id AND b.status = 'done';
+        IF last_visit IS NULL OR last_visit < current_date - COALESCE(st.refill_followup_days, 180) THEN
+            RAISE EXCEPTION 'no in-person visit with this doctor in the last % days: ask the patient to visit',
+                COALESCE(st.refill_followup_days, 180) USING ERRCODE = 'P0001';
+        END IF;
+        NEW.last_in_person_visit := last_visit;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tickets_refill_rules
+    BEFORE INSERT OR UPDATE ON message_tickets
+    FOR EACH ROW EXECUTE FUNCTION enforce_refill_rules();
 
 CREATE TABLE emergency_alerts (
     id               bigserial PRIMARY KEY,

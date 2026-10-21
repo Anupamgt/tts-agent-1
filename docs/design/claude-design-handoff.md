@@ -177,7 +177,14 @@ Tabs: `Due` · `Links sent` · `Paid` · `Refunds`.
 
 ### Screen 9 · Messages and refills for the doctor · P1 · desktop and phone
 
-Tickets the agent created: type (refill / message / report question), patient, "requested by relative" flag, caller's words, medicine name for refills, created time. Doctor actions: `Approve refill`, `Decline` (with note), `Reply`, `Ask patient to visit` (opens booking). After a decision, the patient gets a call or SMS (shown as the outcome).
+Tickets the agent created: type (refill / message / report question), patient, "requested by relative" or "guardian" flag, caller's words (labelled "Caller said"), created time. Refills follow `docs/flows/11-prescription-refills.md` part B:
+
+- **Only the patient's own doctor** sees the medicine name and the decision buttons. Everyone else sees "Refill request · Dr Sharma · status" and can only mark it seen or chase it.
+- The doctor sees: medicine as the caller said it, days left, flags (runs out soon, new symptoms mentioned, relative, guardian), **last in-person visit with this doctor**, and the last 5 refill requests for this patient.
+- Actions: `Call patient` (opens a call to the registered number), `Ask to visit` (opens booking), `Decline` (note required), `Approve`.
+- `Approve` is disabled with a reason when there is no in-person visit with this doctor in the last 6 months ("Needs an in-person visit · last seen 14 Feb"). It opens a confirm step: three checkboxes (same condition as the earlier visit; enough information to decide without seeing the patient; not a Schedule X or NDPS medicine), how the prescription was issued (left at the desk / I sent it to the patient), then the doctor's PIN.
+- The outcome line shows who decided and when, and which SMS went out. SMS never name the medicine. Nothing in this screen generates a prescription.
+- Messages and report questions keep `Reply` and `Decline`.
 
 ### Screen 10 · Patients · P1 · desktop
 
@@ -240,7 +247,7 @@ Words to use: "priority visit", never "urgent". "Arrival window", not "slot" or 
 
 ## 8. Privacy in the UI
 
-- No diagnoses, symptoms, medicines or test results anywhere except a refill ticket's medicine name (for the doctor).
+- No diagnoses, symptoms, medicines or test results anywhere except a refill ticket's medicine name, shown only to the patient's own doctor.
 - Transcripts and recordings open on purpose (a click), never in list previews beyond a one-line snippet.
 - Phone numbers: full where staff need to call (callbacks, alerts, patient profile); partly hidden in long lists (`+91 98••• ••111`).
 - The waiting-room display can show patient numbers instead of names (clinic setting).

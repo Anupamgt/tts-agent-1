@@ -21,7 +21,8 @@ flowchart TD
     INT -->|"change or cancel a visit"| R4["04 Reschedule / cancel"]
     INT -->|"check my booking"| R4
     INT -->|"is the doctor running late"| R4
-    INT -->|"message or refill for the doctor"| R5
+    INT -->|"message for the doctor"| R5
+    INT -->|"medicine refill"| R11["11 Prescription refills"]
     INT -->|"reports or lab results"| R5
     INT -->|"billing or payment"| R6["06 Handoff"]
     INT -->|"asks what to take or what is wrong"| R1["01 Pivot: no medical advice"]
@@ -34,6 +35,7 @@ flowchart TD
     CL2 -->|"no"| R6
 
     R5 --> WRAP
+    R11 --> WRAP
     R3 --> WRAP
     R4 --> WRAP
     R1 --> WRAP
@@ -45,7 +47,7 @@ flowchart TD
 
     classDef ref fill:#eef1fb,stroke:#534ab7;
     classDef safety fill:#fde8e8,stroke:#a32d2d;
-    class R5,R3,R4,R6,R1b ref;
+    class R5,R3,R4,R6,R1b,R11 ref;
     class R1 safety;
 ```
 

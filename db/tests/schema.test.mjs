@@ -280,5 +280,58 @@ await rejects('audit entry cannot be edited', `UPDATE audit_log SET action = 'x'
 await rejects('audit entry cannot be deleted', `DELETE FROM audit_log`, [], 'append-only');
 await rejects('audit log cannot be truncated', `TRUNCATE audit_log`, [], 'append-only');
 
+// ---- prescription refills: doctor only (flow 11, S-20)
+const DR = d => `(SELECT id FROM staff_users WHERE doctor_id = ${d})`;
+await rejects('a doctor account must name its doctor',
+  `INSERT INTO staff_users (clinic_id, name, role) VALUES (1, 'Dr Nobody', 'doctor')`, [], 'check constraint');
+await ok('refill test patients: adults R20, R22, child R21',
+  `UPDATE patients SET age_years = CASE full_name WHEN 'R21' THEN 8 ELSE 40 END WHERE full_name IN ('R20', 'R21', 'R22')`);
+const refill = (p, d, extra = {}) => {
+  const cols = ['clinic_id', 'patient_id', 'doctor_id', 'type', 'medicine_name', 'body', ...Object.keys(extra)];
+  const vals = [1, p, d, `'refill'`, `'Telma 40'`, `'same tablets as last time'`, ...Object.values(extra)];
+  return `INSERT INTO message_tickets (${cols.join(', ')}) VALUES (${vals.join(', ')})`;
+};
+await rejects('a refill request needs the medicine and the doctor', refill(rid.R20, 'NULL'), [], 'check constraint');
+await ok('agent logs a refill request for R20 with Dr Sharma', refill(rid.R20, 1, { days_left: 5 }));
+await rejects('a second open refill request for the same patient rejected', refill(rid.R20, 1), [], 'duplicate');
+await ok('R22 asks Dr Sharma with 1 day of tablets left', refill(rid.R22, 1, { days_left: 1 }));
+await expect('runs-out-soon set from the setting (2 days)',
+  `SELECT patient_id, runs_out_soon FROM message_tickets WHERE type = 'refill' ORDER BY id`,
+  [{ patient_id: rid.R20, runs_out_soon: false }, { patient_id: rid.R22, runs_out_soon: true }]);
+const t20 = (await one(`SELECT id FROM message_tickets WHERE patient_id = $1`, [rid.R20])).id;
+const t22 = (await one(`SELECT id FROM message_tickets WHERE patient_id = $1`, [rid.R22])).id;
+await rejects('the medicine cannot be edited after the call',
+  `UPDATE message_tickets SET medicine_name = 'Alprax 0.5' WHERE id = $1`, [t20], 'cannot be edited');
+await ok('anyone at the desk may mark it seen', `UPDATE message_tickets SET status = 'seen' WHERE id = $1`, [t20]);
+const approve = `UPDATE message_tickets SET status = 'approved', teleconsult_checks_confirmed = true,
+  prescription_issued_via = 'collect_at_desk', responded_by = `;
+await rejects('the agent cannot approve (no staff member)', `UPDATE message_tickets SET status = 'approved' WHERE id = $1`, [t20], 'own doctor');
+await rejects('a receptionist cannot approve', approve + RECEPTION + ` WHERE id = $1`, [t20], 'own doctor');
+await rejects('an admin cannot approve', approve + ADMIN + ` WHERE id = $1`, [t20], 'own doctor');
+await rejects('another doctor cannot approve', approve + DR(2) + ` WHERE id = $1`, [t20], 'own doctor');
+await rejects('a receptionist cannot decline either',
+  `UPDATE message_tickets SET status = 'declined', responded_by = ${RECEPTION} WHERE id = $1`, [t20], 'own doctor');
+await rejects('Dr Sharma cannot approve without an in-person visit in 6 months', approve + DR(1) + ` WHERE id = $1`, [t20], 'in-person visit');
+await ok('R20 seen in person by Dr Sharma today (window 5)',
+  `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source) VALUES (${rid.R20}, 5, 1, 'booked', 'console')`);
+await ok('visit marked done', `UPDATE bookings SET status = 'done' WHERE patient_id = $1 AND window_id = 5`, [rid.R20]);
+await rejects('approval needs the doctor\'s checks and how the prescription is issued',
+  `UPDATE message_tickets SET status = 'approved', responded_by = ${DR(1)} WHERE id = $1`, [t20], 'check constraint');
+await ok('Dr Sharma approves with the checks confirmed', approve + DR(1) + ` WHERE id = $1`, [t20]);
+await expect('last in-person visit and decision time recorded',
+  `SELECT last_in_person_visit = current_date AS v, responded_at IS NOT NULL AS t FROM message_tickets WHERE id = $1`, [{ v: true, t: true }], [t20]);
+await ok('R22 seen in person by Dr Verma today (window 8)',
+  `INSERT INTO bookings (patient_id, window_id, doctor_id, status, source) VALUES (${rid.R22}, 8, 2, 'booked', 'console')`);
+await ok('R22 visit with Dr Verma done', `UPDATE bookings SET status = 'done' WHERE patient_id = $1 AND window_id = 8`, [rid.R22]);
+await rejects('a visit with a different doctor does not count', approve + DR(1) + ` WHERE id = $1`, [t22], 'in-person visit');
+await ok('Dr Sharma asks R22 to visit instead', `UPDATE message_tickets SET status = 'visit_requested', responded_by = ${DR(1)} WHERE id = $1`, [t22]);
+await rejects('a child\'s refill from someone who is not a registered guardian rejected',
+  refill(rid.R21, 3, { requested_by_relative: true }), [], 'parent or guardian');
+await rejects('a guardian is always a relative', refill(rid.R21, 3, { requester_is_guardian: true }), [], 'check constraint');
+await ok('a registered guardian can ask for a child\'s refill', refill(rid.R21, 3, { requested_by_relative: true, requester_is_guardian: true }));
+await ok('limit refill requests to 1 per 30 days for the next check', `UPDATE clinic_settings SET refill_requests_per_30_days = 1`);
+await rejects('too many refill requests in 30 days rejected', refill(rid.R20, 1), [], 'too many refill requests');
+await ok('limit back to 4', `UPDATE clinic_settings SET refill_requests_per_30_days = 4`);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

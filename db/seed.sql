@@ -10,16 +10,20 @@ VALUES ('Demo Family Clinic', '+911100000000', '12 Example Road, Chandigarh');
 INSERT INTO clinic_settings (clinic_id, staff_on_desk, staff_transfer_number)
 VALUES (1, true, '+919800000000');
 
-INSERT INTO staff_users (clinic_id, name, phone, role) VALUES
-  (1, 'Front desk',      '+919800000000', 'receptionist'),
-  (1, 'Cabin assistant', '+919800000003', 'assistant'),
-  (1, 'Dr Demo Sharma',  '+919800000001', 'doctor'),
-  (1, 'Clinic admin',    '+919800000002', 'admin');
-
 INSERT INTO doctors (clinic_id, name, specialty, priority_fee_inr, appointment_fee_inr) VALUES
   (1, 'Dr Demo Sharma', 'General medicine', NULL, NULL),   -- id 1
   (1, 'Dr Demo Verma',  'General medicine', NULL, NULL),   -- id 2
   (1, 'Dr Demo Kaur',   'Paediatrics',      500,  200);    -- id 3
+
+-- Staff accounts. Each doctor's account is tied to their doctor record (flow 11: only the
+-- patient's own doctor decides a refill).
+INSERT INTO staff_users (clinic_id, name, phone, role, doctor_id) VALUES
+  (1, 'Front desk',      '+919800000000', 'receptionist', NULL),
+  (1, 'Cabin assistant', '+919800000003', 'assistant',    NULL),
+  (1, 'Dr Demo Sharma',  '+919800000001', 'doctor',       1),
+  (1, 'Clinic admin',    '+919800000002', 'admin',        NULL),
+  (1, 'Dr Demo Verma',   '+919800000004', 'doctor',       2),
+  (1, 'Dr Demo Kaur',    '+919800000005', 'doctor',       3);
 
 INSERT INTO doctor_pools (clinic_id, name) VALUES (1, 'General check-up');
 INSERT INTO doctor_pool_members (pool_id, doctor_id) VALUES (1, 1), (1, 2);
@@ -29,10 +33,6 @@ INSERT INTO schedule_templates (doctor_id, weekday, start_time, end_time) VALUES
   (1, 4, '17:00', '20:00'), (1, 5, '17:00', '20:00'), (1, 6, '10:00', '13:00'),
   (2, 1, '17:00', '20:00'), (2, 3, '17:00', '20:00'), (2, 5, '17:00', '20:00'),
   (3, 2, '17:00', '20:00'), (3, 4, '17:00', '20:00');
-
-INSERT INTO restricted_medicines (clinic_id, name, note) VALUES
-  (1, 'Sleeping tablets',   'Doctor must see the patient'),
-  (1, 'Strong painkillers', 'Doctor must see the patient');
 
 INSERT INTO clinic_info (clinic_id, topic, language, answer) VALUES
   (1, 'hours',        'en', 'Monday to Friday 5 to 8 pm, Saturday 10 am to 1 pm. Closed Sunday.'),
@@ -85,6 +85,11 @@ INSERT INTO message_templates (key, language, channel, category, body) VALUES
   ('rescheduled',        'en', 'sms', 'service_implicit', 'Your visit with Dr {#var#} has moved to {#var#}, arrival window {#var#}. Call {#var#} if this does not suit you. -{#var#}'),
   ('cancelled',          'en', 'sms', 'service_implicit', 'Your visit with Dr {#var#} on {#var#} is cancelled. Call {#var#} to book again. -{#var#}'),
   ('callback_queued',    'en', 'sms', 'service_implicit', 'We received your request. Our staff will call you back by {#var#}. For emergencies, call 112. -{#var#}'),
+  -- prescription refills (flow 11): never a medicine name, always to the patient's registered number
+  ('refill_received',    'en', 'sms', 'service_implicit', 'Your medicine request is with Dr {#var#}. You will get an SMS when the doctor has responded. This SMS is not a prescription. -{#var#}'),
+  ('refill_collect',     'en', 'sms', 'service_implicit', 'Dr {#var#} has responded to your medicine request. Please collect your prescription at the clinic desk with your patient card. -{#var#}'),
+  ('refill_doctor_reply','en', 'sms', 'service_implicit', 'Dr {#var#} has responded to your medicine request and sent the reply to this number. Call {#var#} with any questions. -{#var#}'),
+  ('refill_visit_needed','en', 'sms', 'service_implicit', 'Dr {#var#} needs to see you before renewing your medicine. Call {#var#} to book a visit. If you feel unwell, call 112. -{#var#}'),
   -- WhatsApp (utility templates, need Meta approval)
   ('payment_link',       'en', 'whatsapp', 'utility', 'Hello {{1}}, your visit with Dr {{2}} on {{3}} needs a payment of Rs {{4}} ({{5}}). Pay by UPI here: {{6}}. The link is valid for {{7}} minutes. You can also pay in cash at the desk. We never ask for your UPI PIN or OTP.'),
   ('payment_reminder',   'en', 'whatsapp', 'utility', 'Reminder: Rs {{1}} for your visit with Dr {{2}} on {{3}} is still due. Pay here: {{4}}, or in cash at the desk. We never ask for your UPI PIN or OTP.'),

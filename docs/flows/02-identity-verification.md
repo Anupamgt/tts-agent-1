@@ -10,7 +10,8 @@ Decided: the main check is **name + patient ID** (printed on the patient card). 
 | "Is Dr X running late today" | None | About the doctor, not a patient |
 | Book a new visit | Existing patient: verified. New patient: name, age or date of birth, phone; a patient ID is created | Needs the right file, but reveals nothing |
 | View, reschedule or cancel a booking | Verified | Reveals appointment details |
-| Message or refill request for the doctor | Verified | Medical context |
+| Message for the doctor | Verified | Medical context |
+| Refill request | Verified; for a child, only a registered parent or guardian (11) | Leads to a prescription; the main abuse target |
 | Anything read out about a patient's history | Not in v1 | No access to medical records |
 
 India does not use HIPAA; the equivalent obligations come from the DPDP Act.
@@ -71,7 +72,7 @@ flowchart TD
 - **Name and ID must agree.** A valid ID with a different name is a failed attempt (it may belong to another family member). The agent does not reveal whose ID it is.
 - Verification lasts for this call and this patient. If the caller switches to a different patient (a mother booking for herself, then her son), verify again.
 - A shared number is normal. The agent never lists the names linked to a number.
-- **Limited mode** (decided): a relative or friend may book, reschedule, cancel and leave a message for the doctor, and hears only the booking details they need. Refill requests from a relative are logged with a "requested by a relative" flag.
+- **Limited mode** (decided): a relative or friend may book, reschedule, cancel and leave a message for the doctor, and hears only the booking details they need. Refill requests from a relative are logged with a "requested by a relative" flag; for a patient under 18 only a registered parent or guardian can ask (`11`). Whatever the doctor decides goes to the patient's registered number, never the caller's.
 - Never confirm or deny that a person is a patient of the clinic to an unverified caller.
 - Log every attempt (method, result) in the console for audit. When the details point at a real record but do not match (for example a valid ID with the wrong name), record that patient on the attempt.
 - **Lockout across calls** (security review S-05): after 5 failed attempts in 24 hours from one number, or against one patient, the agent stops phone verification for that number or patient. It offers a staff callback instead, and the console shows the lockout. The threshold is a setting.
