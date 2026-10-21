@@ -4,127 +4,160 @@
 <meta charset="utf-8">
 <title>States</title>
 <script src="./support.js"></script>
+<link rel="stylesheet" href="ds/bolnai/tokens.css">
+<link rel="stylesheet" href="ds/bolnai/components/bundle.css">
+<script src="ds/bolnai/components/bundle.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
 <style>body{margin:0}</style>
 </helmet>
-<div style="width:1440px;height:760px;box-sizing:border-box;padding:24px;display:flex;gap:16px;background:#f5f4f0;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
+<div style="box-sizing: border-box; width: 100%; padding: 24px; display: flex; flex-direction: column; gap: 24px; background: var(--canvas); color: var(--ink); font-family: var(--font-sans)">
 
-  <section style="flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
-    <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Today · running 60+ min late</div>
-    <div style="padding:12px 14px;border-bottom:1px solid #1a1a1a;display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:24px">Dr Sharma</h2>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:24px;line-height:28px">+65 min</span>
-      </div>
-      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#55534e"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>live · windows shifted</span></span>
-      <div style="box-sizing:border-box;border:2px solid #1d4f7a;padding:10px 12px;display:flex;flex-direction:column;gap:8px">
-        <span style="font-size:13px;font-weight:700;line-height:18px">Offer reschedule to affected patients?</span>
-        <span style="font-size:12px;line-height:16px;color:#55534e">3 patients waiting more than 60 min past their window.</span>
-        <div style="display:flex;gap:8px">
-          <button style="flex:1;height:44px;border:1px solid #111;background:#111;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border-radius:0">Offer reschedule</button>
-          <button style="height:44px;padding:0 14px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Not now</button>
-        </div>
-      </div>
-    </div>
-    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:baseline;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;white-space:nowrap"><span style="color:#55534e;text-decoration:line-through">6:00–6:30 pm</span><span>→</span><span style="font-weight:700;font-size:13px">7:05–7:35 pm</span></div>
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:14px;font-weight:700">Fatima Shaikh</span><span style="font-size:12px;color:#55534e">29 yrs</span></div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Delay SMS 2/2</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #16781b;border-radius:2px;color:#16781b">Delay call: chose to keep place</span></div>
-      </div>
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:14px;font-weight:700">Sunil Kumar</span><span style="font-size:12px;color:#55534e">52 yrs</span></div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Delay SMS 2/2</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d9741e;border-radius:2px">Delay call: unconfirmed</span></div>
-      </div>
-      <div style="display:flex;align-items:baseline;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;white-space:nowrap;margin-top:6px"><span style="color:#55534e;text-decoration:line-through">6:30–7:00 pm</span><span>→</span><span style="font-weight:700;font-size:13px">7:35–8:05 pm</span></div>
-      <div style="height:28px;box-sizing:border-box;display:flex;align-items:center;padding:0 10px;border:1px dashed #bcb9b0;font-size:12px;color:#55534e">4 places free · session ends 8:00 pm</div>
-    </div>
-  </section>
-
-  <section style="flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid #bcb9b0;background:#fff">
-    <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #bcb9b0;font-size:11px;color:#55534e">Today · doctor absent</div>
-    <div style="padding:12px 14px;border-bottom:1px solid #bcb9b0;display:flex;flex-direction:column;gap:8px;background:#f5f4f0">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:24px;color:#55534e">Dr Verma</h2>
-        <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px solid #55534e;border-radius:2px;font-size:11px;color:#55534e;text-decoration:line-through">Session cancelled</span>
-      </div>
-      <span style="font-size:12px;line-height:16px;color:#55534e">Cancelled by Simran Arora at 6:12 pm · 3 bookings affected</span>
-    </div>
-    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
-      <span style="font-size:11px;color:#55534e">Affected bookings · outreach status</span>
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
-        <span style="font-size:14px;font-weight:700">Ishaan Rao</span>
-        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Any doctor</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">moved from Dr Verma</span></div>
-        <span style="font-size:12px;line-height:16px">Now with Dr Sharma, 6:55–7:25 pm · SMS sent</span>
-      </div>
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
-        <span style="font-size:14px;font-weight:700">Meera Iyer</span>
-        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Named doctor</span></div>
-        <span style="display:flex;align-items:center;gap:6px;font-size:12px;line-height:16px"><span style="width:6px;height:6px;border-radius:50%;background:#16781b"></span><span>Agent calling now · attempt 1 of 2</span></span>
-      </div>
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;flex-direction:column;gap:5px">
-        <span style="font-size:14px;font-weight:700">Neha Joshi</span>
-        <div style="display:flex;flex-wrap:wrap;gap:5px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Named doctor</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d9741e;border-radius:2px">Refund requested ₹700</span></div>
-        <span style="font-size:12px;line-height:16px">Doctor unavailable: full refund · waiting in Payments</span>
-        <button style="align-self:flex-start;height:44px;padding:0 14px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Open refund</button>
-      </div>
-    </div>
-  </section>
-
-  <section style="flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
-    <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Today · session ended</div>
-    <div style="padding:12px 14px;border-bottom:1px solid #1a1a1a;display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:24px">Dr Sharma</h2>
-        <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px solid #1a1a1a;border-radius:2px;font-size:11px">Ended 8:20 pm</span>
-      </div>
-      <span style="font-size:12px;line-height:16px;color:#55534e">Average delay today: 25 min · 3 done · 1 no-show</span>
-    </div>
-    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;align-items:baseline;justify-content:space-between;color:#55534e"><span style="font-size:14px;font-weight:700">Rohan Mehta</span><span style="font-size:12px">Done · 6:12 pm</span></div>
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;align-items:baseline;justify-content:space-between;color:#55534e"><span style="font-size:14px;font-weight:700">Asha Rani</span><span style="font-size:12px">Done · 6:30 pm</span></div>
-      <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:8px 10px;display:flex;align-items:baseline;justify-content:space-between;color:#55534e"><span style="font-size:14px;font-weight:700">Sunil Kumar</span><span style="font-size:12px">Done · 6:41 pm</span></div>
-      <div style="box-sizing:border-box;border:1px dashed #bcb9b0;padding:8px 10px;display:flex;flex-direction:column;gap:4px;color:#55534e">
-        <div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:14px;font-weight:700;text-decoration:line-through">Fatima Shaikh</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #55534e;border-radius:2px">No-show</span></div>
-        <span style="font-size:12px;line-height:16px">Window 6:25–6:55 pm · Delay SMS 2/2 · marked at 8:20 pm</span>
-      </div>
-    </div>
-  </section>
-
-  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px">
-    <section style="display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
-      <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Callbacks · empty</div>
-      <div style="padding:24px 14px;display:flex;flex-direction:column;gap:6px">
-        <span style="font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:20px;line-height:26px">No callbacks. Nice.</span>
-        <span style="font-size:12px;line-height:18px;color:#55534e">New ones appear here as calls come in. P1 within 15 min, P2 within 2 h, P3 next working session.</span>
-      </div>
-    </section>
-
-    <section style="display:flex;flex-direction:column;border:1px solid #1a1a1a;background:#fff">
-      <div style="padding:6px 14px;background:#f5f4f0;border-bottom:1px solid #1a1a1a;font-size:11px;color:#55534e">Alerts · today</div>
-      <div style="padding:12px 14px;border-bottom:1px solid #d4d2cc;display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:700">Medical · 6:11 pm</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #c81d1d;border-radius:2px;color:#c81d1d;font-weight:700">New</span></div>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#1d4f7a">+91 98777 77777</span>
-        <span style="font-size:12px;line-height:16px;color:#55534e">Waiting for acknowledgement</span>
-      </div>
-      <div style="padding:12px 14px;display:flex;flex-direction:column;gap:5px;color:#55534e">
-        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:700">Medical · 5:19 pm</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px">Acknowledged</span></div>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px">+91 98••• ••333</span>
-        <span style="font-size:12px;line-height:16px">By Simran Arora at 5:21 pm · callback done</span>
-      </div>
-    </section>
+  <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px">
+    <h1 class="heading-lg" style="margin: 0">States</h1>
+    <span class="body bn-muted">How the console looks when the day goes off plan</span>
   </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+    <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+      <section aria-label="Running more than 60 min late" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+        <span class="label bn-muted">Running more than 60 min late</span>
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+          <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Sharma" delay-min="{{n65}}" basis="live" status="started"></x-import>
+          <span class="caption bn-muted">Windows after 6:00 pm moved back 65 min</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--radius-md); background: var(--accent-soft)">
+          <span class="body-strong">Offer new times to the patients waiting longest?</span>
+          <span class="body">3 patients will wait more than 60 min past their arrival window. The agent calls each one with two new times.</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <x-import component-from-global-scope="Bolnai.Button" variant="primary">Offer new times</x-import>
+            <x-import component-from-global-scope="Bolnai.Button">Not now</x-import>
+          </div>
+        </div>
+        <x-import component-from-global-scope="Bolnai.WindowBlock" label="6:00–6:30 pm" shifted="7:05–7:35 pm" capacity="{{n4}}" taken="{{n2}}">
+          <x-import component-from-global-scope="Bolnai.PatientCard" name="Fatima Shaikh" patient-id="264 158 7" status="booked" status-note="Delay SMS 2/2" any-doctor="{{yes}}" source="agent" note="Delay call: chose to keep her place"></x-import>
+          <x-import component-from-global-scope="Bolnai.PatientCard" name="Arjun Nair" patient-id="271 640 5" status="booked" status-note="Delay SMS 2/2" source="agent" note="Delay call: not answered yet"></x-import>
+        </x-import>
+      </section>
+
+      <section aria-label="Loading and error" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+        <span class="label bn-muted">Lists: loading and error</span>
+        <span role="status" class="body bn-muted">Loading today's calls…</span>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="height: 44px; border-radius: var(--radius-md); background: var(--surface-sunken)"></div>
+          <div style="height: 44px; border-radius: var(--radius-md); background: var(--surface-sunken)"></div>
+        </div>
+        <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px; border-radius: var(--radius-md); background: var(--attention-soft); color: var(--attention-ink)">
+          <x-import component-from-global-scope="Bolnai.Glyph" name="alert"></x-import>
+          <span class="body" style="flex: 1 1 200px">Calls could not load. Trying again in 10 s.</span>
+          <x-import component-from-global-scope="Bolnai.Button">Try again now</x-import>
+        </div>
+      </section>
+
+    </div>
+
+    <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+      <section aria-label="Doctor absent" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+        <span class="label bn-muted">Doctor absent</span>
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; border-radius: var(--radius-md); background: var(--surface-sunken)">
+          <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Verma" status="cancelled"></x-import>
+          <span class="caption bn-muted bn-num">Cancelled by Simran Arora at 6:12 pm · 2 bookings affected</span>
+        </div>
+        <x-import component-from-global-scope="Bolnai.PatientCard" name="Ishaan Rao" patient-id="357 820 1" age="{{n9}}" status="booked" status-note="moved from Dr Verma" any-doctor="{{yes}}" source="agent" note="Now with Dr Sharma, 6:55–7:25 pm · SMS sent"></x-import>
+        <x-import component-from-global-scope="Bolnai.PatientCard" name="Ritu Malhotra" patient-id="415 093 8" age="{{n41}}" status="booked" status-note="Agent calling · try 1 of 2" source="console" note="Booked Dr Verma by name: offered another day or Dr Sharma today"></x-import>
+      </section>
+
+      <section aria-label="Callbacks, empty" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+        <span class="label bn-muted">Callbacks: empty</span>
+        <div style="display: flex; flex-direction: column; gap: 4px; padding: 32px 8px">
+          <span class="heading">No callbacks waiting</span>
+          <span class="body bn-muted">New ones appear here as calls come in, most urgent first.</span>
+        </div>
+      </section>
+
+      <section aria-label="Alerts" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+        <span class="label bn-muted">Alerts today</span>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--line)">
+          <x-import component-from-global-scope="Bolnai.PriorityMark" level="P1"></x-import>
+          <div style="flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column">
+            <span class="body-strong bn-num">Medical · 6:11 pm</span>
+            <span class="caption bn-muted bn-num">+91 98777 77777 · not acknowledged yet</span>
+          </div>
+          <x-import component-from-global-scope="Bolnai.Button" variant="primary">Acknowledge</x-import>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px; border-radius: var(--radius-md); background: var(--emergency-soft)">
+          <x-import component-from-global-scope="Bolnai.PriorityMark" level="P1" quiet="{{yes}}"></x-import>
+          <div style="flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column">
+            <span class="body-strong bn-num">Medical · 5:19 pm</span>
+            <span class="caption bn-num" style="color: var(--ink-muted)">Acknowledged by Simran Arora at 5:21 pm · called back 5:24 pm</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+      <section aria-label="Session ended" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+        <span class="label bn-muted">Session ended</span>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+          <h2 class="heading" style="margin: 0">Dr Sharma</h2>
+          <x-import component-from-global-scope="Bolnai.StatusBadge" icon="check">Ended 8:20 pm</x-import>
+        </div>
+        <span class="caption bn-muted bn-num">Average delay 25 min · 3 done · 1 no-show</span>
+        <x-import component-from-global-scope="Bolnai.PatientCard" name="Rohan Mehta" patient-id="736 204 9" status="done" status-note="6:12 pm"></x-import>
+        <x-import component-from-global-scope="Bolnai.PatientCard" name="Asha Rani" patient-id="482 915 6" status="done" status-note="6:30 pm"></x-import>
+        <x-import component-from-global-scope="Bolnai.PatientCard" name="Sunil Kumar" patient-id="519 387 5" status="done" status-note="6:41 pm"></x-import>
+        <x-import component-from-global-scope="Bolnai.PatientCard" name="Fatima Shaikh" patient-id="264 158 7" status="no_show" status-note="marked 8:20 pm" note="Delay SMS 2/2 · did not come"></x-import>
+      </section>
+
+      <section aria-label="Refund to approve" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+        <span class="label bn-muted">Refund to approve, seen by a receptionist</span>
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+          <span class="heading">Neha Joshi</span>
+          <span class="figure-lg bn-num">₹700</span>
+        </div>
+        <span class="caption bn-muted bn-num">648 031 3 · Dr Kaur · Thu, 22 Oct</span>
+        <dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px 12px">
+          <dt class="caption bn-muted">Policy</dt>
+          <dd class="body" style="margin: 0">Doctor unavailable: full refund</dd>
+          <dt class="caption bn-muted">Requested by</dt>
+          <dd class="body bn-num" style="margin: 0">Agent, on a call at 3:12 pm · <a href="Calls.dc.html" style="color: var(--accent)">Open call</a></dd>
+          <dt class="caption bn-muted">Paid so far</dt>
+          <dd class="body bn-num" style="margin: 0">₹700 paid · ₹0 refunded so far</dd>
+        </dl>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <x-import component-from-global-scope="Bolnai.Button" variant="danger" disabled="{{yes}}">Approve refund</x-import>
+          <x-import component-from-global-scope="Bolnai.Button" disabled="{{yes}}">Change amount</x-import>
+          <x-import component-from-global-scope="Bolnai.Button" disabled="{{yes}}">Reject</x-import>
+        </div>
+        <span class="caption bn-muted">Only an admin can approve refunds. This one is waiting for the clinic owner.</span>
+      </section>
+
+    </div>
+  </div>
+
+  <section aria-label="Staff away from the desk" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+    <span class="label bn-muted">Staff away from the desk: a caller asks for a person</span>
+    <div>
+      <x-import component-from-global-scope="Bolnai.DeskSwitch" on="{{no}}"></x-import>
+    </div>
+    <div style="border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden">
+      <x-import component-from-global-scope="Bolnai.CallbackRow" priority="P2" number="+91 98444 12000" language="Hinglish" reason="Asked to speak to a person while the desk was away." due-text="due by 8:00 pm" is-new="{{yes}}"></x-import>
+    </div>
+  </section>
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":760}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
 class Component extends DCLogic {
   renderVals() {
-    return {};
+    return { yes: true, no: false, n2: 2, n4: 4, n9: 9, n41: 41, n65: 65 };
   }
 }
 </script>

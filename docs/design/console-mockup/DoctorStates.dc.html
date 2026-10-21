@@ -4,135 +4,138 @@
 <meta charset="utf-8">
 <title>Doctor view states</title>
 <script src="./support.js"></script>
+<link rel="stylesheet" href="ds/bolnai/tokens.css">
+<link rel="stylesheet" href="ds/bolnai/components/bundle.css">
+<script src="ds/bolnai/components/bundle.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
 <style>body{margin:0}</style>
 </helmet>
-<div style="width:1290px;height:844px;display:flex;gap:60px;background:#f5f4f0;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
+<div style="width: 1740px; height: 900px; box-sizing: border-box; display: flex; gap: 60px; background: var(--canvas); color: var(--ink); font-family: var(--font-sans); overflow: hidden">
 
-  <div style="width:390px;height:844px;flex:none;box-sizing:border-box;padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid #1a1a1a">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-      <div style="display:flex;flex-direction:column;gap:2px">
-        <h1 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:24px;line-height:28px">Dr Sharma</h1>
-        <span style="font-size:12px;line-height:16px;color:#55534e">Session 5:00–8:00 pm</span>
+  <div style="width: 390px; flex: none; display: flex; flex-direction: column; gap: 16px">
+    <span class="label bn-muted" style="height: 40px; display: flex; align-items: flex-end">Just after Call next (2 seconds)</span>
+    <div style="height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--canvas); border: 1px solid var(--line); overflow: hidden">
+      <header style="padding: 16px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 8px">
+        <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Sharma" delay-min="{{n25}}" basis="live" status="started"></x-import>
+        <span class="caption bn-muted bn-num">General medicine · session 5:00–8:00 pm</span>
+      </header>
+      <div style="padding: 16px 16px 0">
+        <div role="status" style="display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: var(--radius-lg); background: var(--accent); color: var(--on-accent)">
+          <span class="label">Called in</span>
+          <span class="heading-lg">Asha Rani</span>
+          <span class="caption bn-num">482 915 6 · shown on the waiting-room screen</span>
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px solid #1a1a1a;border-radius:2px;font-size:11px"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>Started</span></span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700">+25 min · live</span>
+      <div style="margin-top: auto; padding-bottom: 8px">
+        <x-import component-from-global-scope="Bolnai.CallNextButton" next-name="Sunil Kumar" next-meta="519 387 5 · walk-in · waiting 5 min" footer="1 waiting · 1 booked later · finish about 7:55 pm"></x-import>
+        <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px">
+          <x-import component-from-global-scope="Bolnai.Button" variant="quiet">Undo last call · 28 s</x-import>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+            <x-import component-from-global-scope="Bolnai.Button" size="lg" icon="pause">Pause session</x-import>
+            <x-import component-from-global-scope="Bolnai.Button" size="lg">End session</x-import>
+          </div>
+        </div>
       </div>
-    </div>
-    <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-      <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-        <span style="font-size:11px;line-height:14px;color:#55534e">Now with you</span>
-        <span style="font-size:18px;font-weight:700;line-height:24px">Asha Rani</span>
-      </div>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:28px;font-weight:700;line-height:34px">0:00</span>
-    </div>
-    <div style="box-sizing:border-box;border:2px solid #1a1a1a;padding:12px 14px;display:flex;flex-direction:column;gap:4px">
-      <div style="display:flex;align-items:baseline;justify-content:space-between">
-        <span style="font-size:11px;line-height:14px;color:#55534e">Next</span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#55534e">100 003 3</span>
-      </div>
-      <span style="font-size:26px;font-weight:700;line-height:32px">Sunil Kumar</span>
-      <span style="font-size:13px;line-height:18px">52 yrs · Walk-in</span>
-      <span style="font-size:13px;line-height:18px;color:#55534e">Waiting 5 min · arrived 6:05 pm</span>
-    </div>
-    <div style="font-size:13px;line-height:18px;color:#55534e">2 waiting · 1 booked later · est. finish 7:55 pm</div>
-    <div role="status" style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#111;color:#fff;padding:0 20px;text-align:center">
-      <span style="font-size:14px;line-height:18px;color:#e6e4de">Calling in</span>
-      <span style="font-size:44px;font-weight:700;line-height:52px">Asha Rani</span>
-      <span style="font-size:15px;line-height:20px;color:#e6e4de">34 yrs · General check-up</span>
-      <span style="font-size:12px;line-height:16px;color:#cfcdc6">Shown on the waiting-room screen</span>
-      <div style="width:140px;height:2px;background:#55534e"><div style="width:84px;height:2px;background:#fff"></div></div>
-    </div>
-    <div style="display:flex;gap:10px">
-      <button style="flex:1;height:48px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;cursor:pointer;border-radius:0">Pause session</button>
-      <button style="flex:1;height:48px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;cursor:pointer;border-radius:0">End session</button>
     </div>
   </div>
 
-  <div style="width:390px;height:844px;flex:none;box-sizing:border-box;padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid #1a1a1a">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-      <div style="display:flex;flex-direction:column;gap:2px">
-        <h1 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:24px;line-height:28px">Dr Kaur</h1>
-        <span style="font-size:12px;line-height:16px;color:#55534e">Session 5:00–8:00 pm</span>
+  <div style="width: 390px; flex: none; display: flex; flex-direction: column; gap: 16px">
+    <span class="label bn-muted" style="height: 40px; display: flex; align-items: flex-end">No one waiting</span>
+    <div style="height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--canvas); border: 1px solid var(--line); overflow: hidden">
+      <header style="padding: 16px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 8px">
+        <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Kaur" delay-min="{{n10}}" basis="live" status="started"></x-import>
+        <span class="caption bn-muted bn-num">Paediatrics · session 5:00–8:00 pm</span>
+      </header>
+      <div style="padding: 16px 16px 0">
+        <div style="display: flex; flex-direction: column; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line)">
+          <span class="caption bn-muted">With you</span>
+          <span class="body-strong bn-muted">No one</span>
+          <span class="caption bn-muted bn-num">last patient left 6:07 pm</span>
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px solid #1a1a1a;border-radius:2px;font-size:11px"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>Started</span></span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700">+10 min · live</span>
+      <div style="margin-top: auto; padding-bottom: 8px">
+        <x-import component-from-global-scope="Bolnai.CallNextButton" empty-text="No patients waiting. 2 booked later." footer="Next window 6:30–7:00 pm"></x-import>
+        <div style="padding: 0 16px 16px">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+            <x-import component-from-global-scope="Bolnai.Button" size="lg" icon="pause">Pause session</x-import>
+            <x-import component-from-global-scope="Bolnai.Button" size="lg">End session</x-import>
+          </div>
+        </div>
       </div>
-    </div>
-    <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-      <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-        <span style="font-size:11px;line-height:14px;color:#55534e">Now with you</span>
-        <span style="font-size:18px;font-weight:700;line-height:24px;color:#55534e">No one</span>
-      </div>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:28px;font-weight:700;line-height:34px;color:#bcb9b0">–:––</span>
-    </div>
-    <div style="box-sizing:border-box;border:2px dashed #bcb9b0;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-height:118px;justify-content:center">
-      <span style="font-size:11px;line-height:14px;color:#55534e">Next</span>
-      <span style="font-size:20px;font-weight:700;line-height:26px">No patients waiting.</span>
-      <span style="font-size:14px;line-height:20px;color:#55534e">2 booked later.</span>
-    </div>
-    <div style="font-size:13px;line-height:18px;color:#55534e">0 waiting · 2 booked later · est. finish 7:30 pm</div>
-    <button disabled style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed #bcb9b0;background:#fff;color:#55534e;font-family:inherit;cursor:not-allowed;border-radius:0">
-      <span style="font-size:42px;font-weight:700;line-height:48px">Call next</span>
-      <span style="font-size:16px;line-height:20px">No one to call yet</span>
-    </button>
-    <div style="display:flex;gap:10px">
-      <button style="flex:1;height:48px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;cursor:pointer;border-radius:0">Pause session</button>
-      <button style="flex:1;height:48px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;cursor:pointer;border-radius:0">End session</button>
     </div>
   </div>
 
-  <div style="width:390px;height:844px;flex:none;box-sizing:border-box;padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid #1a1a1a">
-    <div role="status" style="display:flex;align-items:center;gap:8px;box-sizing:border-box;padding:8px 10px;border:1.5px solid #d9741e;font-size:12px;line-height:16px"><svg width="14" height="14" viewBox="0 0 12 12" aria-hidden="true" style="flex:none"><path d="M6 1.2 11.2 10.8H.8Z" fill="none" stroke="#d9741e" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.8v2.8" stroke="#d9741e" stroke-width="1.4"/><circle cx="6" cy="9.1" r=".7" fill="#d9741e"/></svg><span style="flex:1">Offline · 1 tap saved, will sync</span></div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-      <div style="display:flex;flex-direction:column;gap:2px">
-        <h1 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:24px;line-height:28px">Dr Sharma</h1>
-        <span style="font-size:12px;line-height:16px;color:#55534e">Session 5:00–8:00 pm</span>
+  <div style="width: 390px; flex: none; display: flex; flex-direction: column; gap: 16px">
+    <span class="label bn-muted" style="height: 40px; display: flex; align-items: flex-end">Paused, and the phone is offline</span>
+    <div style="height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--canvas); border: 1px solid var(--line); overflow: hidden">
+      <div role="status" style="display: flex; align-items: flex-start; gap: 8px; padding: 12px 16px; background: var(--attention-soft); color: var(--attention-ink)">
+        <x-import component-from-global-scope="Bolnai.Glyph" name="alert"></x-import>
+        <span class="label">Offline. 1 tap saved; it will sync when the network is back.</span>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px dashed #1a1a1a;border-radius:2px;font-size:11px"><svg width="8" height="10" viewBox="0 0 8 10" aria-hidden="true"><path d="M1.5 1v8M6.5 1v8" stroke="#111" stroke-width="1.8"/></svg><span>Paused</span></span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700">+25 min · live</span>
+      <header style="padding: 16px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 8px">
+        <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Sharma" delay-min="{{n25}}" basis="live" status="paused"></x-import>
+        <span class="caption bn-muted bn-num">Paused at 6:19 pm</span>
+      </header>
+      <div style="padding: 16px 16px 0; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line)">
+          <div style="display: flex; flex-direction: column; min-width: 0">
+            <span class="caption bn-muted">With you · timer paused</span>
+            <span class="body-strong">Asha Rani</span>
+          </div>
+          <span class="figure-lg bn-num bn-muted">12:40</span>
+        </div>
+        <x-import component-from-global-scope="Bolnai.Button" variant="primary" size="lg">Resume session</x-import>
+      </div>
+      <div style="margin-top: auto; padding-bottom: 8px">
+        <x-import component-from-global-scope="Bolnai.CallNextButton" next-name="Sunil Kumar" next-meta="519 387 5 · walk-in · waiting 17 min" disabled="{{yes}}" footer="Resume the session to call the next patient"></x-import>
+        <div style="padding: 0 16px 16px">
+          <x-import component-from-global-scope="Bolnai.Button" size="lg">End session</x-import>
+        </div>
       </div>
     </div>
-    <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-      <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-        <span style="font-size:11px;line-height:14px;color:#55534e">Now with you · timer paused</span>
-        <span style="font-size:18px;font-weight:700;line-height:24px">Asha Rani</span>
+  </div>
+
+  <div lang="hi" style="width: 390px; flex: none; display: flex; flex-direction: column; gap: 16px">
+    <span class="label bn-muted" lang="en" style="height: 40px; display: flex; align-items: flex-end">Hindi (needs a native speaker's review)</span>
+    <div style="height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--canvas); border: 1px solid var(--line); overflow: hidden">
+      <header style="padding: 16px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 8px">
+        <span class="hi-heading">डॉ. शर्मा</span>
+        <span style="display: inline-flex; align-items: center; gap: 8px; height: 36px; box-sizing: border-box; padding: 0 12px; border-radius: var(--radius-md); background: var(--attention); color: var(--ink)">
+          <span style="width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--ink)"></span>
+          <span class="hi-label bn-num">+25 मिनट देर · लाइव</span>
+        </span>
+        <span class="hi-caption bn-muted bn-num">सेशन 5:00–8:00 pm</span>
+      </header>
+      <div style="padding: 16px 16px 0">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line)">
+          <div style="display: flex; flex-direction: column; min-width: 0">
+            <span class="hi-caption bn-muted">अभी आपके पास</span>
+            <span class="body-strong" lang="en">Rohan Mehta</span>
+          </div>
+          <span class="figure-lg bn-num">8:12</span>
+        </div>
       </div>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:28px;font-weight:700;line-height:34px;color:#55534e">12:40</span>
-    </div>
-    <div style="box-sizing:border-box;border:2px solid #1a1a1a;padding:12px 14px;display:flex;flex-direction:column;gap:4px">
-      <div style="display:flex;align-items:baseline;justify-content:space-between">
-        <span style="font-size:11px;line-height:14px;color:#55534e">Next</span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#55534e">100 003 3</span>
+      <div style="margin-top: auto; padding-bottom: 8px">
+        <x-import component-from-global-scope="Bolnai.CallNextButton" lang="hi" label="अगले मरीज़ को बुलाएँ" next-label="अगला मरीज़" next-name="Asha Rani" next-meta="482 915 6 · 5:48 pm पर आईं · 22 मिनट से इंतज़ार" footer="3 इंतज़ार में · लगभग 7:55 pm तक"></x-import>
+        <div style="padding: 0 16px 16px">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+            <x-import component-from-global-scope="Bolnai.Button" size="lg" icon="pause" lang="hi">सेशन रोकें</x-import>
+            <x-import component-from-global-scope="Bolnai.Button" size="lg" lang="hi">सेशन खत्म करें</x-import>
+          </div>
+        </div>
       </div>
-      <span style="font-size:26px;font-weight:700;line-height:32px">Sunil Kumar</span>
-      <span style="font-size:13px;line-height:18px">52 yrs · Walk-in</span>
-      <span style="font-size:13px;line-height:18px;color:#55534e">Waiting 17 min · arrived 6:05 pm</span>
-    </div>
-    <div style="font-size:13px;line-height:18px;color:#55534e">2 waiting · 1 booked later · est. finish 8:05 pm</div>
-    <button style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:1px solid #111;background:#111;color:#fff;font-family:inherit;cursor:pointer;border-radius:0">
-      <span style="font-size:42px;font-weight:700;line-height:48px">Resume</span>
-      <span style="font-size:16px;line-height:20px;color:#e6e4de">Session paused since 6:19 pm</span>
-    </button>
-    <div style="display:flex;gap:10px">
-      <button disabled style="flex:1;height:48px;border:1px dashed #bcb9b0;background:#fff;color:#55534e;font-family:inherit;font-size:14px;cursor:not-allowed;border-radius:0">Call next</button>
-      <button style="flex:1;height:48px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;cursor:pointer;border-radius:0">End session</button>
     </div>
   </div>
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1290,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1740,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
-    return {};
+    return { yes: true, n10: 10, n25: 25 };
   }
 }
 </script>

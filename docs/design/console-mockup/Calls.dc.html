@@ -4,178 +4,208 @@
 <meta charset="utf-8">
 <title>Calls and call detail</title>
 <script src="./support.js"></script>
+<link rel="stylesheet" href="ds/bolnai/tokens.css">
+<link rel="stylesheet" href="ds/bolnai/components/bundle.css">
+<script src="ds/bolnai/components/bundle.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
 <style>body{margin:0}</style>
 </helmet>
-<div style="width:1440px;height:980px;display:flex;background:#fff;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
-  <div style="width:176px;height:980px;flex:none">
-    <dc-import name="Rail" active="calls" hint-size="176px,980px"></dc-import>
-  </div>
-  <div style="width:1264px;height:980px;flex:none;display:flex;flex-direction:column">
-    <div style="width:1264px;height:100px;flex:none">
-      <dc-import name="TopBar" time="6:10 pm" hint-size="1264px,100px"></dc-import>
+<div style="box-sizing: border-box; width: 100%; display: flex; flex-direction: column; background: var(--canvas); color: var(--ink); font-family: var(--font-sans)">
+  <dc-import name="TopBar" time="6:10 pm" hint-size="100%,120px"></dc-import>
+  <div style="display: flex; flex-wrap: wrap; align-items: stretch">
+    <div style="flex: 1 1 176px; min-width: 0; background: var(--surface); border-right: 1px solid var(--line)">
+      <dc-import name="Rail" active="calls" hint-size="100%,560px"></dc-import>
     </div>
+    <main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 16px">
 
-    <div style="width:1264px;height:880px;flex:none;box-sizing:border-box;padding:20px 24px;display:flex;gap:20px">
+      <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px">
+        <h1 class="heading-lg" style="margin: 0">Calls</h1>
+        <span class="body bn-muted">Mon, 19 Oct</span>
+      </div>
 
-      <div style="width:460px;flex:none;display:flex;flex-direction:column;gap:12px">
-        <div style="display:flex;flex-direction:column;gap:2px">
-          <h1 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:22px;line-height:28px">Calls</h1>
-          <span style="font-size:12px;line-height:16px;color:#55534e">Today: 31 handled by the agent · 4 transferred · 3 callbacks · 1 emergency</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px">
+        <div style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg)">
+          <span class="figure-lg bn-num">31</span>
+          <span class="caption bn-muted">handled by the agent</span>
         </div>
-        <div style="display:flex;gap:8px">
-          <select aria-label="Filter by outcome" style="flex:1;height:40px;box-sizing:border-box;padding:0 8px;border:1px solid #1a1a1a;border-radius:0;background:#fff;color:#111;font-family:inherit;font-size:13px"><option>Outcome: all</option><option>Resolved</option><option>Transferred</option><option>Callback</option><option>Emergency</option><option>Abandoned</option></select>
-          <select aria-label="Filter by intent" style="flex:1;height:40px;box-sizing:border-box;padding:0 8px;border:1px solid #1a1a1a;border-radius:0;background:#fff;color:#111;font-family:inherit;font-size:13px"><option>Intent: all</option><option>Booking</option><option>Change</option><option>Cancel</option><option>Info</option><option>Message</option></select>
+        <div style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg)">
+          <span class="figure-lg bn-num">4</span>
+          <span class="caption bn-muted">transferred to the desk</span>
         </div>
-
-        <div style="border:1px solid #1a1a1a;display:flex;flex-direction:column">
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #d4d2cc">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">6:09 pm</span><span style="font-size:11px;color:#55534e">in</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:700">Caller on line</span><span style="font-size:11px;color:#55534e">Hinglish</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span>Booking</span><span style="display:flex;align-items:center;gap:4px;font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #1a1a1a;border-radius:2px;font-weight:700"><span style="width:6px;height:6px;border-radius:50%;background:#16781b"></span><span>In progress</span></span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">0:52</span>
-          </div>
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #d4d2cc">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">5:58 pm</span><span style="font-size:11px;color:#55534e">in</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">+91 98••• ••412</span><span style="font-size:11px;color:#55534e">EN</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span>Info</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">Resolved</span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">1:05</span>
-          </div>
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #d4d2cc">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">5:52 pm</span><span style="font-size:11px;color:#55534e">in</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:700">Gurpreet Singh</span><span style="font-size:11px;color:#55534e">Hinglish</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span>Booking</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #1a1a1a;border-radius:2px">Callback</span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">2:18</span>
-          </div>
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #d4d2cc;background:#f5f4f0;outline:2px solid #1a1a1a;outline-offset:-2px">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">5:38 pm</span><span style="font-size:11px;color:#55534e">in</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:700">Meera Iyer</span><span style="font-size:11px;color:#55534e">Hinglish</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span>Booking · priority</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">Resolved</span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">3:42</span>
-          </div>
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #d4d2cc">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">5:19 pm</span><span style="font-size:11px;color:#55534e">in</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">+91 98••• ••333</span><span style="font-size:11px;color:#55534e">Hinglish</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span>Emergency</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #c81d1d;border-radius:2px;color:#c81d1d;font-weight:700">Emergency</span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">0:54</span>
-          </div>
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #d4d2cc">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">5:00 pm</span><span style="font-size:11px;color:#55534e">out</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:700">Asha Rani</span><span style="font-size:11px;color:#55534e">Hinglish</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span>Reminder</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">Resolved</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">via outbound job</span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">0:41</span>
-          </div>
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid #d4d2cc">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">4:47 pm</span><span style="font-size:11px;color:#55534e">in</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">+91 98••• ••012</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px dashed #bcb9b0;border-radius:2px;color:#55534e">Abandoned</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Sales</span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">0:09</span>
-          </div>
-
-          <div style="display:flex;gap:12px;align-items:center;padding:10px 12px">
-            <div style="width:62px;flex:none;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700">3:12 pm</span><span style="font-size:11px;color:#55534e">in</span></div>
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:700">Neha Joshi</span><span style="font-size:11px;color:#55534e">Hinglish</span></div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span>Cancel</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">Resolved</span><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d9741e;border-radius:2px">Refund requested</span></div>
-            </div>
-            <span style="width:44px;flex:none;text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">2:51</span>
-          </div>
-
+        <div style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg)">
+          <span class="figure-lg bn-num">3</span>
+          <span class="caption bn-muted">callbacks created</span>
+        </div>
+        <div style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg)">
+          <span class="figure-lg bn-num">1</span>
+          <span class="caption bn-muted">emergency flagged · acknowledged</span>
         </div>
       </div>
 
-      <section style="flex:1;min-width:0;box-sizing:border-box;border:1px solid #1a1a1a;padding:20px;display:flex;flex-direction:column;gap:14px;align-self:flex-start">
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
 
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
-            <h2 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:24px;line-height:30px">Meera Iyer</h2>
-            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:#1d4f7a">+91 98222 22222</span>
+        <section aria-label="Today's calls" style="flex: 1 1 380px; max-width: 100%; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); overflow: hidden">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: var(--surface-sunken); border-bottom: 1px solid var(--line)">
+            <label style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px">
+              <span class="caption bn-muted">Outcome</span>
+              <select class="body" style="height: 40px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface); color: var(--ink)">
+                <option>All outcomes</option><option>Resolved</option><option>Transferred</option><option>Callback</option><option>Emergency</option><option>Abandoned</option>
+              </select>
+            </label>
+            <label style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px">
+              <span class="caption bn-muted">Intent</span>
+              <select class="body" style="height: 40px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface); color: var(--ink)">
+                <option>All intents</option><option>Booking</option><option>Change</option><option>Cancel</option><option>Info</option><option>Message</option><option>Emergency</option>
+              </select>
+            </label>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px">
-            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Verified as Meera Iyer · self</span>
-            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Relative mode: for Kabir Iyer</span>
-            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Hinglish</span>
-            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Duration 3:42</span>
-            <span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #d4d2cc;border-radius:2px;color:#55534e">Cost ₹6.40</span>
+
+          <a href="#" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">6:09 pm</span><span class="caption bn-muted">in</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="body-strong">Caller on the line</span><span class="caption bn-muted">Hinglish · booking</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><x-import component-from-global-scope="Bolnai.StatusBadge" icon="dot">In progress</x-import><span class="caption bn-muted bn-num">0:52</span></span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">5:58 pm</span><span class="caption bn-muted">in</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="label bn-num">+91 98••• ••412</span><span class="caption bn-muted">EN · info</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><x-import component-from-global-scope="Bolnai.StatusBadge" tone="ok">Resolved</x-import><span class="caption bn-muted bn-num">1:05</span></span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">5:52 pm</span><span class="caption bn-muted">in</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="body-strong">Gurpreet Singh</span><span class="caption bn-muted">Hinglish · booking</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><x-import component-from-global-scope="Bolnai.StatusBadge" icon="phone">Callback</x-import><span class="caption bn-muted bn-num">2:18</span></span>
+          </a>
+          <a href="#" aria-current="true" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">5:38 pm</span><span class="caption bn-muted">in</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="body-strong">Meera Iyer</span><span class="caption bn-muted">Hinglish · priority booking</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><x-import component-from-global-scope="Bolnai.StatusBadge" tone="ok">Resolved</x-import><span class="caption bn-muted bn-num">3:42</span></span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">5:19 pm</span><span class="caption bn-muted">in</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="label bn-num">+91 98••• ••333</span><span class="caption bn-muted">Hinglish · emergency</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span class="label" style="display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: var(--radius-sm); background: var(--emergency-soft); color: var(--emergency)"><x-import component-from-global-scope="Bolnai.Glyph" name="alert" size="{{n14}}"></x-import>Emergency</span><span class="caption bn-muted bn-num">0:54</span></span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">5:00 pm</span><span class="caption bn-muted">out</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="body-strong">Asha Rani</span><span class="caption bn-muted">Hinglish · reminder · via outbound job</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><x-import component-from-global-scope="Bolnai.StatusBadge" tone="ok">Resolved</x-import><span class="caption bn-muted bn-num">0:41</span></span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">4:47 pm</span><span class="caption bn-muted">in</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="label bn-num">+91 98••• ••012</span><span class="caption bn-muted">sales · non-patient</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><x-import component-from-global-scope="Bolnai.StatusBadge">Abandoned</x-import><span class="caption bn-muted bn-num">0:09</span></span>
+          </a>
+          <a href="#" style="display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none">
+            <span style="display: flex; flex-direction: column"><span class="label bn-num">3:12 pm</span><span class="caption bn-muted">in</span></span>
+            <span style="display: flex; flex-direction: column; min-width: 0"><span class="body-strong">Neha Joshi</span><span class="caption bn-muted">Hinglish · cancel</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><x-import component-from-global-scope="Bolnai.StatusBadge" tone="attention">Refund requested</x-import><span class="caption bn-muted bn-num">2:51</span></span>
+          </a>
+          <div style="padding: 8px 12px">
+            <x-import component-from-global-scope="Bolnai.Button" variant="quiet">Show earlier calls</x-import>
           </div>
-        </div>
+        </section>
 
-        <div style="display:flex;gap:10px">
-          <div style="flex:1;min-width:0;box-sizing:border-box;border:1px solid #1a1a1a;padding:8px 12px;display:flex;flex-direction:column;gap:3px">
-            <span style="font-size:11px;color:#55534e">This call produced · booking</span>
-            <span style="font-size:13px;font-weight:700;line-height:18px">Kabir Iyer · Dr Kaur · 6:00–6:30 pm</span>
-            <span style="display:flex;gap:6px;align-items:center;font-size:12px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #1d4f7a;background:#1d4f7a;border-radius:2px;color:#fff">Priority</span><span style="color:#1d4f7a;text-decoration:underline">Open booking</span></span>
+        <section aria-label="Call detail" style="flex: 999 1 520px; min-width: 0; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-raised)">
+
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+              <h2 class="heading-lg" style="margin: 0">Meera Iyer</h2>
+              <span class="heading bn-num" style="color: var(--accent)">+91 98222 22222</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+              <x-import component-from-global-scope="Bolnai.StatusBadge" tone="ok">Verified as Meera Iyer (self)</x-import>
+              <x-import component-from-global-scope="Bolnai.StatusBadge">Booking for Kabir Iyer (child)</x-import>
+              <x-import component-from-global-scope="Bolnai.StatusBadge">Hinglish</x-import>
+              <x-import component-from-global-scope="Bolnai.StatusBadge" icon="clock">3:42</x-import>
+              <x-import component-from-global-scope="Bolnai.StatusBadge">Cost ₹6.40</x-import>
+              <a href="#" class="label" style="margin-left: auto; color: var(--accent)">History</a>
+            </div>
           </div>
-          <div style="flex:1;min-width:0;box-sizing:border-box;border:1px solid #1a1a1a;padding:8px 12px;display:flex;flex-direction:column;gap:3px">
-            <span style="font-size:11px;color:#55534e">This call produced · payment</span>
-            <span style="font-size:13px;font-weight:700;line-height:18px">₹700 link on WhatsApp</span>
-            <span style="display:flex;gap:6px;align-items:center;font-size:12px"><span style="font-size:11px;line-height:16px;padding:1px 6px;border:1px solid #16781b;border-radius:2px;color:#16781b">Paid · UPI</span><span style="color:#1d4f7a;text-decoration:underline">Open payment</span></span>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 12px">
+            <div style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-md)">
+              <span class="caption bn-muted">This call made a booking</span>
+              <span class="body-strong bn-num">Kabir Iyer · Dr Kaur · 6:00–6:30 pm</span>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                <x-import component-from-global-scope="Bolnai.StatusBadge" tone="priority">Priority</x-import>
+                <a href="Main.dc.html" class="label" style="color: var(--accent)">Open booking</a>
+              </div>
+            </div>
+            <div style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-md)">
+              <span class="caption bn-muted">and a payment</span>
+              <span class="body-strong bn-num">₹700 link sent on WhatsApp</span>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                <x-import component-from-global-scope="Bolnai.StatusBadge" tone="ok">Paid ₹700</x-import>
+                <a href="#" class="label" style="color: var(--accent)">Open payment</a>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:12px;display:flex;flex-direction:column;gap:6px;height:430px;overflow:hidden">
-          <div style="align-self:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;line-height:16px;padding:3px 10px;background:#f5f4f0;color:#55534e">Verified +91 98222 22222 → Meera Iyer (self) · relative mode on: booking for Kabir Iyer</div>
-          <div style="align-self:flex-end;max-width:80%;box-sizing:border-box;border:1px solid #1a1a1a;padding:6px 10px;font-size:13px;line-height:18px"><b>Caller</b>  Kabir ke liye aaj shaam Dr Kaur ka appointment chahiye.</div>
-          <div style="align-self:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;line-height:16px;padding:3px 10px;background:#f5f4f0;color:#55534e">Checked windows for Dr Kaur</div>
-          <div style="align-self:flex-start;max-width:80%;box-sizing:border-box;border:1px solid #d4d2cc;padding:6px 10px;font-size:13px;line-height:18px"><b>Agent</b>  6:00 se 6:30 pm ke beech aa sakte hain. Priority visit mein pehle dekha jaata hai, extra fee ₹500 hai.</div>
-          <div style="align-self:flex-end;max-width:80%;box-sizing:border-box;border:1px solid #1a1a1a;padding:6px 10px;font-size:13px;line-height:18px"><b>Caller</b>  Priority chahiye. Total kitna hoga?</div>
-          <div style="align-self:flex-start;max-width:80%;box-sizing:border-box;border:1px solid #d4d2cc;padding:6px 10px;font-size:13px;line-height:18px"><b>Agent</b>  Appointment ₹200 aur priority ₹500, total ₹700.</div>
-          <div style="align-self:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;line-height:16px;padding:3px 10px;background:#f5f4f0;color:#55534e">Held 6:00–6:30 pm · 90 s</div>
-          <div style="align-self:flex-end;max-width:80%;box-sizing:border-box;border:1px solid #1a1a1a;padding:6px 10px;font-size:13px;line-height:18px"><b>Caller</b>  Theek hai, kar dijiye.</div>
-          <div style="align-self:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;line-height:16px;padding:3px 10px;background:#f5f4f0;color:#55534e">Fee agreed ₹700 at 5:41 pm</div>
-          <div style="align-self:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;line-height:16px;padding:3px 10px;background:#f5f4f0;color:#55534e">Booked · Kabir Iyer · Dr Kaur · Priority</div>
-          <div style="align-self:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;line-height:16px;padding:3px 10px;background:#f5f4f0;color:#55534e">WhatsApp payment link sent</div>
-          <div style="align-self:flex-start;max-width:80%;box-sizing:border-box;border:1px solid #d4d2cc;padding:6px 10px;font-size:13px;line-height:18px"><b>Agent</b>  Ho gaya. Payment link WhatsApp par bhej diya hai.</div>
-        </div>
+          <section aria-label="Transcript" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: var(--radius-md); background: var(--surface-sunken)">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px">
+              <span class="label">Transcript</span>
+              <span class="caption bn-muted">Plain text, as said on the call</span>
+            </div>
+            <div class="caption bn-num" style="align-self: center; display: flex; align-items: center; gap: 6px; color: var(--ink-muted)"><x-import component-from-global-scope="Bolnai.Glyph" name="check" size="{{n14}}"></x-import>Number matched Meera Iyer (self). Booking for Kabir Iyer.</div>
+            <div style="align-self: flex-end; max-width: 80%; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line)">
+              <span class="caption bn-muted">Caller</span>
+              <p class="body" style="margin: 0">Kabir ke liye aaj shaam Dr Kaur ka appointment chahiye.</p>
+            </div>
+            <div class="caption" style="align-self: center; display: flex; align-items: center; gap: 6px; color: var(--ink-muted)"><x-import component-from-global-scope="Bolnai.Glyph" name="check" size="{{n14}}"></x-import>Checked windows for Dr Kaur</div>
+            <div style="align-self: flex-start; max-width: 80%; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--accent-soft)">
+              <span class="caption" style="color: var(--accent)">Agent</span>
+              <p class="body bn-num" style="margin: 0">6:00 se 6:30 pm ke beech aa sakte hain. Priority visit mein pehle dekha jaata hai, uske ₹500 extra hain.</p>
+            </div>
+            <div style="align-self: flex-end; max-width: 80%; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line)">
+              <span class="caption bn-muted">Caller</span>
+              <p class="body" style="margin: 0">Priority kar dijiye. Total kitna hoga?</p>
+            </div>
+            <div style="align-self: flex-start; max-width: 80%; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--accent-soft)">
+              <span class="caption" style="color: var(--accent)">Agent</span>
+              <p class="body bn-num" style="margin: 0">Appointment ₹200 aur priority ₹500, total ₹700.</p>
+            </div>
+            <div class="caption bn-num" style="align-self: center; display: flex; align-items: center; gap: 6px; color: var(--ink-muted)"><x-import component-from-global-scope="Bolnai.Glyph" name="clock" size="{{n14}}"></x-import>Held 6:00–6:30 pm priority place · 90 s</div>
+            <div style="align-self: flex-end; max-width: 80%; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line)">
+              <span class="caption bn-muted">Caller</span>
+              <p class="body" style="margin: 0">Theek hai, book kar dijiye.</p>
+            </div>
+            <div class="caption bn-num" style="align-self: center; display: flex; align-items: center; gap: 6px; color: var(--ink-muted)"><x-import component-from-global-scope="Bolnai.Glyph" name="check" size="{{n14}}"></x-import>Fee agreed ₹700 at 5:41 pm · booked · WhatsApp payment link sent</div>
+            <div style="align-self: flex-start; max-width: 80%; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--accent-soft)">
+              <span class="caption" style="color: var(--accent)">Agent</span>
+              <p class="body" style="margin: 0">Ho gaya. Payment link WhatsApp par bhej diya hai.</p>
+            </div>
+          </section>
 
-        <div style="display:flex;align-items:center;gap:12px;box-sizing:border-box;border:1px solid #1a1a1a;padding:0 12px;height:48px">
-          <button aria-label="Play recording" style="width:36px;height:36px;flex:none;border:1px solid #111;background:#111;color:#fff;border-radius:0;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1.5v9l8-4.5Z" fill="#fff"/></svg></button>
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px">0:00</span>
-          <div style="flex:1;height:2px;background:#d4d2cc;position:relative"><span style="position:absolute;left:0;top:-4px;width:2px;height:10px;background:#111"></span></div>
-          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#55534e">3:42</span>
-          <span style="font-size:11px;color:#55534e">Recording</span>
-        </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-md)">
+              <button type="button" aria-label="Play recording" style="width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: var(--accent); color: var(--on-accent); cursor: pointer">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7-4.5Z" fill="currentColor"></path></svg>
+              </button>
+              <span class="label bn-num">0:00</span>
+              <div style="flex: 1; height: 4px; border-radius: var(--radius-sm); background: var(--line)"></div>
+              <span class="label bn-num bn-muted">3:42</span>
+            </div>
+            <span class="caption bn-muted">The recording plays here after sign-in. There is no download link.</span>
+          </div>
 
-        <div style="background:#f5f4f0;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
-          <span style="font-size:11px;line-height:14px;color:#55534e">Summary · generated</span>
-          <span style="font-size:13px;line-height:19px">Meera Iyer booked a priority visit for Kabir Iyer with Dr Kaur, 6:00–6:30 pm. The ₹700 fee was agreed on the call and the payment link went out on WhatsApp.</span>
-        </div>
+          <div style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--line)">
+            <span class="label bn-muted">AI summary</span>
+            <p class="body bn-num" style="margin: 0">Meera Iyer booked a priority visit for her son Kabir with Dr Kaur, 6:00–6:30 pm. The ₹700 fee was agreed on the call and paid by UPI from the WhatsApp link.</p>
+          </div>
 
-      </section>
-
-    </div>
+        </section>
+      </div>
+    </main>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1260}}'>
 class Component extends DCLogic {
   renderVals() {
-    return {};
+    return { n14: 14 };
   }
 }
 </script>

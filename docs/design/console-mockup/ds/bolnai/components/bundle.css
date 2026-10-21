@@ -1,0 +1,138 @@
+/* Bolnai Helpdesk components. Every colour, space, radius and shadow comes from tokens.json; type sizes come from the type-style classes (body, label, hi-body ...). */
+
+body { margin: 0; font-family: var(--font-sans); background: var(--canvas); color: var(--ink); -webkit-font-smoothing: antialiased; }
+[lang="hi"] { font-family: var(--font-deva); }
+.bn-num { font-variant-numeric: tabular-nums; }
+.bn-muted { color: var(--ink-muted); }
+.bn-strike { text-decoration: line-through; }
+.bn-row { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; padding: var(--space-4); }
+.bn-stack { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
+
+/* glyphs: 16px stroke icons drawn in currentColor */
+.bn-glyph { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* focus: a 2px surface gap, then a solid 3px focus ring */
+.bn-btn:focus-visible, .bn-callnext-btn:focus-visible, .bn-switch-input:focus-visible + .bn-switch-track {
+  outline: none; box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--focus-ring);
+}
+
+/* Button */
+.bn-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--control-md); padding: 0 var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.bn-btn-lg { height: var(--control-lg); padding: 0 var(--space-5); }
+.bn-btn:hover { background: var(--surface-sunken); }
+.bn-btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.bn-btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.bn-btn-quiet { background: transparent; border-color: transparent; color: var(--accent); }
+.bn-btn-quiet:hover { background: var(--accent-soft); }
+.bn-btn-danger { background: var(--surface); border-color: var(--emergency); color: var(--emergency); }
+.bn-btn-danger:hover { background: var(--emergency-soft); }
+.bn-btn:disabled { cursor: not-allowed; background: var(--surface-sunken); border-color: var(--line); color: var(--ink-muted); }
+
+/* StatusBadge */
+.bn-badge { display: inline-flex; align-items: center; gap: var(--space-1); padding: 1px var(--space-2); border-radius: var(--radius-sm); background: var(--neutral-soft); color: var(--ink); white-space: nowrap; }
+.bn-badge-info { background: var(--accent-soft); color: var(--accent); }
+.bn-badge-ok { background: var(--ok-soft); color: var(--ok-ink); }
+.bn-badge-attention { background: var(--attention-soft); color: var(--attention-ink); }
+.bn-badge-priority { background: var(--priority-soft); color: var(--priority); }
+.bn-badge-emergency { background: var(--emergency); color: var(--on-emergency); }
+.bn-badge-held { background: var(--surface); color: var(--ink-muted); border: 1px dashed var(--line-strong); padding: 0 calc(var(--space-2) - 1px); }
+
+/* PriorityMark: !!! / !! / ! as in medical alarm marking, so priority never depends on colour alone */
+.bn-prio { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 52px; padding: 1px var(--space-2); border-radius: var(--radius-sm); background: var(--neutral-soft); color: var(--ink); }
+.bn-prio-marks { font-weight: 800; letter-spacing: 0.04em; }
+.bn-prio-P1 { background: var(--emergency); color: var(--on-emergency); }
+.bn-prio-P2 { background: var(--attention); color: var(--ink); }
+.bn-prio-P1.is-quiet { background: var(--emergency-soft); color: var(--emergency); }
+
+/* DoctorChip */
+.bn-chip { display: inline-flex; align-items: center; gap: var(--space-2); height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
+.bn-chip-dot { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--ok); flex: none; }
+.bn-chip-sep { color: var(--ink-muted); }
+.bn-chip-basis { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ok-ink); }
+.bn-chip-late { background: var(--attention); border-color: var(--attention); }
+.bn-chip-late .bn-chip-dot { background: var(--ink); }
+.bn-chip-late .bn-chip-basis, .bn-chip-late .bn-chip-sep { color: var(--ink); }
+.bn-chip-schedule { background: var(--attention-soft); border: 1px dashed var(--attention-ink); }
+.bn-chip-schedule .bn-chip-dot { background: transparent; border: 2px solid var(--attention-ink); width: 6px; height: 6px; }
+.bn-chip-schedule .bn-chip-basis { color: var(--attention-ink); }
+.bn-chip-paused .bn-chip-dot { background: var(--line-strong); }
+.bn-chip-cancelled { background: var(--surface-sunken); color: var(--ink-muted); }
+.bn-chip-cancelled .bn-chip-dot { background: var(--line-strong); }
+
+/* WindowBlock and its places */
+.bn-window { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-lg); background: var(--surface-sunken); }
+.bn-window.is-now { background: var(--accent-soft); }
+.bn-window-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.bn-window-time { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.bn-window-places { display: flex; align-items: center; gap: var(--space-2); }
+.bn-window-body { display: flex; flex-direction: column; gap: var(--space-2); }
+.bn-places { display: inline-flex; gap: var(--space-1); }
+.bn-place { width: var(--place); height: var(--place); border-radius: var(--radius-sm); box-sizing: border-box; }
+.bn-place.is-taken { background: var(--accent); }
+.bn-place.is-free { background: var(--surface); border: 1.5px solid var(--line-strong); }
+.bn-place-priority { border-radius: var(--radius-pill); }
+.bn-place-priority.is-taken { background: var(--priority); }
+.bn-place-priority.is-free { background: var(--priority-soft); border: 1.5px solid var(--priority); }
+
+/* PatientCard */
+.bn-card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-raised); min-width: 0; }
+.bn-card-main { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+.bn-card-who { display: flex; flex-direction: column; min-width: 0; }
+.bn-card-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bn-card-state { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); flex: none; }
+.bn-card-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.bn-card-actions { display: flex; gap: var(--space-2); }
+.bn-card.is-priority { border-color: var(--priority); }
+.bn-card-held { border: 1.5px dashed var(--line-strong); box-shadow: none; }
+.bn-card-in_consult { border-color: var(--ok); }
+.bn-card-done, .bn-card-no_show, .bn-card-cancelled, .bn-card-rescheduled { background: var(--surface-sunken); box-shadow: none; }
+.bn-card-done .bn-card-name, .bn-card-no_show .bn-card-name, .bn-card-cancelled .bn-card-name, .bn-card-rescheduled .bn-card-name { color: var(--ink-muted); }
+.bn-card-cancelled .bn-card-name { text-decoration: line-through; }
+
+/* EmergencyBanner: the only full-red element in the product */
+.bn-emergency { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3) var(--space-4); padding: var(--space-4) var(--space-5); border-radius: var(--radius-lg); background: var(--emergency); color: var(--on-emergency); box-shadow: var(--shadow-overlay); }
+.bn-emergency p { margin: 0; }
+.bn-emergency-icon { flex: none; padding-top: 2px; }
+.bn-emergency-body { display: flex; flex-direction: column; gap: var(--space-1); flex: 1 1 220px; min-width: 0; }
+.bn-emergency-title { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.bn-emergency-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; flex: none; }
+@media (max-width: 560px) {
+  .bn-emergency { padding: var(--space-4); }
+  .bn-emergency-actions { flex: 1 1 100%; }
+  .bn-emergency-actions .bn-btn { flex: 1 1 0; }
+}
+.bn-btn-onred { height: var(--control-lg); background: transparent; border-color: var(--on-emergency); color: var(--on-emergency); }
+.bn-btn-onred:hover { background: var(--emergency-soft); color: var(--emergency); }
+.bn-btn-onred-solid { height: var(--control-lg); background: var(--surface); border-color: var(--surface); color: var(--emergency); }
+.bn-btn-onred-solid:hover { background: var(--emergency-soft); }
+.bn-btn-onred:focus-visible, .bn-btn-onred-solid:focus-visible { box-shadow: 0 0 0 2px var(--emergency), 0 0 0 5px var(--on-emergency); }
+@media (prefers-reduced-motion: no-preference) {
+  .bn-emergency.is-new .bn-emergency-icon { animation: bn-pulse 1s ease-in-out infinite; }
+}
+@keyframes bn-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* CallbackRow */
+.bn-cbrow { display: grid; grid-template-columns: auto minmax(140px, 1fr) minmax(160px, 2fr) auto auto; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface); border-bottom: 1px solid var(--line); }
+.bn-cbrow p { margin: 0; }
+.bn-cbrow > .bn-prio, .bn-cbrow > .bn-btn { justify-self: start; }
+.bn-cbrow-who { display: flex; flex-direction: column; min-width: 0; }
+.bn-cbrow-due { display: flex; gap: var(--space-1); flex-wrap: wrap; justify-content: flex-end; }
+.bn-cbrow.is-overdue { background: var(--emergency-soft); }
+@media (max-width: 720px) { .bn-cbrow { grid-template-columns: auto 1fr; } .bn-cbrow-reason, .bn-cbrow-due { grid-column: 1 / -1; justify-content: flex-start; } }
+
+/* DeskSwitch */
+.bn-switch { position: relative; display: inline-flex; align-items: center; gap: var(--space-3); cursor: pointer; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); }
+.bn-switch-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.bn-switch-track { position: relative; width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--surface); border: 1.5px solid var(--line-strong); box-sizing: border-box; flex: none; }
+.bn-switch-thumb { position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: var(--radius-pill); background: var(--line-strong); }
+.bn-switch.is-on .bn-switch-track { background: var(--accent); border-color: var(--accent); }
+.bn-switch.is-on .bn-switch-thumb { left: 22px; background: var(--on-accent); }
+.bn-switch-text { display: flex; flex-direction: column; }
+.bn-switch.is-off { border-color: var(--attention-ink); background: var(--attention-soft); }
+
+/* CallNextButton (doctor view) */
+.bn-callnext { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); width: 100%; max-width: 420px; box-sizing: border-box; }
+.bn-callnext-next { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line); }
+.bn-callnext-btn { height: var(--call-next); padding: 0 var(--space-4); border-radius: var(--radius-lg); border: 0; background: var(--accent); color: var(--on-accent); cursor: pointer; width: 100%; }
+.bn-callnext-btn:hover { background: var(--accent-strong); }
+.bn-callnext-btn:disabled { background: var(--surface-sunken); color: var(--ink-muted); cursor: not-allowed; }

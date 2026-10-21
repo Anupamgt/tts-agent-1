@@ -5,16 +5,16 @@
   "launch": { "view": "canvas" },
   "pages": [],
   "boards": {
-    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 980, "title": "1 · Today (live queue)" },
-    "Emergency.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 1170, "title": "3 · Emergency alert" },
-    "Callbacks.dc.html": { "x": 0, "y": 1290, "w": 1440, "h": 980, "title": "4 · Callbacks" },
-    "Calls.dc.html": { "x": 1520, "y": 1290, "w": 1440, "h": 980, "title": "5 · Calls and call detail" },
-    "Doctor.dc.html": { "x": 0, "y": 2390, "w": 390, "h": 844, "title": "2 · Doctor view" },
-    "DoctorStates.dc.html": { "x": 470, "y": 2390, "w": 1290, "h": 844, "title": "2 · Doctor view states" },
-    "TodayStates.dc.html": { "x": 0, "y": 3354, "w": 1440, "h": 760, "title": "States · late, absent, ended, empty, alerts" },
-    "TodayBody.dc.html": { "x": 0, "y": 4234, "w": 1264, "h": 880, "title": "Part · Today body" },
-    "TopBar.dc.html": { "x": 1344, "y": 4234, "w": 1264, "h": 100, "title": "Part · Top bar" },
-    "Rail.dc.html": { "x": 2688, "y": 4234, "w": 176, "h": 980, "title": "Part · Left rail" }
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1300, "title": "1 · Today (live queue)", "expand": "fill", "is_interactive": true },
+    "Emergency.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 1480, "title": "3 · Emergency alert (try Acknowledge)", "expand": "fill", "is_interactive": true },
+    "Callbacks.dc.html": { "x": 0, "y": 1900, "w": 1440, "h": 1040, "title": "4 · Callbacks", "expand": "fill", "is_interactive": true },
+    "Calls.dc.html": { "x": 1520, "y": 1900, "w": 1440, "h": 1260, "title": "5 · Calls and call detail", "expand": "fill", "is_interactive": true },
+    "Doctor.dc.html": { "x": 0, "y": 3580, "w": 390, "h": 844, "title": "2 · Doctor view (try Call next)", "is_interactive": true },
+    "DoctorStates.dc.html": { "x": 470, "y": 3580, "w": 1740, "h": 900, "title": "2 · Doctor view states and Hindi" },
+    "TodayStates.dc.html": { "x": 0, "y": 4900, "w": 1440, "h": 1320, "title": "States", "expand": "fill" },
+    "TopBar.dc.html": { "x": 0, "y": 6640, "w": 1440, "h": 120, "title": "Part · Top bar", "expand": "fill" },
+    "Rail.dc.html": { "x": 1520, "y": 6640, "w": 176, "h": 640, "title": "Part · Left rail" },
+    "TodayBody.dc.html": { "x": 1776, "y": 6640, "w": 1264, "h": 1180, "title": "Part · Today body", "expand": "fill" }
   },
   "order": [
     "Main.dc.html",
@@ -24,18 +24,25 @@
     "Doctor.dc.html",
     "DoctorStates.dc.html",
     "TodayStates.dc.html",
-    "TodayBody.dc.html",
     "TopBar.dc.html",
-    "Rail.dc.html"
+    "Rail.dc.html",
+    "TodayBody.dc.html"
   ],
-  "notes": {},
+  "notes": {
+    "t-desktop": { "x": 0, "y": -300, "text": "Desktop console", "kind": "title1", "maxW": 2960 },
+    "t-calls": { "x": 0, "y": 1600, "text": "Callbacks and calls", "kind": "title1", "maxW": 2960 },
+    "t-phone": { "x": 0, "y": 3280, "text": "Doctor's phone", "kind": "title1", "maxW": 2210 },
+    "t-states": { "x": 0, "y": 4600, "text": "States", "kind": "title1", "maxW": 1440 },
+    "t-parts": { "x": 0, "y": 6340, "text": "Shared parts", "kind": "title1", "maxW": 3040 },
+    "persona": { "x": -560, "y": 0, "w": 460, "fill": "blue", "size": "m", "text": "Designed for Simran, the front-desk receptionist. She runs the desk alone from 5 to 8 pm with three doctors seeing patients, and is interrupted every 30 seconds. In two seconds she needs: anything urgent, each doctor's delay and whether it is live, who is here, and who she owes a call.\n\nSecondary: Dr Sharma on his phone, one thumb, two-second glances between patients.\n\nIn the background: the clinic owner (refunds, waivers) and the hackathon judges (five demo moments)." }
+  },
   "designSystems": [
     {
-      "title": "Synopsis",
-      "namespace": "synopsis",
-      "artifact": "https://claude.ai/code/artifact/646073c9-4223-4ac2-b3bf-f7c6c66ad9b9",
-      "version": "1790997769-1357",
-      "copiedAt": "2026-10-18T20:41:00Z"
+      "title": "Bolnai Helpdesk",
+      "namespace": "bolnai",
+      "artifact": "https://claude.ai/artifact/Tjkq5Qy2Ac4VLZWS7eWuRk",
+      "version": "1792367373-44ad",
+      "copiedAt": "2026-10-19T01:30:00Z"
     }
   ]
 }

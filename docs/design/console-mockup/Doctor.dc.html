@@ -4,62 +4,107 @@
 <meta charset="utf-8">
 <title>Doctor view</title>
 <script src="./support.js"></script>
+<link rel="stylesheet" href="ds/bolnai/tokens.css">
+<link rel="stylesheet" href="ds/bolnai/components/bundle.css">
+<script src="ds/bolnai/components/bundle.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
 <style>body{margin:0}</style>
 </helmet>
-<div style="width:390px;height:844px;box-sizing:border-box;padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;background:#fff;color:#111;overflow:hidden;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif">
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: var(--canvas); color: var(--ink); font-family: var(--font-sans); overflow: hidden">
 
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-    <div style="display:flex;flex-direction:column;gap:2px">
-      <h1 style="margin:0;font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:24px;line-height:28px">Dr Sharma</h1>
-      <span style="font-size:12px;line-height:16px;color:#55534e">Session 5:00–8:00 pm</span>
+  <header style="padding: 16px; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 8px">
+    <div style="align-self: stretch; display: flex; justify-content: space-between; gap: 8px">
+      <span class="caption bn-muted">Demo Family Clinic · Cabin 2</span>
+      <span class="caption bn-muted bn-num">6:10 pm</span>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <span style="display:flex;align-items:center;gap:5px;height:20px;box-sizing:border-box;padding:0 7px;border:1px solid #1a1a1a;border-radius:2px;font-size:11px"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>Started</span></span>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700">+25 min · live</span>
-    </div>
+    <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Sharma" delay-min="{{d25}}" basis="live" status="started"></x-import>
+    <span class="caption bn-muted bn-num">General medicine · session 5:00–8:00 pm</span>
+  </header>
+
+  <div style="padding: 16px 16px 0">
+    <sc-if value="{{confirming}}" hint-placeholder-val="{{false}}">
+      <div role="status" style="display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: var(--radius-lg); background: var(--accent); color: var(--on-accent)">
+        <span class="label">Called in</span>
+        <span class="heading-lg">{{confirmName}}</span>
+        <span class="caption">Shown on the waiting-room screen</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{notConfirming}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line)">
+        <div style="display: flex; flex-direction: column; min-width: 0">
+          <span class="caption bn-muted">With you</span>
+          <span class="body-strong">{{withName}}</span>
+          <span class="caption bn-muted bn-num">{{withSince}}</span>
+        </div>
+        <span class="figure-lg bn-num">{{withTime}}</span>
+      </div>
+    </sc-if>
   </div>
 
-  <div style="box-sizing:border-box;border:1px solid #d4d2cc;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">
-    <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-      <span style="font-size:11px;line-height:14px;color:#55534e">Now with you</span>
-      <span style="font-size:18px;font-weight:700;line-height:24px">Rohan Mehta</span>
+  <div style="margin-top: auto; padding-bottom: 8px">
+    <x-import component-from-global-scope="Bolnai.CallNextButton" next-name="{{nextName}}" next-meta="{{nextMeta}}" footer="{{footer}}" empty-text="No patients waiting. 1 booked later." on-click="{{callNext}}"></x-import>
+    <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px">
+      <sc-if value="{{canUndo}}" hint-placeholder-val="{{false}}">
+        <x-import component-from-global-scope="Bolnai.Button" variant="quiet" on-click="{{undo}}">Undo last call</x-import>
+      </sc-if>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+        <x-import component-from-global-scope="Bolnai.Button" size="lg" icon="pause">Pause session</x-import>
+        <x-import component-from-global-scope="Bolnai.Button" size="lg">End session</x-import>
+      </div>
     </div>
-    <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:28px;font-weight:700;line-height:34px">8:12</span>
-  </div>
-
-  <div style="box-sizing:border-box;border:2px solid #1a1a1a;padding:12px 14px;display:flex;flex-direction:column;gap:4px">
-    <div style="display:flex;align-items:baseline;justify-content:space-between">
-      <span style="font-size:11px;line-height:14px;color:#55534e">Next</span>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#55534e">100 001 7</span>
-    </div>
-    <span style="font-size:26px;font-weight:700;line-height:32px">Asha Rani</span>
-    <span style="font-size:13px;line-height:18px">34 yrs · General check-up</span>
-    <span style="font-size:13px;line-height:18px;color:#55534e">Waiting 22 min · arrived 5:48 pm</span>
-  </div>
-
-  <div style="font-size:13px;line-height:18px;color:#55534e">3 waiting · 1 booked later · est. finish 7:55 pm</div>
-
-  <button style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:1px solid #111;background:#111;color:#fff;font-family:inherit;cursor:pointer;border-radius:0">
-    <span style="font-size:42px;font-weight:700;line-height:48px">Call next</span>
-    <span style="font-size:16px;line-height:20px;color:#e6e4de">Asha Rani</span>
-  </button>
-
-  <div style="display:flex;gap:10px">
-    <button style="flex:1;height:48px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;cursor:pointer;border-radius:0">Pause session</button>
-    <button style="flex:1;height:48px;border:1px solid #1a1a1a;background:#fff;color:#111;font-family:inherit;font-size:14px;cursor:pointer;border-radius:0">End session</button>
   </div>
 
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
+  componentWillUnmount() {
+    if (this._t) clearTimeout(this._t);
+  }
   renderVals() {
-    return {};
+    const s = this.state || {};
+    const idx = s.idx || 0;
+    const queue = [
+      { name: 'Asha Rani', meta: '482 915 6 · arrived 5:48 pm · waiting 22 min' },
+      { name: 'Sunil Kumar', meta: '519 387 5 · walk-in · arrived 6:05 pm · waiting 5 min' }
+    ];
+    const withList = [
+      { name: 'Rohan Mehta', time: '8:12', since: 'since 6:02 pm' },
+      { name: 'Asha Rani', time: '0:00', since: 'since 6:10 pm' },
+      { name: 'Sunil Kumar', time: '0:00', since: 'since 6:10 pm' }
+    ];
+    const next = queue[idx];
+    const left = queue.length - idx;
+    const current = withList[Math.min(idx, withList.length - 1)];
+    return {
+      d25: 25,
+      nextName: next ? next.name : '',
+      nextMeta: next ? next.meta : '',
+      footer: left + ' waiting · 1 booked later · finish about 7:55 pm',
+      withName: current.name,
+      withTime: current.time,
+      withSince: current.since,
+      confirming: !!s.confirm,
+      notConfirming: !s.confirm,
+      confirmName: s.confirm || '',
+      canUndo: idx > 0,
+      callNext: () => {
+        const i = (this.state && this.state.idx) || 0;
+        if (i >= queue.length) return;
+        if (this._t) clearTimeout(this._t);
+        this.setState({ idx: i + 1, confirm: queue[i].name });
+        this._t = setTimeout(() => this.setState({ confirm: null }), 2000);
+      },
+      undo: () => {
+        const i = (this.state && this.state.idx) || 0;
+        if (i <= 0) return;
+        if (this._t) clearTimeout(this._t);
+        this.setState({ idx: i - 1, confirm: null });
+      }
+    };
   }
 }
 </script>

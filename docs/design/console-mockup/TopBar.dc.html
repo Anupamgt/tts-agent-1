@@ -4,78 +4,79 @@
 <meta charset="utf-8">
 <title>Top bar</title>
 <script src="./support.js"></script>
+<link rel="stylesheet" href="ds/bolnai/tokens.css">
+<link rel="stylesheet" href="ds/bolnai/components/bundle.css">
+<script src="ds/bolnai/components/bundle.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=STIX+Two+Text:wght@400;700&display=swap">
 <style>body{margin:0}</style>
 </helmet>
-<div style="width:1264px;height:100px;box-sizing:border-box;display:flex;flex-direction:column;background:#fff;color:#111;font-family:Verdana,'DejaVu Sans','Noto Sans',sans-serif;border-bottom:1px solid #1a1a1a">
-  <div style="height:56px;flex:none;box-sizing:border-box;padding:0 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #d4d2cc">
-    <div style="display:flex;flex-direction:column;gap:2px;width:190px;flex:none">
-      <span style="font-family:'STIX Two Text','Times New Roman',serif;font-weight:700;font-size:17px;line-height:20px;white-space:nowrap">Demo Family Clinic</span>
-      <span style="display:flex;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:16px;color:#55534e"><span>Mon, 19 Oct</span><span>·</span><span>{{time}}</span></span>
+<header style="box-sizing: border-box; width: 100%; background: var(--surface); color: var(--ink); font-family: var(--font-sans); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-raised)">
+  <div style="box-sizing: border-box; padding: 12px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px">
+    <div style="display: flex; align-items: baseline; gap: 8px; flex: none">
+      <span class="heading">Demo Family Clinic</span>
+      <span class="caption bn-muted">· Bolnai</span>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex:none">
-      <div style="display:flex;flex-direction:column;gap:1px">
-        <span style="font-size:13px;font-weight:700;line-height:16px;white-space:nowrap">Staff on desk</span>
-        <span style="font-size:10px;line-height:13px;color:#55534e;white-space:nowrap">Calls ring the desk phone</span>
-      </div>
-      <div role="group" aria-label="Staff on desk" style="display:flex;border:1px solid #1a1a1a;height:40px;box-sizing:border-box">
-        <button aria-pressed="true" style="width:64px;border:0;background:#111;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border-radius:0">On</button>
-        <button aria-pressed="false" style="width:64px;border:0;background:#fff;color:#111;font-family:inherit;font-size:13px;cursor:pointer;border-radius:0">Away</button>
-      </div>
+    <div style="display: flex; flex-direction: column; flex: none">
+      <span class="label bn-num">Mon, 19 Oct · {{time}}</span>
+      <span class="caption" style="display: flex; align-items: center; gap: 6px; color: var(--ok-ink)"><span style="width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--ok)"></span>Agent: 2 calls in progress</span>
     </div>
-    <label style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #1a1a1a">
-      <input aria-label="Search patients" placeholder="Patient ID, name or phone" style="flex:1;min-width:0;border:0;outline:0;background:transparent;font-family:inherit;font-size:13px;color:#111">
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;padding:1px 6px;border:1px solid #bcb9b0;border-radius:2px;color:#55534e">/</span>
+    <label style="flex: 1 1 220px; min-width: 0; display: flex; align-items: center; gap: 8px; height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-md); background: var(--surface)">
+      <input type="search" aria-label="Search patients by ID, name or phone" class="body" placeholder="Patient ID, name or phone" style="flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink)">
+      <span class="caption bn-muted" style="padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm)">/</span>
     </label>
-    <div style="display:flex;gap:8px;flex:none">
-      <div style="display:flex;flex-direction:column;justify-content:center;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d4d2cc;min-width:100px">
-        <span style="font-size:10px;line-height:12px;color:#55534e;white-space:nowrap">Open callbacks</span>
-        <span style="display:flex;gap:10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;line-height:16px">
-          <sc-if value="{{hasP1}}" hint-placeholder-val="{{false}}"><span style="display:flex;gap:4px;color:#c81d1d"><span>P1</span><span>{{p1}}</span></span></sc-if>
-          <sc-if value="{{noP1}}" hint-placeholder-val="{{true}}"><span style="display:flex;gap:4px"><span>P1</span><span>{{p1}}</span></span></sc-if>
-          <span style="display:flex;gap:4px"><span>P2</span><span>3</span></span>
-        </span>
-      </div>
-      <div style="display:flex;flex-direction:column;justify-content:center;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d4d2cc">
-        <span style="font-size:10px;line-height:12px;color:#55534e;white-space:nowrap">Refunds to approve</span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;line-height:16px">1</span>
-      </div>
-      <div style="display:flex;flex-direction:column;justify-content:center;height:40px;box-sizing:border-box;padding:0 10px;border:1px solid #d4d2cc">
-        <span style="font-size:10px;line-height:12px;color:#55534e;white-space:nowrap">Failed messages</span>
-        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;line-height:16px">3</span>
-      </div>
+    <x-import component-from-global-scope="Bolnai.DeskSwitch" on="{{deskOn}}"></x-import>
+    <div role="group" aria-label="Console language" style="display: flex; flex: none; height: 40px; box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: var(--radius-md); overflow: hidden">
+      <button type="button" aria-pressed="true" class="label" style="padding: 0 14px; border: 0; background: var(--accent-soft); color: var(--accent); cursor: pointer">English</button>
+      <button type="button" aria-pressed="false" lang="hi" class="hi-label" style="padding: 0 14px; border: 0; border-left: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); cursor: pointer">हिंदी</button>
     </div>
   </div>
-  <div style="height:43px;flex:none;box-sizing:border-box;padding:0 24px;display:flex;align-items:center;gap:12px">
-    <span style="font-size:11px;color:#55534e;white-space:nowrap">In session</span>
-    <div style="display:flex;align-items:center;gap:8px;height:32px;box-sizing:border-box;padding:0 12px;border:1px solid #1a1a1a;white-space:nowrap;font-size:12px">
-      <span style="font-weight:700">Dr Sharma</span>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:13px">+25 min</span>
-      <span style="display:flex;align-items:center;gap:4px;color:#55534e"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>live</span></span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;height:32px;box-sizing:border-box;padding:0 12px;border:1.5px solid #d9741e;white-space:nowrap;font-size:12px">
-      <span style="font-weight:700">Dr Verma</span>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:13px">on time</span>
-      <span style="display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" style="flex:none"><path d="M6 1.2 11.2 10.8H.8Z" fill="none" stroke="#d9741e" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.8v2.8" stroke="#d9741e" stroke-width="1.4"/><circle cx="6" cy="9.1" r=".7" fill="#d9741e"/></svg><span>schedule only</span></span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;height:32px;box-sizing:border-box;padding:0 12px;border:1px solid #1a1a1a;white-space:nowrap;font-size:12px">
-      <span style="font-weight:700">Dr Kaur</span>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;font-size:13px">+10 min</span>
-      <span style="display:flex;align-items:center;gap:4px;color:#55534e"><span style="width:6px;height:6px;border-radius:50%;background:#111"></span><span>live</span></span>
-    </div>
-    <span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#55534e;white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:#16781b"></span><span>Agent: 2 calls in progress</span></span>
+  <div style="box-sizing: border-box; padding: 8px 24px 10px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+    <span class="caption bn-muted">In session</span>
+    <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Sharma" delay-min="{{d25}}" basis="live" status="started"></x-import>
+    <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Verma" delay-min="{{d0}}" basis="schedule" status="started" title="No tap from the cabin for 32 min"></x-import>
+    <x-import component-from-global-scope="Bolnai.DoctorChip" name="Dr Kaur" delay-min="{{d10}}" basis="live" status="started"></x-import>
+    <nav aria-label="Needs you" style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <sc-if value="{{hasP1}}" hint-placeholder-val="{{false}}">
+        <a href="Callbacks.dc.html" style="display: flex; align-items: center; gap: 8px; height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-md); color: var(--ink); text-decoration: none">
+          <x-import component-from-global-scope="Bolnai.PriorityMark" level="P1"></x-import>
+          <span class="label bn-num">{{p1}} new</span>
+        </a>
+      </sc-if>
+      <a href="Callbacks.dc.html" style="display: flex; align-items: center; gap: 8px; height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-md); color: var(--ink); text-decoration: none">
+        <span class="label">Callbacks</span>
+        <span class="label bn-num">{{cbCount}}</span>
+        <x-import component-from-global-scope="Bolnai.StatusBadge" tone="attention" icon="clock">1 overdue</x-import>
+      </a>
+      <a href="#" style="display: flex; align-items: center; gap: 8px; height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-md); color: var(--ink); text-decoration: none">
+        <span class="label">Refunds</span>
+        <span class="label bn-num">1</span>
+      </a>
+      <a href="#" style="display: flex; align-items: center; gap: 8px; height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-md); color: var(--ink); text-decoration: none">
+        <span class="label">Failed SMS</span>
+        <span class="label bn-num" style="color: var(--attention-ink)">3</span>
+      </a>
+    </nav>
   </div>
-</div>
+</header>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"time":{"editor":"text","default":"6:10 pm"},"p1":{"editor":"int","default":0,"min":0},"$preview":{"width":1264,"height":100}}'>
+<script type="text/x-dc" data-dc-script data-props='{"time":{"editor":"text","default":"6:10 pm"},"p1":{"editor":"int","default":0,"min":0,"max":3},"deskOn":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":120}}'>
 class Component extends DCLogic {
   renderVals() {
-    const p1 = Number(this.props.p1 ?? 0);
-    return { time: this.props.time ?? '6:10 pm', p1: p1, hasP1: p1 > 0, noP1: p1 <= 0 };
+    const p1 = Number(this.props.p1 ?? 0) || 0;
+    const desk = this.props.deskOn;
+    return {
+      time: this.props.time ?? '6:10 pm',
+      deskOn: desk === undefined ? true : desk !== false && desk !== 'false',
+      p1: p1,
+      hasP1: p1 > 0,
+      cbCount: 4 + p1,
+      d25: 25,
+      d0: 0,
+      d10: 10
+    };
   }
 }
 </script>
