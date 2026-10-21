@@ -61,7 +61,7 @@ erDiagram
 - **Shared phones:** `patient_phones` links one number to many patients, with a relation. `calls.patient_id` is set only after verification.
 - **Webhook safety:** `calls.bolna_execution_id` is unique, so a retried webhook cannot create a second call record. The raw payload is stored for debugging.
 - **Settings table** holds every proposed default from `docs/flows/README.md`, so changing a threshold is a data change, not a code change.
-- **Console data:** `callbacks` (priority queue), `message_tickets` (refill and messages), `emergency_alerts` (acknowledge), `messages` (SMS and WhatsApp outbox), `payments` and `refunds`, `audit_log` (who did what).
+- **Console data:** `callbacks` (priority queue), `message_tickets` (refill and messages), `emergency_alerts` (acknowledged by, at, and via: the Acknowledge button or Call back), `messages` (SMS and WhatsApp outbox), `payments` and `refunds`, `audit_log` (who did what).
 - **Views:** `window_availability` (open routine and priority places per window, delay shift applied), `pool_window_availability` (the same across a pool), `session_queue` (waiting-room order).
 
 ## Security hardening (docs/security/threat-model.md)
@@ -73,7 +73,7 @@ erDiagram
 - **Verification lockout data** (S-05): view `verification_failures_24h` (per number and per patient); threshold `verification_lockout_failures` (5).
 - **Audit log** (S-10): append-only (UPDATE, DELETE, TRUNCATE refused).
 - **Retention settings** (S-07): `transcript_retention_days` (180), `recording_retention_days` (30); the purge job is still to build.
-- Tests: 112 checks in `tests/schema.test.mjs`.
+- Tests: 118 checks in `tests/schema.test.mjs`.
 
 ## Known gaps
 

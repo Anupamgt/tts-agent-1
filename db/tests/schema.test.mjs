@@ -280,5 +280,20 @@ await rejects('audit entry cannot be edited', `UPDATE audit_log SET action = 'x'
 await rejects('audit entry cannot be deleted', `DELETE FROM audit_log`, [], 'append-only');
 await rejects('audit log cannot be truncated', `TRUNCATE audit_log`, [], 'append-only');
 
+// emergency alerts: Call back also acknowledges, and the log says how (flows 01 A2)
+await ok('alert acknowledged by calling back',
+  `INSERT INTO emergency_alerts (clinic_id, kind, caller_number, acknowledged_by, acknowledged_at, acknowledged_via)
+   VALUES (1, 'medical', '+919877777777', ${RECEPTION}, now(), 'call_back')`);
+await ok('alert acknowledged with the Acknowledge button',
+  `INSERT INTO emergency_alerts (clinic_id, kind, acknowledged_by, acknowledged_at, acknowledged_via)
+   VALUES (1, 'self_harm', ${RECEPTION}, now(), 'acknowledge')`);
+await ok('new alert, not acknowledged yet', `INSERT INTO emergency_alerts (clinic_id, kind) VALUES (1, 'medical')`);
+await rejects('acknowledgement without how it happened rejected',
+  `INSERT INTO emergency_alerts (clinic_id, kind, acknowledged_by, acknowledged_at) VALUES (1, 'medical', ${RECEPTION}, now())`, [], 'check constraint');
+await rejects('acknowledgement without who rejected',
+  `INSERT INTO emergency_alerts (clinic_id, kind, acknowledged_at, acknowledged_via) VALUES (1, 'medical', now(), 'call_back')`, [], 'check constraint');
+await rejects('unknown acknowledgement method rejected',
+  `INSERT INTO emergency_alerts (clinic_id, kind, acknowledged_by, acknowledged_at, acknowledged_via) VALUES (1, 'medical', ${RECEPTION}, now(), 'timeout')`, [], 'check constraint');
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

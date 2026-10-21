@@ -50,7 +50,7 @@ flowchart TD
 
 | Priority | When | Target |
 |---|---|---|
-| P1 | Emergency flagged, self-harm | Staff call within 15 minutes, console alert with sound |
+| P1 | Emergency flagged, self-harm | Staff call within 15 minutes, console alert with sound. Tapping Call back on the alert also acknowledges it and puts this callback in progress (01 A2) |
 | P2 | Wants to be seen today and nothing is free; distress or anger; medical question; tool failure on a booking; transfer failed | Within 2 hours, and before today's session ends for same-day requests |
 | P3 | Messages, refills, reports, billing, verification, non-patient | Next working session, same day if before 6 pm |
 

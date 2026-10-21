@@ -25,7 +25,8 @@
     phone: [['path', { d: 'M5.2 2.5h1.9l.9 2.9-1.4 1a7.2 7.2 0 0 0 3 3l1-1.4 2.9.9v1.9a1.4 1.4 0 0 1-1.5 1.4A10.8 10.8 0 0 1 3.7 4a1.4 1.4 0 0 1 1.5-1.5Z' }]],
     dot: [['circle', { cx: 8, cy: 8, r: 3, fill: 'currentColor', stroke: 'none' }]],
     pause: [['path', { d: 'M6 4v8M10 4v8' }]],
-    arrow: [['path', { d: 'M3 8h10M9 4l4 4-4 4' }]]
+    arrow: [['path', { d: 'M3 8h10M9 4l4 4-4 4' }]],
+    cross: [['path', { d: 'M4.5 4.5l7 7M11.5 4.5l-7 7' }]]
   };
   function Glyph(props) {
     var parts = GLYPHS[props.name];
@@ -204,24 +205,65 @@
   }
 
   // ---------------------------------------------------------------- EmergencyBanner
+  // Segmented so it reads in two seconds: what happened and when; the number to call; what the
+  // caller said; the actions; then one tile per step (what the agent did, and the staff's next step).
+  var STEP = {
+    done: { icon: 'check', label: 'Done' },
+    failed: { icon: 'cross', label: 'Failed' },
+    next: { icon: 'clock', label: 'Your next step' }
+  };
+  function telHref(n) { return 'tel:' + String(n).replace(/[^0-9+]/g, ''); }
   function EmergencyBanner(props) {
+    var lang = props.lang;
     var title = props.title || (props.kind === 'self_harm' ? 'Self-harm risk on a call' : 'Possible medical emergency on a call');
-    var meta = [props.number, props.agentNote].filter(Boolean).join(' · ');
-    return h('div', { className: cx('bn-emergency', props.isNew && 'is-new'), role: 'alert' },
-      h('div', { className: 'bn-emergency-icon', 'aria-hidden': 'true' }, h(Glyph, { name: 'alert', size: 28 })),
-      h('div', { className: 'bn-emergency-body' },
-        h('div', { className: 'bn-emergency-title' },
-          h('span', { className: 'bn-prio-marks heading', 'aria-hidden': 'true' }, '!!!'),
-          h('span', { className: 'heading' }, title),
-          props.time ? h('span', { className: 'label bn-num' }, props.time) : null),
-        props.snippet ? h('p', { className: 'body' },
-          h('span', { className: 'label' }, 'Caller said: '), '“' + props.snippet + '”') : null,
-        meta ? h('p', { className: 'caption bn-num' }, meta) : null),
-      h('div', { className: 'bn-emergency-actions' },
-        h('button', { type: 'button', className: 'bn-btn bn-btn-onred', onClick: props.onCallBack },
-          h(Glyph, { name: 'phone' }), h('span', { className: 'body-strong' }, props.callLabel || 'Call back')),
-        h('button', { type: 'button', className: 'bn-btn bn-btn-onred-solid', onClick: props.onAcknowledge },
-          h('span', { className: 'body-strong' }, props.ackLabel || 'Acknowledge'))));
+    // Older screens pass one agentNote line; show it as a single "Done" tile.
+    var steps = props.steps || (props.agentNote ? [{ state: 'done', text: props.agentNote }] : []);
+    var callerMeta = [props.language,
+      props.verified === true ? 'verified' : props.verified === false ? 'not verified' : null].filter(Boolean).join(' · ');
+    // Call back counts as acknowledging, unless the host turns that off. onAcknowledge gets
+    // { via: 'acknowledge' | 'call_back' } so the log says how the alert was handled.
+    var callAcks = props.callAcknowledges !== false;
+    function ack(via) { if (props.onAcknowledge) props.onAcknowledge({ via: via }); }
+    function callBack(e) {
+      // Return false from onCallBack to hold the acknowledgement, for example while staff
+      // confirm a different callback number; then call your own acknowledge after they confirm.
+      var result = props.onCallBack ? props.onCallBack(e) : undefined;
+      if (callAcks && result !== false) ack('call_back');
+    }
+    // Open call sits under the quote ("see the whole call"); without a quote it joins the actions.
+    var openLink = (props.onOpenCall || props.openHref)
+      ? h('a', { className: cx(ts('label', lang), 'bn-emergency-open'), href: props.openHref || '#', onClick: props.onOpenCall },
+          props.openLabel || 'Open call', h(Glyph, { name: 'arrow', size: 14 }))
+      : null;
+    return h('section', { className: cx('bn-emergency', props.isNew && 'is-new'), role: 'alert', lang: lang },
+      h('div', { className: 'bn-emergency-head' },
+        h('span', { className: 'bn-emergency-icon', 'aria-hidden': 'true' }, h(Glyph, { name: 'alert', size: 28 })),
+        h('span', { className: 'bn-prio-marks heading', 'aria-hidden': 'true' }, '!!!'),
+        h('span', { className: cx(ts('heading', lang), 'bn-emergency-title') }, title),
+        props.time ? h('span', { className: 'label bn-num bn-emergency-time' }, props.time) : null),
+      h('div', { className: 'bn-emergency-main' },
+        props.number ? h('div', { className: 'bn-emergency-caller' },
+          h('span', { className: ts('caption', lang) }, props.callerLabel || 'Call this number'),
+          h('a', { className: 'heading-lg bn-num bn-emergency-number', href: telHref(props.number) }, props.number),
+          callerMeta ? h('span', { className: 'caption' }, callerMeta) : null) : null,
+        props.snippet ? h('div', { className: 'bn-emergency-said' },
+          h('span', { className: ts('caption', lang) }, props.quoteLabel || 'Caller said'),
+          h('p', { className: 'body bn-emergency-quote' }, '“' + props.snippet + '”'),
+          openLink) : null,
+        h('div', { className: 'bn-emergency-actions' },
+          h('button', { type: 'button', className: 'bn-btn bn-btn-onred-solid', onClick: function () { ack('acknowledge'); } },
+            h('span', { className: ts('body-strong', lang) }, props.ackLabel || 'Acknowledge')),
+          h('button', { type: 'button', className: 'bn-btn bn-btn-onred', onClick: callBack },
+            h(Glyph, { name: 'phone' }), h('span', { className: ts('body-strong', lang) }, props.callLabel || 'Call back')),
+          props.snippet ? null : openLink,
+          callAcks ? h('span', { className: cx(ts('caption', lang), 'bn-emergency-note') }, props.callAckNote || 'Call back also acknowledges') : null)),
+      steps.length ? h('ul', { className: 'bn-emergency-steps' }, steps.map(function (s, i) {
+        var st = STEP[s.state] ? s.state : 'done';
+        return h('li', { key: i, className: cx('bn-emergency-step', 'is-' + st) },
+          h('span', { className: cx(ts('label', lang), 'bn-emergency-step-head') },
+            h(Glyph, { name: STEP[st].icon, size: 14 }), s.label || STEP[st].label),
+          h('span', { className: cx(ts('body', lang), 'bn-num') }, s.text));
+      })) : null);
   }
 
   // ---------------------------------------------------------------- CallbackRow

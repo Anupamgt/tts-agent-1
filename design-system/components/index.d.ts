@@ -2,7 +2,7 @@ import type * as React from 'react';
 
 /** 'hi' switches a component's text to the Hindi type styles (hi-body, hi-label ...) and sets lang="hi". */
 export type Lang = 'en' | 'hi';
-export type GlyphName = 'check' | 'clock' | 'alert' | 'up' | 'phone' | 'dot' | 'pause' | 'arrow';
+export type GlyphName = 'check' | 'clock' | 'alert' | 'up' | 'phone' | 'dot' | 'pause' | 'arrow' | 'cross';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** secondary is the default. One primary per view; danger only for destructive steps (cancel a booking, refund). */
@@ -122,23 +122,51 @@ export interface PatientCardProps {
 }
 export declare function PatientCard(props: PatientCardProps): React.ReactElement;
 
+/** One tile in the banner's status strip. */
+export interface EmergencyStep {
+  /** done: the agent did it. failed: it did not work. next: what staff must do now. */
+  state: 'done' | 'failed' | 'next';
+  /** e.g. "Told the caller to ring 112 or 108", "P1 callback due by 6:26 pm · in 15 min". */
+  text: string;
+  /** Overrides "Done" / "Failed" / "Your next step", e.g. for Hindi. */
+  label?: string;
+}
+
 export interface EmergencyBannerProps {
   kind?: 'medical' | 'self_harm';
   title?: string;
-  /** e.g. "5:47 pm" */
+  /** e.g. "6:11 pm · 1 min ago" */
   time?: string;
-  /** Caller's number, formatted "+91 98111 11111". */
+  /** Caller's number, formatted "+91 98111 11111". Shown large, as a tel: link. */
   number?: string;
+  /** Language of the call, e.g. "Hinglish". */
+  language?: string;
+  /** Whether the caller was verified. Omit when not checked. */
+  verified?: boolean;
   /** What the caller said, from the transcript. Rendered as plain text, never as HTML. */
   snippet?: string;
-  /** What the agent did, e.g. "Agent told caller to dial 112". */
+  /** One tile per step, in order: what the agent did, then the staff's next step. */
+  steps?: EmergencyStep[];
+  /** Older single line of what the agent did; shown as one "Done" tile when steps is not given. */
   agentNote?: string;
   /** Pulse the icon until acknowledged (not under reduced motion). */
   isNew?: boolean;
-  onAcknowledge?: () => void;
-  onCallBack?: () => void;
+  /** Called by Acknowledge, and by Call back unless callAcknowledges is false. */
+  onAcknowledge?: (info: { via: 'acknowledge' | 'call_back' }) => void;
+  /** Return false to hold the acknowledgement (for example while staff confirm a different number). */
+  onCallBack?: (event: React.MouseEvent) => void | boolean;
+  /** Call back also acknowledges the alert. Default true. */
+  callAcknowledges?: boolean;
+  onOpenCall?: (event: React.MouseEvent) => void;
+  /** Link to the call record; shows the Open call link when set (or when onOpenCall is). */
+  openHref?: string;
+  lang?: Lang;
   ackLabel?: string;
   callLabel?: string;
+  openLabel?: string;
+  callerLabel?: string;
+  quoteLabel?: string;
+  callAckNote?: string;
 }
 export declare function EmergencyBanner(props: EmergencyBannerProps): React.ReactElement;
 

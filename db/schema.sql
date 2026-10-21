@@ -614,7 +614,13 @@ CREATE TABLE emergency_alerts (
     caller_number    text,
     acknowledged_by  bigint REFERENCES staff_users(id),
     acknowledged_at  timestamptz,
-    created_at       timestamptz NOT NULL DEFAULT now()
+    -- how staff acknowledged it: the Acknowledge button, or Call back, which also acknowledges
+    -- (docs/flows/01-safety-and-urgency.md, A2)
+    acknowledged_via text CHECK (acknowledged_via IN ('acknowledge', 'call_back')),
+    created_at       timestamptz NOT NULL DEFAULT now(),
+    -- who, when and how are recorded together or not at all
+    CHECK ((acknowledged_at IS NULL) = (acknowledged_by IS NULL)
+       AND (acknowledged_at IS NULL) = (acknowledged_via IS NULL))
 );
 
 -- ---------------------------------------------------------------- payments and refunds (decision 3)

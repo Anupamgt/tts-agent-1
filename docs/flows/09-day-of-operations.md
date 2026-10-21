@@ -139,7 +139,7 @@ flowchart TD
 | Payments and refunds | UPI links sent, paid, expired; cash collected; refund requests to approve, change or reject |
 | Callbacks | Priority-sorted queue with transcript snippet, caller number, reason, verification status |
 | Messages and refills | Tickets for the doctor to approve or answer |
-| Emergency alerts | Latest flags, with a clear acknowledge action |
+| Emergency alerts | Red banner on every screen until someone acknowledges it; Call back also acknowledges (01 A2). The alerts list shows who, when, and whether they called back |
 | Calls | Every call with transcript, language, tags, outcome, recording link |
 | SMS outbox | Sent and failed messages, template used |
 | Settings | Windows, capacity, priority places, priority and appointment fees per doctor, payment and refund rules, release time, doctor pools, staff-on-desk switch, clinic info, thresholds |

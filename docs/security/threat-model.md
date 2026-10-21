@@ -177,7 +177,7 @@ Permission matrix (proposed):
 | Raise a refund request | yes | no | no | yes |
 | Approve a refund | no | no | no | yes, not their own |
 | Approve refills, answer messages | no | no | yes | no |
-| Acknowledge emergency alerts | yes | yes | yes | yes |
+| Acknowledge emergency alerts (Acknowledge, or Call back, which also acknowledges) | yes | yes | yes | yes |
 | Settings, fees, staff accounts | no | no | no | yes |
 | Export data | no | no | no | yes |
 
@@ -301,6 +301,7 @@ Permission matrix (proposed):
 - Never suppress an emergency path; the 112 / 108 script always plays.
 - The console marks repeat alerts from the same number within an hour as "repeat caller".
 - Staff can tag a call as a prank after acknowledging it, which the day summary reports.
+- Every acknowledgement records who, when, and how (`acknowledged_via`: the Acknowledge button or Call back), so the alerts list and the audit log show whether an alert was actually called back.
 
 ## S-17 · Low · Children's data
 

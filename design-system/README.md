@@ -88,7 +88,7 @@ Bolnai Helpdesk is the staff console beside a clinic's AI phone agent: the recep
 
 ## Iconography
 
-- Icons are simple 16px stroke glyphs drawn in `currentColor` (1.6px stroke, round caps and joins), always next to a word, never alone as the only label. The bundle ships a small interim set through `Glyph`: check, clock, alert, up, phone, dot, pause, arrow.
+- Icons are simple 16px stroke glyphs drawn in `currentColor` (1.6px stroke, round caps and joins), always next to a word, never alone as the only label. The bundle ships a small interim set through `Glyph`: check, clock, alert, up, phone, dot, pause, arrow, cross.
 - These glyphs are a stand-in, not a chosen icon system. For the full console use Lucide (ISC licence), at 16px with a 1.5–1.75 stroke to match.
 - No emoji, no illustrations, no photographs of people or medical scenes.
 

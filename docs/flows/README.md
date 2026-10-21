@@ -5,7 +5,7 @@ Read in this order. Every file is a Mermaid diagram plus the rules the diagram c
 | # | File | Covers |
 |---|---|---|
 | 00 | [call-router](00-call-router.md) | Call start, greeting, language, intent routing, global interrupts |
-| 01 | [safety-and-urgency](01-safety-and-urgency.md) | Term definitions (emergency vs priority visit), emergency and self-harm handling, same-day requests, "no medical advice" pivot |
+| 01 | [safety-and-urgency](01-safety-and-urgency.md) | Term definitions (emergency vs priority visit), emergency and self-harm handling, what staff do with an emergency alert (Call back also acknowledges), same-day requests, "no medical advice" pivot |
 | 02 | [identity-verification](02-identity-verification.md) | Name + patient ID, date-of-birth fallback, family callers, failed checks |
 | 03 | [appointment-booking](03-appointment-booking.md) | New booking: named vs any-doctor, windows, holds, read-back; part P priority booking with fee consent |
 | 04 | [reschedule-cancel-status](04-reschedule-cancel-status.md) | Reschedule, cancel, check booking, "is the doctor late" |

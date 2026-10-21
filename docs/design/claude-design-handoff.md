@@ -112,9 +112,9 @@ Same screen in a cabin-assistant variant: shows the full queue for one doctor an
 Trigger: the agent detected a possible emergency or self-harm signal on a call. It already told the caller to ring 112 / 108.
 
 - Full-width red banner across every screen plus a sound, until acknowledged.
-- Content: type (Medical / Self-harm), time, caller number (full, tap to call), short transcript snippet, whether the agent transferred the call to the desk, whether a P1 callback was created.
-- Actions: `Acknowledge` (records who and when), `Call back now`, `Open call`.
-- After acknowledgement: moves to an Alerts list with acknowledged-by and time.
+- Segmented content, top to bottom: type (Medical / Self-harm) and time; the caller number (full, large, tap to call) with language and verified state; what the caller said, in a white quote box; actions; then one tile per step: what the agent did (`Done`: told the caller to ring 112 / 108; `Failed`: transfer to the desk not answered) and `Your next step` (P1 callback due time, counting down).
+- Actions: `Acknowledge` (records who and when), `Call back` (dials and **also acknowledges**, recorded as "via call back"), `Open call` (does not acknowledge). Flow: `docs/flows/01-safety-and-urgency.md` part A2.
+- After acknowledgement: moves to an Alerts list with acknowledged-by, time, and whether they called back.
 - Never shows anything that looks like a diagnosis.
 
 ### Screen 4 · Callbacks · P0 · desktop
@@ -276,7 +276,7 @@ Moments that need explicit UI:
 ## 10. Demo moments to prototype (the story the judges see)
 
 1. **Hinglish booking:** a caller books Dr Kaur (specialist) with a priority visit. Today shows a held card (dashed), then booked with `Priority`, `Via agent`, `Fee due ₹700`. The outbox shows the WhatsApp payment link; minutes later it turns `Paid`.
-2. **Emergency:** a caller says their father has chest pain. The red banner appears on every screen with a transcript snippet; the receptionist acknowledges and taps Call back.
+2. **Emergency:** a caller says their father has chest pain. The red banner appears on every screen with a transcript snippet; the receptionist taps Call back, which dials and acknowledges in one tap, and the alerts list shows "called back".
 3. **Running late:** the doctor taps Call next on the phone; Dr Sharma's chip moves to `+25 min · live`; later windows shift; patient cards show `Delay SMS 1/2`. After the 2nd message a delay-choice call happens; the card shows the patient's choice.
 4. **Doctor absent:** staff cancel Dr Verma's session. Any-doctor patients move to Dr Sharma (`moved from Dr Verma`); others get calls; one asks for money back → refund request appears in Payments for approval.
 5. **After hours:** staff-on-desk is off; a caller asks for a person → P2 callback appears with the reason and transcript.

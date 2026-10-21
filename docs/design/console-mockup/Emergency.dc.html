@@ -17,15 +17,25 @@
 
   <sc-if value="{{showBanner}}" hint-placeholder-val="{{true}}">
     <div style="padding: 12px 24px; background: var(--canvas)">
-      <x-import component-from-global-scope="Bolnai.EmergencyBanner" kind="medical" time="6:11 pm · 1 min ago" number="+91 98777 77777" snippet="Mere papa ko seene mein dard hai, jaldi kuch kijiye" agent-note="Agent told the caller to ring 112 or 108 · transfer to the desk: no answer · P1 callback due by 6:26 pm" is-new="{{yes}}" on-acknowledge="{{ack}}"></x-import>
+      <x-import component-from-global-scope="Bolnai.EmergencyBanner" kind="medical" time="6:11 pm · 1 min ago" number="+91 98777 77777" language="Hinglish" verified="{{no}}" snippet="Mere papa ko seene mein dard hai, jaldi kuch kijiye" steps="{{steps}}" open-href="Calls.dc.html" is-new="{{yes}}" on-acknowledge="{{ack}}"></x-import>
     </div>
   </sc-if>
 
-  <sc-if value="{{acked}}" hint-placeholder-val="{{false}}">
+  <sc-if value="{{ackedByCall}}" hint-placeholder-val="{{false}}">
     <div style="padding: 12px 24px; background: var(--canvas)">
       <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--emergency-soft); color: var(--ink)">
         <x-import component-from-global-scope="Bolnai.PriorityMark" level="P1" quiet="{{yes}}"></x-import>
-        <span class="body bn-num" style="flex: 1 1 320px">Emergency at 6:11 pm acknowledged by Simran Arora at 6:12 pm. P1 callback due by 6:26 pm.</span>
+        <span class="body bn-num" style="flex: 1 1 320px">Simran Arora called back at 6:12 pm, which acknowledged the 6:11 pm emergency. P1 callback in progress.</span>
+        <a href="Callbacks.dc.html" class="label" style="color: var(--accent)">Open callbacks</a>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ackedByButton}}" hint-placeholder-val="{{false}}">
+    <div style="padding: 12px 24px; background: var(--canvas)">
+      <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--emergency-soft); color: var(--ink)">
+        <x-import component-from-global-scope="Bolnai.PriorityMark" level="P1" quiet="{{yes}}"></x-import>
+        <span class="body bn-num" style="flex: 1 1 320px">Emergency at 6:11 pm acknowledged by Simran Arora at 6:12 pm. P1 callback still open, due by 6:26 pm.</span>
         <a href="Callbacks.dc.html" class="label" style="color: var(--accent)">Open callbacks</a>
       </div>
     </div>
@@ -45,12 +55,20 @@
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1480}}'>
 class Component extends DCLogic {
   renderVals() {
-    const acked = !!(this.state && this.state.acked);
+    const s = this.state || {};
+    const acked = !!s.acked;
     return {
       yes: true,
+      no: false,
+      steps: [
+        { state: 'done', text: 'Told the caller to ring 112 or 108' },
+        { state: 'failed', text: 'Transfer to the desk: no answer' },
+        { state: 'next', text: 'P1 callback due by 6:26 pm · in 15 min' }
+      ],
       showBanner: !acked,
-      acked: acked,
-      ack: () => this.setState({ acked: true })
+      ackedByCall: acked && s.via === 'call_back',
+      ackedByButton: acked && s.via !== 'call_back',
+      ack: (info) => this.setState({ acked: true, via: info && info.via })
     };
   }
 }

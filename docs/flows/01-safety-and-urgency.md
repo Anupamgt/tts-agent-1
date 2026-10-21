@@ -51,6 +51,56 @@ Rules:
 - Test set: build at least 40 phrasings across English, Hindi and Hinglish, with negatives, and require every emergency case to trigger.
 - Open item: confirm the helpline numbers to read out before launch (112 national emergency, 108 ambulance in most states, a mental-health helpline such as Tele-MANAS 14416).
 
+## A2. What staff see and do (console)
+
+`flag_emergency` creates the alert. When nobody took the transfer, the agent has also created a P1 callback due in 15 minutes. From there the console takes over:
+
+```mermaid
+flowchart TD
+    S0(["flag_emergency: alert created"]) --> S1["Red banner on every console screen<br/>and on the locked desk screen<br/>alarm sound, icon pulses"]
+    S1 --> S2["Banner shows the number to call, what the caller said,<br/>and one tile per step: done, failed, your next step"]
+    S2 --> S3{"What does staff tap?"}
+
+    S3 -->|"Call back"| C0{"Callback number differs<br/>from the caller's?"}
+    C0 -->|"yes"| C0a["Confirm both numbers first:<br/>'Call +91 ... ? The patient called from +91 ...'"]
+    C0a -->|"cancel"| S3
+    C0a -->|"confirm"| C1
+    C0 -->|"no"| C1["Alert acknowledged: who, when, via call back<br/>sound stops, banner leaves every screen"]
+    C1 --> C2["P1 callback set to in progress, assigned to them<br/>created now if the alert had none<br/>(for example, the transfer was answered)"]
+    C2 --> C3["Desk phone dials the number"]
+    C3 --> C4{"What happened on the call?"}
+    C4 -->|"reached"| C5(["Callback done"])
+    C4 -->|"no answer or wrong number"| C6["Callback back to open, attempt counted<br/>15-minute target keeps running"]
+
+    S3 -->|"Acknowledge"| A1["Alert acknowledged: who, when, via acknowledge<br/>sound stops, banner leaves every screen"]
+    A1 --> A2["P1 callback stays open in Callbacks<br/>for whoever is calling back"]
+
+    S3 -->|"Open call"| O1["Call record opens<br/>banner and sound stay"]
+    O1 --> S3
+    S3 -->|"nothing yet"| N1["Banner and sound stay<br/>the P1 callback turns overdue at 15 min"]
+    N1 --> S3
+
+    C1 --> L["Alert moves to the alerts list<br/>with who, when, and how:<br/>'Acknowledged by Simran at 6:12 pm · called back'"]
+    A1 --> L
+
+    classDef safety fill:#fde8e8,stroke:#a32d2d;
+    classDef human fill:#eef1fb,stroke:#534ab7;
+    class S1,S2,N1 safety;
+    class C0a,C1,C2,C3,C6,A1,A2 human;
+```
+
+Rules:
+
+- **Call back also acknowledges.** One tap stops the sound, removes the banner from every screen, and records who, when, and `acknowledged_via = 'call_back'`. Nobody has to tap twice in an emergency.
+- **Acknowledge on its own** is for when someone else is already calling, or the caller said help is on the way. It records `acknowledged_via = 'acknowledge'` and leaves the P1 callback open.
+- **Different callback number (S-08):** the acknowledgement is recorded only when staff confirm the number. Cancelling the confirm leaves the banner and the sound on.
+- **If the call does not connect,** staff mark No answer or Wrong number. The alert stays acknowledged, because someone is on it, but the P1 callback goes back to open with its 15-minute target and turns red when overdue.
+- **Nothing else acknowledges:** not Open call, not moving to another screen, not a timeout, not closing the tab.
+- **Acknowledged once:** if two people tap at the same moment, the first is recorded and the second sees "Already acknowledged by Simran at 6:12 pm".
+- **Any staff role can do it** (S-06): receptionist, cabin assistant, doctor or admin, from the desk PC or a phone.
+- A call can still be tagged as a prank afterwards, from the call record (S-16).
+- The banner's layout and states live in `design-system/components/EmergencyBanner`.
+
 ## B. Same-day request (no emergency signal)
 
 The doctor-defined "urgent criteria" list from the earlier draft is gone. The agent no longer sorts callers by how sick they sound; it only offers what is available.

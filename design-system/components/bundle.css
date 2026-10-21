@@ -89,17 +89,33 @@ body { margin: 0; font-family: var(--font-sans); background: var(--canvas); colo
 .bn-card-done .bn-card-name, .bn-card-no_show .bn-card-name, .bn-card-cancelled .bn-card-name, .bn-card-rescheduled .bn-card-name { color: var(--ink-muted); }
 .bn-card-cancelled .bn-card-name { text-decoration: line-through; }
 
-/* EmergencyBanner: the only full-red element in the product */
-.bn-emergency { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3) var(--space-4); padding: var(--space-4) var(--space-5); border-radius: var(--radius-lg); background: var(--emergency); color: var(--on-emergency); box-shadow: var(--shadow-overlay); }
+/* EmergencyBanner: the only full-red element in the product.
+   Segmented: head (what and when) · main (number to call · caller said · actions) · step tiles. */
+.bn-emergency { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4) var(--space-5) var(--space-5); border-radius: var(--radius-lg); background: var(--emergency); color: var(--on-emergency); box-shadow: var(--shadow-overlay); }
 .bn-emergency p { margin: 0; }
-.bn-emergency-icon { flex: none; padding-top: 2px; }
-.bn-emergency-body { display: flex; flex-direction: column; gap: var(--space-1); flex: 1 1 220px; min-width: 0; }
-.bn-emergency-title { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-.bn-emergency-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; flex: none; }
+.bn-emergency-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.bn-emergency-icon { display: inline-flex; flex: none; }
+.bn-emergency-title { flex: 1 1 240px; min-width: 0; }
+.bn-emergency-time { flex: none; margin-left: auto; }
+.bn-emergency-main { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-4) var(--space-5); }
+.bn-emergency-caller { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.bn-emergency-number { color: var(--on-emergency); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; white-space: nowrap; }
+.bn-emergency-said { flex: 2 1 280px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.bn-emergency-quote { padding: var(--space-3); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); }
+.bn-emergency-actions { flex: 0 1 200px; display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); }
+.bn-emergency-open { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: var(--touch-min); color: var(--on-emergency); text-decoration: underline; text-underline-offset: 3px; }
+.bn-emergency-said .bn-emergency-open { align-self: flex-start; }
+.bn-emergency-note { text-align: center; }
+.bn-emergency-number:focus-visible, .bn-emergency-open:focus-visible { outline: none; border-radius: var(--radius-sm); box-shadow: 0 0 0 2px var(--emergency), 0 0 0 5px var(--on-emergency); }
+.bn-emergency-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2); }
+.bn-emergency-step { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); border-radius: var(--radius-md); background: var(--emergency-soft); color: var(--ink); }
+.bn-emergency-step-head { display: inline-flex; align-items: center; gap: var(--space-1); }
+.bn-emergency-step.is-failed .bn-emergency-step-head { color: var(--emergency); }
+.bn-emergency-step.is-next { background: var(--surface); }
+.bn-emergency-step.is-next .bn-emergency-step-head { color: var(--accent); }
 @media (max-width: 560px) {
   .bn-emergency { padding: var(--space-4); }
   .bn-emergency-actions { flex: 1 1 100%; }
-  .bn-emergency-actions .bn-btn { flex: 1 1 0; }
 }
 .bn-btn-onred { height: var(--control-lg); background: transparent; border-color: var(--on-emergency); color: var(--on-emergency); }
 .bn-btn-onred:hover { background: var(--emergency-soft); color: var(--emergency); }
