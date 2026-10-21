@@ -198,6 +198,93 @@
   function booking(id) { return state.bookings.filter(function (b) { return b.id === id; })[0]; }
   function callBy(id) { return state.calls.filter(function (c) { return c.id === id; })[0]; }
   function cbBy(id) { return state.callbacks.filter(function (c) { return c.id === id; })[0]; }
+
+  /* ---- prescription refills (docs/flows/11-prescription-refills.md, security review S-20) ----
+     Only the patient's own doctor sees the medicine and decides. Approval needs an in-person visit
+     with that doctor within refillFollowupDays, the doctor's three checks, how the prescription was
+     issued, and the doctor's PIN. Bolnai never creates a prescription. */
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var REFILL_STATUS = {
+    open: ['attention', 'Waiting for the doctor'],
+    seen: ['attention', 'Seen by the desk'],
+    approved: ['ok', 'Approved by the doctor'],
+    declined: ['neutral', 'Declined by the doctor'],
+    visit_requested: ['info', 'Visit requested']
+  };
+  function ticketBy(id) { return state.tickets.filter(function (x) { return x.id === id; })[0]; }
+  function isRefill(tk) { return tk && tk.type === 'Refill'; }
+  function refillOpen(tk) { return tk.status === 'open' || tk.status === 'seen'; }
+  function ownDoctor(tk) {
+    var u = user();
+    return !!(u && u.role === 'doctor' && tk.doctorId && u.doctorId === tk.doctorId);
+  }
+  function dayNum(key) { var p = String(key).split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000; }
+  function dayLabel(key) {
+    var p = String(key).split('-');
+    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    return DAYS[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()];
+  }
+  function lastInPerson(patientId, doctorId) {
+    var p = patient(patientId);
+    var best = '';
+    ((p && p.past) || []).forEach(function (v) { if (v.doctorId === doctorId && v.dateKey && v.dateKey > best) best = v.dateKey; });
+    state.bookings.forEach(function (b) { if (b.patientId === patientId && b.doctorId === doctorId && b.status === 'done' && b.dateKey > best) best = b.dateKey; });
+    return best;
+  }
+  function refillCheck(tk) {
+    var last = lastInPerson(tk.patientId, tk.doctorId);
+    var limit = Number(state.settings.refillFollowupDays) || 180;
+    var ago = last ? dayNum(state.dateKey) - dayNum(last) : null;
+    return { last: last, ago: ago, limit: limit, ok: !!last && ago <= limit };
+  }
+  function requesterText(tk) {
+    if (tk.requester === 'guardian') return 'Asked by registered parent ' + tk.requesterName;
+    if (tk.requester === 'relative') return 'Asked by a relative, ' + tk.requesterName;
+    return 'Asked by the patient';
+  }
+  function queueSms(patientId, template, text) {
+    state.outbox.unshift({ id: 'mx-' + Date.now(), at: state.timeLabel, patientId: patientId, channel: 'SMS', template: template, status: 'sent', text: text + ' - ' + state.clinic });
+  }
+  function refillCard(tk) {
+    var p = patient(tk.patientId);
+    var d = doctor(tk.doctorId);
+    var st = REFILL_STATUS[tk.status] || REFILL_STATUS.open;
+    var open = refillOpen(tk);
+    var head = '<header class="panel-hd"><div><h2 class="heading">Medicine request · ' + esc(p.name) + '</h2><p class="caption bn-num">' + esc(p.pid) + ' · ' + p.age + ' y · ' + esc(tk.at) + ' · ' + esc(requesterText(tk)) + ' · for ' + esc(d.name) + '</p></div>' + badge(st[0], st[1], null) + '</header>';
+    var flags = (tk.runsOutSoon ? badge('attention', tk.daysLeft === 0 ? 'None left' : 'Runs out in ' + tk.daysLeft + ' days') : '') +
+      (tk.newSymptoms ? badge('attention', 'New symptoms mentioned') : '') +
+      (tk.requester === 'guardian' ? badge('neutral', 'Guardian', null) : tk.requester === 'relative' ? badge('neutral', 'Relative', null) : '');
+    var body = flags ? '<div class="row-actions">' + flags + '</div>' : '';
+    if (!ownDoctor(tk)) {
+      body += '<p class="bn-muted">Only ' + esc(d.name) + ' can see the medicine and decide. The desk can mark it seen, remind the doctor, and return the patient’s call.</p>';
+      if (tk.outcome) body += '<p class="caption">' + esc(tk.outcome) + '</p>';
+      if (open && user().role !== 'doctor') {
+        body += '<div class="row-actions">' + (tk.status === 'open' ? '<button type="button" class="bn-btn" data-act="refill-seen" data-id="' + tk.id + '">Mark seen</button>' : '') +
+          '<button type="button" class="bn-btn" data-act="refill-remind" data-id="' + tk.id + '">Remind ' + esc(d.name) + '</button></div>';
+      }
+      return '<section class="panel">' + head + '<div class="panel-bd">' + body + '</div></section>';
+    }
+    var chk = refillCheck(tk);
+    body += '<p><span class="label">Caller said: </span>“' + esc(tk.words) + '”</p>' +
+      '<p>Medicine, as the caller read it: <strong>' + esc(tk.medicine) + '</strong>' + (tk.daysLeft === 0 ? ' · none left' : tk.daysLeft != null ? ' · about ' + tk.daysLeft + ' day' + (tk.daysLeft === 1 ? '' : 's') + ' left' : '') + '</p>' +
+      '<p>' + (chk.last ? 'Last in-person visit with you: <strong class="bn-num">' + esc(dayLabel(chk.last)) + '</strong> <span class="caption bn-muted bn-num">(' + chk.ago + ' days ago)</span>' : '<strong>No in-person visit with you on record.</strong>') + '</p>' +
+      '<div><div class="label">Earlier requests</div>' + ((tk.prior || []).length ? tk.prior.slice(0, 5).map(function (r) { return '<p class="caption"><span class="bn-num">' + esc(r.at) + '</span> · ' + esc(r.text) + '</p>'; }).join('') : '<p class="caption bn-muted">None</p>') + '</div>';
+    if (tk.outcome) body += '<p class="caption">' + esc(tk.outcome) + '</p>';
+    if (open) {
+      var why = chk.ok ? '' : chk.last
+        ? 'Approve is off: the last visit with you was more than ' + chk.limit + ' days ago. Ask the patient to visit.'
+        : 'Approve is off: no in-person visit with you in the last 6 months. Ask the patient to visit.';
+      body += '<div class="row-actions">' +
+        '<button type="button" class="bn-btn bn-btn-primary" data-act="refill-approve" data-id="' + tk.id + '"' + (chk.ok ? '' : ' disabled') + '>' + e('Approve') + '</button>' +
+        '<button type="button" class="bn-btn" data-act="refill-call" data-id="' + tk.id + '">' + icon('phone') + 'Call patient</button>' +
+        '<button type="button" class="bn-btn" data-act="refill-visit" data-id="' + tk.id + '">Ask to visit</button>' +
+        '<button type="button" class="bn-btn" data-act="refill-decline" data-id="' + tk.id + '">Decline</button></div>' +
+        (why ? '<p class="caption bn-muted">' + esc(why) + '</p>' : '') +
+        '<p class="caption bn-muted">Approve only after you have issued the prescription yourself, signed and with your registration number. Never for Schedule X or NDPS medicines. Bolnai does not create prescriptions.</p>';
+    }
+    return '<section class="panel">' + head + '<div class="panel-bd">' + body + '</div></section>';
+  }
   function route() {
     var h = (location.hash || '#today').replace(/^#/, '').split('?')[0];
     return h || 'today';
@@ -646,7 +733,7 @@
     var attempts = c.attempts.length ? '<ul class="timeline">' + c.attempts.map(function (a) { return '<li><span class="caption bn-num">' + esc(a.at) + '</span><span>' + esc(a.outcome) + '</span></li>'; }).join('') + '</ul>' : '<p class="caption bn-muted">No attempts yet.</p>';
     return '<section class="panel"><header class="panel-hd"><h2 class="heading">' + esc(c.caller || 'Unknown caller') + '</h2>' + prio(c.priority, c.priority === 'P1' && !c.overdue && !c.isNew) + '</header><div class="panel-bd">' +
       '<p class="bn-num">' + esc(c.number) + (c.differs ? ' · callback number ' + esc(c.callbackNumber) : '') + '</p>' +
-      '<p><span class="label">Caller said: </span>“' + esc(c.snippet) + '”</p>' +
+      (c.snippet ? '<p><span class="label">Caller said: </span>“' + esc(c.snippet) + '”</p>' : '') +
       '<p class="caption bn-muted">Wanted: ' + esc(c.wanted) + '</p>' +
       '<p class="caption bn-muted">Preferred: ' + esc(c.preferred) + ' · ' + esc(c.language) + ' · ' + (c.verified ? 'verified' : 'not verified') + '</p>' +
       (c.lockout ? '<p>' + badge('attention', 'Phone verification paused: 5 failed attempts today', 'lock') + '</p><button type="button" class="bn-btn" data-act="clear-lockout" data-id="' + c.id + '">Clear after in-person check</button>' : '') +
@@ -758,13 +845,14 @@
   function ticketsPanel() {
     if (!state.tickets.length) return '<div class="empty"><p class="heading">No messages for the doctor</p></div>';
     return '<div class="stack">' + state.tickets.map(function (tk) {
+      if (isRefill(tk)) return refillCard(tk);
       var p = patient(tk.patientId);
       var open = tk.status === 'open';
       return '<section class="panel"><header class="panel-hd"><div><h2 class="heading">' + esc(tk.type) + ' · ' + esc(p.name) + '</h2><p class="caption bn-num">' + esc(p.pid) + ' · ' + esc(tk.at) + (tk.relative ? ' · ' + esc(tk.relative) : '') + '</p></div>' + badge(open ? 'attention' : 'ok', open ? 'Open' : 'Decided', null) + '</header><div class="panel-bd">' +
         '<p><span class="label">Caller said: </span>“' + esc(tk.words) + '”</p>' +
         (tk.medicine ? '<p>Medicine: <strong>' + esc(tk.medicine) + '</strong></p>' : '') +
         (tk.outcome ? '<p class="caption">' + esc(tk.outcome) + '</p>' : '') +
-        (open ? '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="ticket" data-id="' + tk.id + '" data-value="approve">' + (tk.type === 'Refill' ? 'Approve refill' : 'Reply') + '</button>' +
+        (open ? '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="ticket" data-id="' + tk.id + '" data-value="approve">Reply</button>' +
           '<button type="button" class="bn-btn" data-act="ticket" data-id="' + tk.id + '" data-value="decline">Decline</button>' +
           '<button type="button" class="bn-btn" data-act="ticket" data-id="' + tk.id + '" data-value="visit">Ask patient to visit</button></div>' : '') +
         '</div></section>';
@@ -985,10 +1073,14 @@
       '<button type="button" class="bn-btn bn-btn-quiet" data-act="network">' + (state.poorNetwork ? 'Network: poor' : 'Network: good') + '</button></div>';
     var net = state.poorNetwork ? '<div class="banner"><p>Poor network. A tap is kept on this phone and will sync.</p></div>' : '';
     var paused = d.status === 'paused' ? '<div class="banner"><p>Session paused. Call next waits until you resume.</p></div>' : '';
+    // Medicine requests for this doctor (flow 11). Full detail and decisions only on the doctor's own login.
+    var reqs = mode === 'cabin' ? [] : state.tickets.filter(function (tk) { return isRefill(tk) && tk.doctorId === d.id; });
+    var openReqs = reqs.filter(refillOpen).length;
+    var reqHtml = reqs.length ? '<div class="stack"><h2 class="heading">Medicine requests <span class="caption bn-muted bn-num">' + openReqs + ' open</span></h2>' + reqs.map(refillCard).join('') + '</div>' : '';
     return '<div class="phone-wrap"><div class="phone"><div class="phone-top">' + back + '<div><div class="body-strong">' + esc(d.name) + '</div><div class="caption bn-muted">' + esc(d.cabin) + '</div></div><button type="button" class="bn-btn" data-act="switch-open">' + esc(user().name.split(' ')[0]) + '</button></div>' +
       modeToggle + chip(d) + net + paused +
       '<p class="bn-num"><strong>' + remaining + '</strong> <span class="caption">remaining today · finish about ' + esc(finish) + '</span></p>' +
-      cabinList + (state.flash ? flash : callBtn) + small + '</div></div>';
+      cabinList + (state.flash ? flash : callBtn) + small + reqHtml + '</div></div>';
   }
   function undoLive() { return state.undo && (Date.now() - state.undo.at) < 30000; }
 
@@ -1124,6 +1216,41 @@
     if (m.kind === 'ticket') {
       return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true"><h2 class="heading">Note for the patient</h2><label class="field"><span class="label">Note</span><textarea id="tk-note" data-bind="form.note" data-live="1">' + esc(state.form.note || '') + '</textarea></label><div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="ticket-confirm">Save decision</button><button type="button" class="bn-btn" data-act="modal-close">' + e('Close') + '</button></div></div></div>';
     }
+    if (m.kind === 'refill-approve') {
+      var ra = ticketBy(m.id);
+      var rp = patient(ra.patientId);
+      var fa = state.form;
+      var box = function (key, text) {
+        return '<label class="check-line"><input type="checkbox" data-bind="form.' + key + '" data-act="refresh" ' + (fa[key] ? 'checked' : '') + '><span>' + esc(text) + '</span></label>';
+      };
+      var radio = function (val, text) {
+        return '<label class="check-line"><input type="radio" name="rf-via" value="' + val + '" data-bind="form.via" data-act="refresh" ' + (fa.via === val ? 'checked' : '') + '><span>' + esc(text) + '</span></label>';
+      };
+      return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ra-title"><h2 id="ra-title" class="heading">Approve medicine request</h2>' +
+        '<p>' + esc(rp.name) + ' · ' + esc(ra.medicine) + '</p>' +
+        '<div class="stack" style="padding:0"><div class="label">Confirm all three</div>' +
+        box('c1', 'Same condition as the in-person visit') +
+        box('c2', 'I have enough information to decide without seeing the patient') +
+        box('c3', 'Not a Schedule X or NDPS medicine') + '</div>' +
+        '<div class="stack" style="padding:0"><div class="label">How did you issue the prescription?</div>' +
+        radio('desk', 'Signed prescription left at the desk') +
+        radio('sent', 'I sent it to the patient’s registered number') + '</div>' +
+        '<label class="field"><span class="label">Your PIN</span><input id="rf-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" data-bind="form.pin" data-live="1" value="' + esc(fa.pin || '') + '"><span class="caption bn-muted">Approvals need your PIN every time, so a phone left signed in cannot approve.</span></label>' +
+        (fa.error ? '<p class="caption" style="color:var(--emergency)">' + esc(fa.error) + '</p>' : '') +
+        '<p class="caption bn-muted">The patient gets an SMS on the registered number that you have responded. It never names the medicine.</p>' +
+        '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="refill-approve-confirm">' + e('Approve') + '</button><button type="button" class="bn-btn" data-act="modal-close">' + e('Close') + '</button></div></div></div>';
+    }
+    if (m.kind === 'refill-decline') {
+      return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true"><h2 class="heading">Decline medicine request</h2>' +
+        '<label class="field"><span class="label">Note for the desk</span><textarea id="rf-dnote" data-bind="form.note" data-live="1">' + esc(state.form.note || '') + '</textarea><span class="caption bn-muted">The desk calls the patient with this note. Keep medicine names out of it if you can.</span></label>' +
+        (state.form.error ? '<p class="caption" style="color:var(--emergency)">' + esc(state.form.error) + '</p>' : '') +
+        '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="refill-decline-confirm">Decline</button><button type="button" class="bn-btn" data-act="modal-close">' + e('Close') + '</button></div></div></div>';
+    }
+    if (m.kind === 'refill-call') {
+      var rc = ticketBy(m.id);
+      var rcp = patient(rc.patientId);
+      return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true"><h2 class="heading">Call ' + esc(rcp.phones[0].number) + '?</h2><p>The registered number for ' + esc(rcp.name) + (rc.requester === 'guardian' ? ' (their parent answers)' : '') + '. This is your own teleconsult: decide after the call.</p><div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="refill-call-confirm">Call</button><button type="button" class="bn-btn" data-act="modal-close">' + e('Close') + '</button></div></div></div>';
+    }
     if (m.kind === 'move') {
       var bb = booking(m.bookingId);
       var pp = patient(bb.patientId);
@@ -1165,7 +1292,17 @@
     return '<div class="shell">' + emergencyBanner() + inner + drawer() + modal() + switchSheet() + (state.toast ? '<div class="toast" role="status">' + esc(state.toast) + '</div>' : '') + '</div>';
   }
 
+  // Replacing the page can blur a focused input, whose change handler renders again while the first
+  // render is still writing innerHTML. Queue that second render instead of nesting it.
+  var rendering = false;
+  var renderAgain = null;
   function render(opts) {
+    if (rendering) { renderAgain = opts || {}; return; }
+    rendering = true;
+    try { renderNow(opts); } finally { rendering = false; }
+    if (renderAgain) { var again = renderAgain; renderAgain = null; render(again); }
+  }
+  function renderNow(opts) {
     var keep = opts && opts.keepFocus ? document.activeElement : null;
     var focusId = keep && keep.id;
     var pos = keep ? keep.selectionStart : null;
@@ -1568,12 +1705,7 @@
         audit('Asked ' + person.name + ' to visit');
         render(); return;
       }
-      if (value === 'approve' && tk.type === 'Refill') {
-        tk.status = 'decided';
-        tk.outcome = 'Refill approved by ' + user().name + '. SMS queued to the patient.';
-        audit('Approved a refill for ' + patient(tk.patientId).name);
-        render(); return;
-      }
+      if (isRefill(tk)) return;   // refills are decided only through the refill-* actions below
       state.modal = { kind: 'ticket', id: id, mode: value };
       blankForm({ note: '' });
       render(); return;
@@ -1585,6 +1717,77 @@
       ticket.outcome = (state.modal.mode === 'decline' ? 'Declined' : 'Reply saved') + ' by ' + user().name + '. “' + state.form.note + '” SMS queued.';
       state.modal = null;
       audit(ticket.outcome);
+      render(); return;
+    }
+    // ---- refills (flow 11): the desk can only mark seen and remind; the patient's own doctor decides
+    if (act === 'refill-seen' || act === 'refill-remind') {
+      var rs = ticketBy(id);
+      if (!rs || !refillOpen(rs) || user().role === 'doctor') return;
+      if (act === 'refill-seen') { rs.status = 'seen'; audit('Marked a medicine request for ' + patient(rs.patientId).name + ' as seen', { patientId: rs.patientId }); }
+      else audit('Reminded ' + doctor(rs.doctorId).name + ' about a medicine request for ' + patient(rs.patientId).name);
+      render(); return;
+    }
+    if (act === 'refill-approve' || act === 'refill-decline' || act === 'refill-visit' || act === 'refill-call') {
+      var rt = ticketBy(id);
+      if (!rt || !ownDoctor(rt) || !refillOpen(rt)) return;
+      if (act === 'refill-approve' && !refillCheck(rt).ok) return;
+      if (act === 'refill-visit') {
+        state.modal = { kind: 'confirm', title: 'Ask ' + patient(rt.patientId).name + ' to visit?', body: 'They get an SMS that you need to see them before renewing the medicine. The desk helps them book.', confirm: 'Ask to visit', confirmAct: 'refill-visit-confirm', id: rt.id };
+      } else {
+        state.modal = { kind: act, id: rt.id };
+      }
+      blankForm({ c1: false, c2: false, c3: false, via: '', pin: '', note: '' });
+      render(); return;
+    }
+    if (act === 'refill-approve-confirm') {
+      var ap = ticketBy(state.modal && state.modal.id);
+      var fa = state.form;
+      if (!ap || !ownDoctor(ap) || !refillOpen(ap)) { state.modal = null; render(); return; }
+      var chk = refillCheck(ap);
+      if (!chk.ok) fa.error = 'No in-person visit with you in the last 6 months. Ask the patient to visit.';
+      else if (!(fa.c1 && fa.c2 && fa.c3)) fa.error = 'Confirm all three checks, or choose another action.';
+      else if (!fa.via) fa.error = 'Say how you issued the prescription.';
+      else if (String(fa.pin) !== user().pin) { fa.error = 'That PIN does not match.'; fa.pin = ''; }
+      else fa.error = '';
+      if (fa.error) { render(); return; }
+      var ad = doctor(ap.doctorId);
+      ap.status = 'approved';
+      ap.outcome = 'Approved by ' + user().name + ' at ' + state.timeLabel + ' · last in-person visit ' + dayLabel(chk.last) + ' · ' + (fa.via === 'desk' ? 'prescription left at the desk' : 'doctor sent the prescription to the patient') + '.';
+      queueSms(ap.patientId, fa.via === 'desk' ? 'Refill: collect at desk' : 'Refill: doctor replied',
+        fa.via === 'desk'
+          ? ad.name + ' has responded to your medicine request. Please collect your prescription at the clinic desk with your patient card.'
+          : ad.name + ' has responded to your medicine request and sent the reply to this number. Call the clinic with any questions.');
+      state.modal = null;
+      audit('Approved a medicine request for ' + patient(ap.patientId).name, { patientId: ap.patientId });
+      render(); return;
+    }
+    if (act === 'refill-decline-confirm') {
+      var dt = ticketBy(state.modal && state.modal.id);
+      if (!dt || !ownDoctor(dt) || !refillOpen(dt)) { state.modal = null; render(); return; }
+      var note = String(state.form.note || '').trim();
+      if (!note) { state.form.error = 'Add a note so the desk can tell the patient.'; render(); return; }
+      var dp = patient(dt.patientId);
+      dt.status = 'declined';
+      dt.outcome = 'Declined by ' + user().name + ' at ' + state.timeLabel + '. Desk to call the patient. Note: “' + note + '”';
+      state.callbacks.push({ id: 'cb-rf-' + Date.now(), priority: 'P3', isNew: false, overdue: false, dueSoon: false, dueText: 'next session', dueMin: 2200, caller: dp.name, patientId: dp.id, number: dp.phones[0].number, language: 'EN', verified: true, reason: user().name + ' declined a medicine request. Call the patient with the doctor’s note.', callId: '', status: 'open', attempts: [], smsSent: false, differs: false, callbackNumber: '', preferred: 'Next session', wanted: 'Doctor’s note: ' + note, snippet: '', lockout: false });
+      state.modal = null;
+      audit('Declined a medicine request for ' + dp.name, { patientId: dp.id });
+      render(); return;
+    }
+    if (act === 'refill-visit-confirm') {
+      var vt = ticketBy(id);
+      if (!vt || !ownDoctor(vt) || !refillOpen(vt)) { state.modal = null; render(); return; }
+      vt.status = 'visit_requested';
+      vt.outcome = user().name + ' asked the patient to visit, ' + state.timeLabel + '.';
+      queueSms(vt.patientId, 'Refill: visit needed', doctor(vt.doctorId).name + ' needs to see you before renewing your medicine. Call the clinic to book a visit. If you feel unwell, call 112.');
+      state.modal = null;
+      audit('Asked ' + patient(vt.patientId).name + ' to visit about a medicine request', { patientId: vt.patientId });
+      render(); return;
+    }
+    if (act === 'refill-call-confirm') {
+      var ct = ticketBy(state.modal && state.modal.id);
+      state.modal = null;
+      if (ct && ownDoctor(ct)) audit('Called ' + patient(ct.patientId).name + ' about a medicine request', { patientId: ct.patientId });
       render(); return;
     }
     if (act === 'pick-patient') {

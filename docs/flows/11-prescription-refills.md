@@ -94,6 +94,8 @@ flowchart TD
     class D1a,D3a,V safety;
 ```
 
+**Try it in the console mockup** (`console/`, `npm start`): reception (Priya, PIN 2468) sees both requests without the medicine and can only mark them seen or remind the doctor. Dr Sharma (PIN 2222) sees Asha Rani's request, last seen 12 Oct, and can approve it after the three checks, the issue method and his PIN. Dr Kaur (PIN 3333) sees Kabir Iyer's request with Approve switched off, because Kabir has no in-person visit with her on record, and can ask the family to visit.
+
 ## Who can do what
 
 | Action | Agent | Receptionist | Cabin assistant | Patient's own doctor | Other doctor | Admin |

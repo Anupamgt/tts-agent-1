@@ -348,7 +348,8 @@ Permission matrix (proposed):
   - The medicine and the caller's words cannot be edited after the call.
   - `runs_out_soon` is set from `refill_runout_days` (2).
 - **Design rule:** refill SMS templates carry no medicine name and go only to the registered number; the receipt SMS says it is not a prescription. Bolnai never writes, stores or sends prescriptions in v1, and never routes to a pharmacy.
-- **To build:** a doctor-only refill decision endpoint with PIN re-entry; medicine names returned only to the patient's own doctor; the console mockup's buttons gated by role. Split the PRD's `PATCH /api/tickets/{id}` so desk users can only mark a ticket seen.
+- **Console mockup (done, Oct 2026):** `console/` now shows a refill's medicine and caller's words only to the patient's own doctor; the desk can mark it seen and remind the doctor; approval needs an in-person visit with that doctor in 180 days, the three checks, how the prescription was issued and the doctor's PIN; outcome SMS name no medicine.
+- **To build:** the real backend: a doctor-only refill decision endpoint with PIN re-entry, and medicine names returned only to the patient's own doctor. Split the PRD's `PATCH /api/tickets/{id}` so desk users can only mark a ticket seen.
 
 **Accepted:** the doctor's "not Schedule X / NDPS, same condition, enough information" check is a confirmation, not something the system can verify. Matching spoken brand names to drug schedules reliably is not possible in v1, and the decision is the doctor's by law anyway.
 
