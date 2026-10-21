@@ -1,0 +1,9 @@
+{
+  "name": "bolnai-helpdesk-console",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Bolnai helpdesk staff console",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
