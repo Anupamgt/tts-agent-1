@@ -101,7 +101,7 @@ window.SEED = {
        medicine and decides. requester: patient | relative | guardian. prior = earlier requests (last 5). */
     { id: 'tk-refill', type: 'Refill', patientId: 'kabir', doctorId: 'kaur', requester: 'guardian', requesterName: 'Meera Iyer', relative: '', words: 'Same syrup as last time, he finished the bottle.', medicine: 'Paracetamol syrup', daysLeft: 0, runsOutSoon: true, newSymptoms: false, at: '4:40 pm', status: 'open', outcome: '', prior: [] },
     { id: 'tk-refill-asha', type: 'Refill', patientId: 'asha', doctorId: 'sharma', requester: 'patient', requesterName: '', relative: '', words: 'My BP tablets finish on Thursday. Same ones as before.', medicine: 'Telma 40', daysLeft: 3, runsOutSoon: false, newSymptoms: false, at: '5:25 pm', status: 'open', outcome: '', prior: [{ at: 'Thu, 17 Sep', text: 'Approved by Dr Sharma · collected at the desk' }] },
-    { id: 'tk-msg', type: 'Message', patientId: 'asha', relative: '', words: 'Please tell Dr Sharma the swelling is the same.', medicine: '', at: '5:10 pm', status: 'open', outcome: '' },
+    { id: 'tk-msg', type: 'Message', patientId: 'asha', doctorId: 'sharma', relative: '', words: 'Please tell Dr Sharma the swelling is the same.', medicine: '', at: '5:10 pm', status: 'open', outcome: '' },
     { id: 'tk-report', type: 'Report question', patientId: 'meera', relative: '', words: 'Is the blood report ready to collect?', medicine: '', at: '3:02 pm', status: 'open', outcome: '' }
   ],
   outbox: [

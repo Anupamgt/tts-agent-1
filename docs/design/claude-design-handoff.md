@@ -151,7 +151,8 @@ One side drawer used from Today, Bookings, Callbacks and Patients.
 Create / edit:
 - Patient: search by ID, name, phone; or new patient (name, age or date of birth, phone). New patients get an ID shown immediately.
 - Doctor choice: **a named doctor** or **any doctor** (pool, e.g. "General check-up"). For follow-ups: "same doctor as last time?"
-- Window picker: day tabs, windows with places left, priority places shown separately for specialists.
+- Window picker: day tabs, windows with places left, priority places shown separately for specialists. Closed days (holidays, cancelled sessions) cannot be picked; today shows only windows that have not ended, plus the doctor's current window if they are running late.
+- Source: `Walk-in at the desk` (today only) or `Phone call to the desk`, so the day summary and audit tell them apart from agent bookings.
 - Priority toggle (specialists only), shows fee.
 - Fees summary: appointment fee + priority fee = total; payment method: UPI link on WhatsApp / cash at desk; staff-only option `Waive fee` (requires a reason).
 - Requested by relative (checkbox).
@@ -184,7 +185,8 @@ Tickets the agent created: type (refill / message / report question), patient, "
 - Actions: `Call patient` (opens a call to the registered number), `Ask to visit` (opens booking), `Decline` (note required), `Approve`.
 - `Approve` is disabled with a reason when there is no in-person visit with this doctor in the last 6 months ("Needs an in-person visit · last seen 14 Feb"). It opens a confirm step: three checkboxes (same condition as the earlier visit; enough information to decide without seeing the patient; not a Schedule X or NDPS medicine), how the prescription was issued (left at the desk / I sent it to the patient), then the doctor's PIN.
 - The outcome line shows who decided and when, and which SMS went out. SMS never name the medicine. Nothing in this screen generates a prescription.
-- Messages and report questions keep `Reply` and `Decline`.
+- Messages addressed to a doctor are answered only by that doctor (on the doctor view, under "Messages for you"); the desk can mark them seen and remind the doctor. Report questions and other desk tickets keep `Reply` and `Decline` for the desk.
+- The doctor view shows a "N waiting for you" button that jumps to the medicine requests and messages.
 
 ### Screen 10 · Patients · P1 · desktop
 
@@ -257,7 +259,7 @@ Words to use: "priority visit", never "urgent". "Arrival window", not "slot" or 
 
 - Today, Callbacks, Alerts and Payments update live as calls happen. New items slide in with a short highlight; nothing jumps under the user's cursor (insert above, keep scroll).
 - Show when the agent is on a call right now ("Agent: 2 calls in progress"), optional.
-- Banners (stackable, dismissible except emergency): emergency (red, sticky), "No update from Dr Verma's cabin for 32 min", "Calendar out of sync", "3 messages failed", "Offline: changes will sync".
+- Banners (stackable, dismissible except emergency): emergency (red, sticky; after acknowledgement a compact red chip stays in the top bar until the P1 callback is closed), "No update from Dr Verma's cabin for 32 min", "Calendar out of sync", "3 messages failed", "Offline: changes will sync".
 - Every list needs designed empty, loading and error states.
 
 ## 9b. Sign-in, roles and security moments (from `docs/security/threat-model.md`)

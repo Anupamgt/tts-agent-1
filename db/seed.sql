@@ -60,10 +60,12 @@ SELECT s,
   FROM (VALUES (1), (2), (3)) AS t(s), generate_series(0, 5) AS n
  ORDER BY s, n;   -- windows 1-6 = Sharma, 7-12 = Verma, 13-18 = Kaur
 
--- Patients. New ones get a generated ID with a check digit (1000017, 1000025, ...).
-INSERT INTO patients (clinic_id, full_name, date_of_birth, file_complete, created_via) VALUES
-  (1, 'Asha Demo',  '1961-03-14', true, 'console'),
-  (1, 'Rohan Demo', '1994-11-02', true, 'console');
+-- Patients. New ones get a random 7-digit ID with a check digit (security review S-05).
+-- Fixed, check-digit-valid IDs so demo scripts and persona cards can quote them (new patients still
+-- get random IDs). They match the console and design handoff sample data: 482 915 6 and 736 204 9.
+INSERT INTO patients (clinic_id, patient_code, full_name, date_of_birth, file_complete, created_via) VALUES
+  (1, '4829156', 'Asha Demo',  '1961-03-14', true, 'console'),
+  (1, '7362049', 'Rohan Demo', '1994-11-02', true, 'console');
 INSERT INTO patient_phones (patient_id, phone, relation, is_primary) VALUES
   (1, '+919811111111', 'self',  true),
   (2, '+919811111111', 'child', false);
@@ -71,7 +73,7 @@ INSERT INTO patient_phones (patient_id, phone, relation, is_primary) VALUES
 -- Institution-style card: holder and dependant share the holder's institute ID.
 INSERT INTO patients (clinic_id, patient_code, full_name, date_of_birth, holder_code, holder_relation, file_complete, created_via) VALUES
   (1, 'HC/2026/0412', 'Meera Demo', '1988-07-21', 'EMP-1042', 'self',  true, 'console'),
-  (1, 'HC/2026/0413', 'Kabir Demo', '2016-01-09', 'EMP-1042', 'child', true, 'console');
+  (1, 'HC/2026/0413', 'Kabir Demo', '2018-01-09', 'EMP-1042', 'child', true, 'console');
 
 INSERT INTO message_templates (key, language, channel, category, body) VALUES
   -- SMS (DLT format, service implicit)

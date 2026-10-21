@@ -238,6 +238,36 @@
     var ago = last ? dayNum(state.dateKey) - dayNum(last) : null;
     return { last: last, ago: ago, limit: limit, ok: !!last && ago <= limit };
   }
+  // Booking drawer (audit fix): any open day this week, any window that has not started yet.
+  function dayClosed(docId, key) {
+    if ((state.holidays || []).indexOf(key) >= 0) return 'clinic closed';
+    if ((state.cancelledSessions || []).some(function (c) { return c.doctorId === docId && c.dateKey === key; })) return 'session cancelled';
+    return '';
+  }
+  function windowStart(label) {
+    var parts = String(label).split('–');
+    var ap = (parts[1] && parts[1].match(/am|pm/i) || ['pm'])[0];
+    return /am|pm/i.test(parts[0]) ? parseTime(parts[0]) : parseTime(parts[0] + ' ' + ap);
+  }
+  function windowEnd(label) { return parseTime(String(label).split('–')[1] || ''); }
+  function bookableLabels(key, docId) {
+    var now = parseTime(state.timeLabel);
+    var cur = key === state.dateKey && docId ? state.windows.filter(function (w) { return w.doctorId === docId && w.dateKey === key && w.isNow; })[0] : null;
+    // today: windows that have not ended, plus the doctor's current window (it may be running late)
+    return state.dayWindows.filter(function (lab) { return key !== state.dateKey || windowEnd(lab) > now || (cur && cur.label === lab); });
+  }
+  function findWindow(docId, label, key) {
+    return state.windows.filter(function (w) { return w.doctorId === docId && w.label === label && w.dateKey === key; })[0];
+  }
+  function defaultLabel(docId, key) {
+    var labs = bookableLabels(key, docId);
+    if (key === state.dateKey) {
+      var cur = state.windows.filter(function (w) { return w.doctorId === docId && w.dateKey === key && w.isNow; })[0];
+      if (cur && labs.indexOf(cur.label) >= 0) return cur.label;
+    }
+    return labs[0] || '';
+  }
+
   function requesterText(tk) {
     if (tk.requester === 'guardian') return 'Asked by registered parent ' + tk.requesterName;
     if (tk.requester === 'relative') return 'Asked by a relative, ' + tk.requesterName;
@@ -343,6 +373,10 @@
     var d = String(p).replace(/\D/g, '');
     if (d.length < 12) return p;
     return '+91 ' + d.slice(2, 4) + '••• ••' + d.slice(-3);
+  }
+  function sharedWith(p) {
+    var mine = p.phones.map(function (ph) { return ph.number; });
+    return state.patients.filter(function (o) { return o.id !== p.id && o.phones.some(function (ph) { return mine.indexOf(ph.number) >= 0; }); });
   }
   function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
   function searchPatients(q) {
@@ -458,6 +492,12 @@
     return state.refunds.filter(function (r) { return r.status === 'requested'; });
   }
 
+  function emergencyChip() {
+    var cb = cbBy('cb-new');
+    if (!state.emergencyAck || !cb || (cb.status !== 'open' && cb.status !== 'calling')) return '';
+    var al = state.alerts.filter(function (a) { return a.id === 'al-new'; })[0] || {};
+    return '<button type="button" class="emerg-chip" data-act="emerg-open">' + icon('alert', 14) + '<span><strong>Emergency 6:08 pm</strong> · acknowledged by ' + esc(al.by || '') + ' at ' + esc(al.ackAt || '') + ' · P1 callback ' + (cb.status === 'calling' ? 'in progress' : 'still open') + '</span></button>';
+  }
   function emergencyBanner() {
     if (state.emergencyAck) return '';
     return '<div class="emergency-wrap"><div class="bn-emergency is-new" role="alert">' +
@@ -527,7 +567,7 @@
     var held = state.bookings.filter(function (b) { return b.status === 'held'; }).length;
     var hits = state.search.trim() ? searchPatients(state.search).slice(0, 6) : [];
     var pop = hits.length ? '<div class="search-pop" role="listbox">' + hits.map(function (p) {
-      return '<button type="button" class="search-hit" data-act="pick-patient" data-id="' + p.id + '"><span class="body-strong">' + esc(p.name) + '</span><span class="caption bn-muted bn-num">' + esc(p.pid) + ' · ' + esc(p.phones[0].number) + '</span></button>';
+      return '<button type="button" class="search-hit" data-act="pick-patient" data-id="' + p.id + '"><span class="body-strong">' + esc(p.name) + '</span><span class="caption bn-muted bn-num">' + esc(p.pid) + ' · ' + esc(p.phones[0].number) + (sharedWith(p).length ? ' · shared phone' : '') + '</span></button>';
     }).join('') + '</div>' : '';
     var chips = state.doctors.map(chip).join('');
     return '<header class="topbar"><div class="clinic-lockup"><div class="heading">' + esc(state.clinic) + '</div><div class="caption bn-muted">Bolnai</div></div>' +
@@ -536,6 +576,7 @@
       '<div class="chip-row" aria-label="Doctors in session">' + chips + '</div>' +
       (held ? '<span class="caption bn-muted">Agent: ' + held + ' call in progress</span>' : '') +
       '<div class="search"><input id="q" data-bind="search" data-live="1" placeholder="' + e('Search name, ID or phone') + '" aria-label="' + e('Search name, ID or phone') + '" value="' + esc(state.search) + '" title="Press / to search">' + pop + '</div>' +
+      emergencyChip() +
       '<div class="counters"><a class="counter" href="#callbacks"><strong>' + p1 + ' P1 · ' + p2 + ' P2</strong> <span class="caption">' + e('Callbacks') + '</span></a>' +
       '<a class="counter" href="#payments"><strong>' + waitingRefunds().length + '</strong> <span class="caption">' + e('Refunds') + '</span></a>' +
       '<a class="counter" href="#messages"><strong>' + failedMsgs().length + '</strong> <span class="caption">Failed</span></a></div></header>';
@@ -845,18 +886,34 @@
   function ticketsPanel() {
     if (!state.tickets.length) return '<div class="empty"><p class="heading">No messages for the doctor</p></div>';
     return '<div class="stack">' + state.tickets.map(function (tk) {
-      if (isRefill(tk)) return refillCard(tk);
-      var p = patient(tk.patientId);
-      var open = tk.status === 'open';
-      return '<section class="panel"><header class="panel-hd"><div><h2 class="heading">' + esc(tk.type) + ' · ' + esc(p.name) + '</h2><p class="caption bn-num">' + esc(p.pid) + ' · ' + esc(tk.at) + (tk.relative ? ' · ' + esc(tk.relative) : '') + '</p></div>' + badge(open ? 'attention' : 'ok', open ? 'Open' : 'Decided', null) + '</header><div class="panel-bd">' +
-        '<p><span class="label">Caller said: </span>“' + esc(tk.words) + '”</p>' +
-        (tk.medicine ? '<p>Medicine: <strong>' + esc(tk.medicine) + '</strong></p>' : '') +
-        (tk.outcome ? '<p class="caption">' + esc(tk.outcome) + '</p>' : '') +
-        (open ? '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="ticket" data-id="' + tk.id + '" data-value="approve">Reply</button>' +
-          '<button type="button" class="bn-btn" data-act="ticket" data-id="' + tk.id + '" data-value="decline">Decline</button>' +
-          '<button type="button" class="bn-btn" data-act="ticket" data-id="' + tk.id + '" data-value="visit">Ask patient to visit</button></div>' : '') +
-        '</div></section>';
+      return isRefill(tk) ? refillCard(tk) : messageCard(tk);
     }).join('') + '</div>';
+  }
+  // Messages for a named doctor are answered only by that doctor (permission matrix, S-06);
+  // report questions and other desk tickets have no doctor and the desk answers them.
+  function canAnswer(tk) {
+    if (tk.doctorId) return ownDoctor(tk);
+    var r = user().role;
+    return r === 'receptionist' || r === 'admin';
+  }
+  function messageCard(tk) {
+    var p = patient(tk.patientId);
+    var d = tk.doctorId ? doctor(tk.doctorId) : null;
+    var open = tk.status === 'open' || tk.status === 'seen';
+    var st = !open ? ['ok', 'Decided'] : tk.status === 'seen' ? ['attention', 'Seen by the desk'] : ['attention', 'Open'];
+    var html = '<section class="panel"><header class="panel-hd"><div><h2 class="heading">' + esc(tk.type) + ' · ' + esc(p.name) + '</h2><p class="caption bn-num">' + esc(p.pid) + ' · ' + esc(tk.at) + (tk.relative ? ' · ' + esc(tk.relative) : '') + ' · ' + (d ? 'for ' + esc(d.name) : 'for the desk') + '</p></div>' + badge(st[0], st[1], null) + '</header><div class="panel-bd">' +
+      '<p><span class="label">Caller said: </span>“' + esc(tk.words) + '”</p>' +
+      (tk.outcome ? '<p class="caption">' + esc(tk.outcome) + '</p>' : '');
+    if (open && canAnswer(tk)) {
+      html += '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="ticket" data-id="' + tk.id + '" data-value="approve">Reply</button>' +
+        '<button type="button" class="bn-btn" data-act="ticket" data-id="' + tk.id + '" data-value="decline">Decline</button>' +
+        '<button type="button" class="bn-btn" data-act="ticket" data-id="' + tk.id + '" data-value="visit">Ask patient to visit</button></div>';
+    } else if (open && d && user().role !== 'doctor') {
+      html += '<p class="bn-muted">Only ' + esc(d.name) + ' replies to this. The desk can mark it seen and remind the doctor.</p><div class="row-actions">' +
+        (tk.status === 'open' ? '<button type="button" class="bn-btn" data-act="refill-seen" data-id="' + tk.id + '">Mark seen</button>' : '') +
+        '<button type="button" class="bn-btn" data-act="refill-remind" data-id="' + tk.id + '">Remind ' + esc(d.name) + '</button></div>';
+    }
+    return html + '</div></section>';
   }
   function outboxPanel() {
     var filters = '<div class="filters">' + ['all', 'failed', 'sent', 'delivered'].map(function (f) {
@@ -876,7 +933,7 @@
     var list = searchPatients(q);
     var current = patient(state.patientId) || list[0];
     var items = list.length ? list.map(function (p) {
-      return '<button type="button" class="search-hit" data-act="pick-patient" data-id="' + p.id + '" style="background:' + (current && current.id === p.id ? 'var(--accent-soft)' : 'transparent') + '"><span class="body-strong">' + esc(p.name) + '</span><span class="caption bn-muted bn-num">' + esc(p.pid) + '</span></button>';
+      return '<button type="button" class="search-hit" data-act="pick-patient" data-id="' + p.id + '" style="background:' + (current && current.id === p.id ? 'var(--accent-soft)' : 'transparent') + '"><span class="body-strong">' + esc(p.name) + '</span><span class="caption bn-muted bn-num">' + esc(p.pid) + (sharedWith(p).length ? ' · shared phone' : '') + '</span></button>';
     }).join('') : '<div class="empty"><p class="heading">No patient matches that</p><p class="bn-muted">Try the digits of the ID. HC/2026/0412 also matches 20260412.</p></div>';
     return '<div class="page-head"><div><h1 class="heading-lg">' + e('Patients') + '</h1><p class="caption bn-muted">No medical records. Search by ID, name, or phone.</p></div></div>' +
       '<div class="split"><div class="panel"><div class="panel-bd">' + items + '</div></div>' + (current && list.some(function (p) { return p.id === current.id; }) ? profile(current) : '') + '</div>';
@@ -886,7 +943,8 @@
     var calls = state.calls.filter(function (c) { return c.patientId === p.id; });
     var cbs = state.callbacks.filter(function (c) { return c.patientId === p.id; });
     return '<section class="panel"><header class="panel-hd"><div><h2 class="heading">' + esc(p.name) + '</h2><p class="id-hero bn-num">' + esc(p.pid) + '</p><p class="caption bn-muted">' + p.age + ' y · ' + esc(p.dob) + (p.holder ? ' · ' + esc(p.holder) : '') + '</p></div><button type="button" class="bn-btn" data-act="history" data-kind="patient" data-id="' + p.id + '">History</button></header><div class="panel-bd">' +
-      '<div><div class="label">Phones</div>' + p.phones.map(function (ph) { return '<p class="bn-num">' + esc(ph.number) + ' · ' + esc(ph.relation) + '</p>'; }).join('') + '</div>' +
+      '<div><div class="label">Phones</div>' + p.phones.map(function (ph) { return '<p class="bn-num">' + esc(ph.number) + ' · ' + esc(ph.relation) + '</p>'; }).join('') +
+      (sharedWith(p).length ? '<p class="caption" style="color:var(--attention-ink)">' + icon('alert', 12) + ' Shared phone with ' + sharedWith(p).length + ' other patient' + (sharedWith(p).length > 1 ? 's' : '') + '. On a call, confirm the name and patient ID before saying anything about a visit.</p>' : '') + '</div>' +
       '<div><div class="label">Consents</div>' + p.consents.map(function (c) { return '<p>' + (c.on ? badge('ok', c.name, 'check') : badge('neutral', c.name + ' off', null)) + ' <span class="caption bn-num">' + esc(c.date) + '</span></p>'; }).join('') + '</div>' +
       '<div><div class="label">Visits</div>' + (p.past.map(function (v) { return '<p class="caption">' + esc(v.when) + ' · ' + esc(v.text) + '</p>'; }).join('')) +
       (visits.length ? visits.map(function (b) {
@@ -1075,10 +1133,15 @@
     var paused = d.status === 'paused' ? '<div class="banner"><p>Session paused. Call next waits until you resume.</p></div>' : '';
     // Medicine requests for this doctor (flow 11). Full detail and decisions only on the doctor's own login.
     var reqs = mode === 'cabin' ? [] : state.tickets.filter(function (tk) { return isRefill(tk) && tk.doctorId === d.id; });
+    var msgs = mode === 'cabin' ? [] : state.tickets.filter(function (tk) { return !isRefill(tk) && tk.doctorId === d.id; });
     var openReqs = reqs.filter(refillOpen).length;
-    var reqHtml = reqs.length ? '<div class="stack"><h2 class="heading">Medicine requests <span class="caption bn-muted bn-num">' + openReqs + ' open</span></h2>' + reqs.map(refillCard).join('') + '</div>' : '';
+    var openMsgs = msgs.filter(refillOpen).length;
+    var reqHtml = (reqs.length || msgs.length) ? '<div class="stack" id="doc-requests" style="padding:0">' +
+      (reqs.length ? '<h2 class="heading">Medicine requests <span class="caption bn-muted bn-num">' + openReqs + ' open</span></h2>' + reqs.map(refillCard).join('') : '') +
+      (msgs.length ? '<h2 class="heading">Messages for you <span class="caption bn-muted bn-num">' + openMsgs + ' open</span></h2>' + msgs.map(messageCard).join('') : '') + '</div>' : '';
+    var jump = openReqs + openMsgs ? '<button type="button" class="bn-btn" data-act="jump-requests">' + icon('msg') + (openReqs + openMsgs) + ' waiting for you: ' + [openReqs ? openReqs + ' medicine' : '', openMsgs ? openMsgs + ' message' + (openMsgs > 1 ? 's' : '') : ''].filter(Boolean).join(', ') + '</button>' : '';
     return '<div class="phone-wrap"><div class="phone"><div class="phone-top">' + back + '<div><div class="body-strong">' + esc(d.name) + '</div><div class="caption bn-muted">' + esc(d.cabin) + '</div></div><button type="button" class="bn-btn" data-act="switch-open">' + esc(user().name.split(' ')[0]) + '</button></div>' +
-      modeToggle + chip(d) + net + paused +
+      modeToggle + chip(d) + jump + net + paused +
       '<p class="bn-num"><strong>' + remaining + '</strong> <span class="caption">remaining today · finish about ' + esc(finish) + '</span></p>' +
       cabinList + (state.flash ? flash : callBtn) + small + reqHtml + '</div></div>';
   }
@@ -1151,7 +1214,26 @@
       if (last) body += '<p class="caption">Same doctor as last time? ' + esc(doctor(last.doctorId).name) + ' is selected.</p>';
     }
     if (mode === 'create') {
-      body += '<label class="field"><span class="label">Arrival window</span><select id="f-when" data-bind="form.when" data-act="refresh"><option value="current"' + (f.when === 'current' ? ' selected' : '') + '>Current window</option><option value="next"' + (f.when === 'next' ? ' selected' : '') + '>Next window</option>' + (doc && doc.priorityFee ? '<option value="priority"' + (f.when === 'priority' ? ' selected' : '') + '>Priority place</option>' : '') + '</select></label>';
+      var bDoc = f.doctorId === 'any' ? 'sharma' : f.doctorId;
+      var bDate = f.dateKey || state.dateKey;
+      if (f.windowLabel && bookableLabels(bDate, bDoc).indexOf(f.windowLabel) < 0) f.windowLabel = '';
+      body += '<div class="grid-2"><label class="field"><span class="label">Day</span><select id="f-date" data-bind="form.dateKey" data-act="refresh">' +
+        state.week.map(function (wk) {
+          var shut = dayClosed(bDoc, wk.key);
+          return '<option value="' + wk.key + '"' + (bDate === wk.key ? ' selected' : '') + (shut ? ' disabled' : '') + '>' + esc(dayLabel(wk.key) + (wk.key === state.dateKey ? ' (today)' : '') + (shut ? ' · ' + shut : '')) + '</option>';
+        }).join('') + '</select></label>' +
+        '<label class="field"><span class="label">Arrival window</span><select id="f-win" data-bind="form.windowLabel" data-act="refresh">' +
+        bookableLabels(bDate, bDoc).map(function (lab) {
+          var w = findWindow(bDoc, lab, bDate);
+          var o = w ? occupancy(w) : { taken: 0, priorityTaken: 0 };
+          var cap = (w ? w.capacity : (doc && doc.capacity) || 4) - (w ? w.priorityPlaces : (doc && doc.priorityPlaces) || 0);
+          var chosen = (f.windowLabel || defaultLabel(bDoc, bDate)) === lab;
+          return '<option value="' + esc(lab) + '"' + (chosen ? ' selected' : '') + '>' + esc(lab + ' · ' + (o.taken >= cap ? 'full' : o.taken + '/' + cap)) + '</option>';
+        }).join('') + '</select></label></div>';
+      var today = bDate === state.dateKey;
+      body += '<div class="stack" style="padding:0;gap:4px"><span class="label">How did they reach the desk?</span>' +
+        '<label class="check-line"><input type="radio" name="f-src" value="walk_in" data-bind="form.source" data-act="refresh" ' + (f.source === 'walk_in' && today ? 'checked' : '') + (today ? '' : ' disabled') + '><span>Walk-in at the desk' + (today ? '' : ' (today only)') + '</span></label>' +
+        '<label class="check-line"><input type="radio" name="f-src" value="console" data-bind="form.source" data-act="refresh" ' + (f.source !== 'walk_in' || !today ? 'checked' : '') + '><span>Phone call to the desk</span></label></div>';
       body += '<label class="row-actions"><input type="checkbox" data-bind="form.squeeze" data-act="refresh" ' + (f.squeeze ? 'checked' : '') + '> <span>Squeeze in (over capacity)</span></label><p class="caption bn-muted">Only when the window is full. It is an explicit choice.</p>';
     }
     var priorityOn = !!(f.priority || (f.when === 'priority'));
@@ -1325,7 +1407,8 @@
     state.form = Object.assign({
       patientId: '', name: '', phone: '', age: '', reason: 'general check-up', doctorId: 'sharma',
       when: 'current', priority: false, relative: false, waive: false, waiveReason: '',
-      method: 'cash', fileComplete: true, squeeze: false, showQr: false, notify: true, note: '', amount: '', error: ''
+      method: 'cash', fileComplete: true, squeeze: false, showQr: false, notify: true, note: '', amount: '', error: '',
+      dateKey: state.dateKey, windowLabel: '', source: 'console'
     }, extra || {});
   }
   function openBooking(id) {
@@ -1458,11 +1541,17 @@
     var f = state.form;
     var docId = f.doctorId === 'any' ? 'sharma' : f.doctorId;
     var doc = doctor(docId);
-    var wins = state.windows.filter(function (w) { return w.doctorId === docId && w.dateKey === state.dateKey; })
-      .sort(function (a, b) { return parseTime(a.label.split('–')[0] + ' pm') - parseTime(b.label.split('–')[0] + ' pm'); });
-    var now = wins.filter(function (w) { return w.isNow; })[0] || wins[0];
-    var idx = wins.indexOf(now);
-    var win = f.when === 'next' ? (wins[Math.min(wins.length - 1, idx + 1)] || now) : now;
+    var dateKey = f.dateKey || state.dateKey;
+    var shut = dayClosed(docId, dateKey);
+    if (shut) { f.error = doc.name + ' has no session that day (' + shut + ').'; render({ keepFocus: true }); return; }
+    var label = f.windowLabel || defaultLabel(docId, dateKey);
+    if (bookableLabels(dateKey, docId).indexOf(label) < 0) { f.error = 'That window has already started or passed. Pick a later one.'; render({ keepFocus: true }); return; }
+    var win = findWindow(docId, label, dateKey);
+    if (!win) {
+      win = { id: 'w-' + docId + '-' + dateKey + '-' + label.replace(/\W/g, ''), doctorId: docId, label: label, shifted: '', capacity: doc.capacity || 4, priorityPlaces: doc.priorityPlaces || 0, isNow: false, dateKey: dateKey };
+      state.windows.push(win);
+    }
+    var source = f.source === 'walk_in' && dateKey === state.dateKey ? 'walk_in' : 'console';
     var priority = !!(f.priority || f.when === 'priority');
     if (priority && !(doc.priorityFee)) { f.error = 'Priority visits are only for specialists.'; render({ keepFocus: true }); return; }
     var occ = occupancy(win);
@@ -1484,16 +1573,17 @@
     if (f.waive && user().role !== 'admin') { f.error = 'Only an admin can waive a fee.'; render({ keepFocus: true }); return; }
     if (f.waive && !String(f.waiveReason || '').trim()) { f.error = 'A fee waiver needs a reason.'; render({ keepFocus: true }); return; }
     var id = 'b-' + Date.now();
+    var how = source === 'walk_in' ? 'Walk-in added by ' + user().name : 'Booked at the desk by ' + user().name + ' on a phone call';
     state.bookings.push({
-      id: id, patientId: pid, doctorId: docId, dateKey: state.dateKey, dateLabel: state.dateLabel, windowId: win.id,
-      status: 'booked', statusNote: f.squeeze ? 'Squeezed in' : '', source: 'walk_in', callId: '', reason: f.reason,
+      id: id, patientId: pid, doctorId: docId, dateKey: dateKey, dateLabel: dayLabel(dateKey), windowId: win.id,
+      status: 'booked', statusNote: f.squeeze ? 'Squeezed in' : '', source: source, callId: '', reason: f.reason,
       priority: priority, anyDoctor: f.doctorId === 'any', relativeName: f.relative ? 'Relative' : '', fee: fee,
       arrivedMin: 0, delaySms: '0/2', delayChoice: '', outreach: '',
-      timeline: [{ at: state.timeLabel, text: 'Walk-in added by ' + user().name + (f.squeeze ? ' over capacity' : '') + (fee && fee.state === 'waived' ? '. Fee waived: ' + f.waiveReason : '') }]
+      timeline: [{ at: state.timeLabel, text: how + ' · ' + dayLabel(dateKey) + ', ' + label + (f.squeeze ? ' · over capacity' : '') + (fee && fee.state === 'waived' ? '. Fee waived: ' + f.waiveReason : '') }]
     });
-    state.activity.unshift({ id: id, text: user().name + ' added a walk-in for ' + patient(pid).name + ' with ' + doc.name + '.', ago: 'just now' });
+    state.activity.unshift({ id: id, text: user().name + (source === 'walk_in' ? ' added a walk-in for ' : ' booked ') + patient(pid).name + ' with ' + doc.name + ', ' + dayLabel(dateKey) + ' ' + label + '.', ago: 'just now' });
     state.drawer = null;
-    audit('Walk-in booked for ' + patient(pid).name, { patientId: pid });
+    audit((source === 'walk_in' ? 'Walk-in booked for ' : 'Booked ') + patient(pid).name + ' · ' + dayLabel(dateKey) + ', ' + label, { patientId: pid });
     render();
   }
   function tryPin() {
@@ -1564,7 +1654,7 @@
     if (act === 'open-booking') { openBooking(id); return; }
     if (act === 'arrive') { markArrived(id); return; }
     if (act === 'send-in') { sendIn(id); return; }
-    if (act === 'walk-in') { state.drawer = { kind: 'booking', mode: 'create', bookingId: '' }; blankForm(); render(); return; }
+    if (act === 'walk-in') { state.drawer = { kind: 'booking', mode: 'create', bookingId: '' }; blankForm({ source: 'walk_in' }); render(); return; }
     if (act === 'close-drawer') { state.drawer = null; render(); return; }
     if (act === 'fill-patient') {
       var pp = patient(state.form.patientId);
@@ -1695,6 +1785,14 @@
     }
     if (act === 'ticket') {
       var tk = state.tickets.filter(function (tkt) { return tkt.id === id; })[0];
+      if (!tk || isRefill(tk) || !canAnswer(tk)) return;   // refills use the refill-* actions; doctor messages only by that doctor
+      if (value === 'visit' && user().role === 'doctor') {
+        tk.status = 'decided';
+        tk.outcome = user().name + ' asked the patient to visit, ' + state.timeLabel + '. The desk helps them book.';
+        queueSms(tk.patientId, 'Visit requested', user().name + ' would like to see you. Call the clinic to book a visit. If you feel unwell, call 112.');
+        audit('Asked ' + patient(tk.patientId).name + ' to visit', { patientId: tk.patientId });
+        render(); return;
+      }
       if (value === 'visit') {
         tk.status = 'decided';
         tk.outcome = 'Asked the patient to visit. ' + user().name + ' at ' + state.timeLabel + '.';
@@ -1705,13 +1803,13 @@
         audit('Asked ' + person.name + ' to visit');
         render(); return;
       }
-      if (isRefill(tk)) return;   // refills are decided only through the refill-* actions below
       state.modal = { kind: 'ticket', id: id, mode: value };
       blankForm({ note: '' });
       render(); return;
     }
     if (act === 'ticket-confirm') {
       var ticket = state.tickets.filter(function (tkt) { return tkt.id === state.modal.id; })[0];
+      if (!ticket || isRefill(ticket) || !canAnswer(ticket)) { state.modal = null; render(); return; }
       if (!String(state.form.note || '').trim()) return;
       ticket.status = 'decided';
       ticket.outcome = (state.modal.mode === 'decline' ? 'Declined' : 'Reply saved') + ' by ' + user().name + '. “' + state.form.note + '” SMS queued.';
@@ -1723,8 +1821,9 @@
     if (act === 'refill-seen' || act === 'refill-remind') {
       var rs = ticketBy(id);
       if (!rs || !refillOpen(rs) || user().role === 'doctor') return;
-      if (act === 'refill-seen') { rs.status = 'seen'; audit('Marked a medicine request for ' + patient(rs.patientId).name + ' as seen', { patientId: rs.patientId }); }
-      else audit('Reminded ' + doctor(rs.doctorId).name + ' about a medicine request for ' + patient(rs.patientId).name);
+      var what = isRefill(rs) ? 'a medicine request' : 'a message';
+      if (act === 'refill-seen') { rs.status = 'seen'; audit('Marked ' + what + ' for ' + patient(rs.patientId).name + ' as seen', { patientId: rs.patientId }); }
+      else if (rs.doctorId) audit('Reminded ' + doctor(rs.doctorId).name + ' about ' + what + ' for ' + patient(rs.patientId).name);
       render(); return;
     }
     if (act === 'refill-approve' || act === 'refill-decline' || act === 'refill-visit' || act === 'refill-call') {
@@ -1790,6 +1889,8 @@
       if (ct && ownDoctor(ct)) audit('Called ' + patient(ct.patientId).name + ' about a medicine request', { patientId: ct.patientId });
       render(); return;
     }
+    if (act === 'jump-requests') { var jr = document.getElementById('doc-requests'); if (jr) jr.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (act === 'emerg-open') { state.callbackId = 'cb-new'; go('callbacks'); return; }
     if (act === 'pick-patient') {
       state.patientId = id;
       state.search = '';

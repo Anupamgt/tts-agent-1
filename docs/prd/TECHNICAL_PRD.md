@@ -19,8 +19,8 @@ Bolna's cloud still has to reach two routes: tool calls and the execution webhoo
 | From `bolnai-helpdesk` (this repo) | From the telephony service (shape only) |
 |---|---|
 | Clinic model: doctors, windows, bookings, fees, tickets, callbacks, verification rules | A call has a phase, a disposition, and an append-only event stream |
-| Flows 00–10 as the agent's behaviour | Decision traces: ordered, hash-chained, written locally before they are published |
-| `db/schema.sql`, `db/seed.sql`, and the 72 schema tests | Tool servers separated by what they are allowed to read |
+| Flows 00–11 as the agent's behaviour | Decision traces: ordered, hash-chained, written locally before they are published |
+| `db/schema.sql`, `db/seed.sql`, and the 142 schema tests | Tool servers separated by what they are allowed to read |
 | Demo Family Clinic, Dr Sharma, Dr Verma, Dr Kaur | Redis for the live call, Postgres for the record, Kafka for the fan-out |
 | | A local LiveKit room as the media path the human joins |
 
@@ -53,11 +53,11 @@ Build these paths. Leave the rest of the flow docs as agent-prompt rules that en
 | Key | Who | Phone | What to try |
 |---|---|---|---|
 | `meera` | Meera Demo, card `HC/2026/0412`, born 21 Jul 1988 | `+919822222222` | Blood test is ready to collect. Last visit was with Dr Kaur. |
-| `kabir` | Kabir Demo, card `HC/2026/0413`, born 9 Jan 2016 | `+919833333333` | Blood test is pending. He is a dependant on holder `EMP-1042`. |
-| `family` | Shared by Asha Demo (`1000017`, born 14 Mar 1961) and Rohan Demo (`1000025`, born 2 Nov 1994) | `+919811111111` | Two files. The agent must not say either name until one of them verifies. Asha has a collected X-ray. Rohan has no report. |
+| `kabir` | Kabir Demo, card `HC/2026/0413`, born 9 Jan 2018 | `+919833333333` | Blood test is pending. He is a dependant on holder `EMP-1042`. |
+| `family` | Shared by Asha Demo (`482 915 6`, born 14 Mar 1961) and Rohan Demo (`736 204 9`, born 2 Nov 1994) | `+919811111111` | Two files. The agent must not say either name until one of them verifies. Asha has a collected X-ray. Rohan has no report. |
 | `unknown` | No file | `+919800000099` | Hours and a new booking work. A report question must be refused. |
 
-Asha's id `1000017` was read back after applying the current seed. Rohan's `1000025` is the next Luhn id from `patient_code_seq`. If the seed order changes, read the codes from `patients` instead of trusting this paragraph.
+Asha's and Rohan's IDs are fixed in `db/seed.sql` (both pass the check digit), so the persona cards stay valid on every fresh database. Patients created during a demo get random IDs (security review S-05).
 
 ### Three-minute script
 
