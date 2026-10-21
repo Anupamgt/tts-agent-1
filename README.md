@@ -4,6 +4,7 @@ Voice AI phone help desk for a local clinic (Bolna + admin console + Google Cale
 
 - `docs/prd/TECHNICAL_PRD.md` - local prototype runtime (Bolna web call, LiveKit, Kafka, traces, handoff)
 - `docs/scope.md` - agreed scope and open questions
+- `docs/gtm.md` - go-to-market decisions the product depends on (full plan: https://claude.ai/artifact/BjosXcjEXwY6SnBRMTF6Ud)
 - `docs/flows/` - architecture, clinic flow today vs with agent, and the detailed decision trees (00 to 11, start at `docs/flows/README.md`)
 - `docs/alignment.md` - decisions to confirm (with pointers into the flows), caveats, and inputs needed
 - `docs/design/claude-design-handoff.md` - console UI brief for Claude Design (users, screens, states, sample data, kickoff prompt)
