@@ -1,6 +1,6 @@
 # Alignment checklist
 
-Purpose: make sure everyone means the same thing before building. Each row points to the exact place in the flows where the decision lives, so you can read the diagram, say "yes" or "change it", and move on. Node IDs (like `B10`) are the box names inside the Mermaid diagrams.
+Purpose: make sure everyone means the same thing before building. A single sign-off table of every open proposal (37 rows, with an Agree / Change / Defer pick per row) is in the review doc "Bolnai: audit fixes, sign-offs and GTM readiness" (https://claude.ai/artifact/CSNg5JdQzoGJrws7Kru3i6, 22 Oct 2026); this file stays the source the flows point to. Each row points to the exact place in the flows where the decision lives, so you can read the diagram, say "yes" or "change it", and move on. Node IDs (like `B10`) are the box names inside the Mermaid diagrams.
 
 ## How to review in about 30 minutes
 
@@ -156,3 +156,8 @@ Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-u
 - Expired holds are released automatically after 90 seconds.
 - Hindi SMS templates are separate Unicode templates.
 - Outbound calls in the demo go only to team phones.
+- Refill approvals need the doctor's PIN every time; a declined refill creates a P3 callback for the desk.
+- Messages addressed to a doctor are answered only by that doctor; the desk answers report questions.
+- Desk bookings reach 7 days ahead; a booking records whether it was a walk-in or a phone call to the desk.
+- An acknowledged emergency stays as a red chip in the console's top bar until its P1 callback is closed.
+- Demo patients use fixed IDs (Asha 482 915 6, Rohan 736 204 9); Kabir is 8 everywhere.
