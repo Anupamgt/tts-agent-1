@@ -1424,6 +1424,13 @@
     render();
   }
   function markArrived(id) {
+    if (state.live) {
+      liveSend('POST', '/api/bookings/' + id + '/arrive').then(function (res) {
+        if (!res.ok) toast((res.data && res.data.detail) || 'Could not mark arrived');
+        if (state.reload) state.reload();
+      });
+      return;
+    }
     var b = booking(id);
     if (!b || b.status !== 'booked') return;
     b.status = 'arrived';
@@ -1455,6 +1462,13 @@
     render();
   }
   function callNext(id) {
+    if (state.live) {
+      liveSend('POST', '/api/doctors/' + id + '/call-next').then(function (res) {
+        if (!res.ok) toast((res.data && res.data.detail) || 'Could not call the next patient');
+        if (state.reload) state.reload();
+      });
+      return;
+    }
     var d = doctor(id);
     if (!d || d.status === 'paused' || d.status === 'ended' || d.status === 'cancelled') return;
     if (state.poorNetwork) {
@@ -1538,6 +1552,19 @@
     render();
   }
   function saveBooking() {
+    if (state.live && state.form.source === 'walk_in') {
+      var walk = state.form;
+      liveSend('POST', '/api/walk-ins', {
+        full_name: walk.name, phone: walk.phone, doctor_id: walk.doctorId,
+        priority: !!walk.priority, reason: walk.reason || 'general check-up'
+      }).then(function (res) {
+        if (!res.ok) { state.form.error = (res.data && res.data.detail) || 'Could not add the walk-in'; render({ keepFocus: true }); return; }
+        state.drawer = null;
+        toast('Walk-in added');
+        if (state.reload) state.reload();
+      });
+      return;
+    }
     var f = state.form;
     var docId = f.doctorId === 'any' ? 'sharma' : f.doctorId;
     var doc = doctor(docId);
@@ -1615,7 +1642,13 @@
   function doAct(act, el) {
     var id = el.dataset.id || '';
     var value = el.dataset.value || '';
-    if (act === 'desk') { audit(state.staffOnDesk ? 'Staff on desk is on. Calls transfer to the desk phone.' : 'Staff on desk is off. Callers are offered a callback.'); render(); return; }
+    if (act === 'desk') {
+      if (state.live) {
+        liveSend('PATCH', '/api/desk', { staff_on_desk: !!state.staffOnDesk }).then(function () { if (state.reload) state.reload(); });
+      }
+      audit(state.staffOnDesk ? 'Staff on desk is on. Calls transfer to the desk phone.' : 'Staff on desk is off. Callers are offered a callback.');
+      render(); return;
+    }
     if (act === 'refresh') { render({ keepFocus: true }); return; }
     if (act === 'lang') { state.lang = value; render(); return; }
     if (act === 'lock') { state.locked = true; state.pin = ''; state.pinFor = state.userId; state.needOtp = false; state.pinError = ''; render(); return; }
@@ -1755,6 +1788,17 @@
       var rff = state.refunds.filter(function (r) { return r.id === state.modal.id; })[0];
       var mode = state.modal.mode;
       if ((mode === 'reject' || mode === 'change') && !String(state.form.note || '').trim()) { state.form.error = 'A note is required.'; render({ keepFocus: true }); return; }
+      if (state.live) {
+        liveSend('POST', '/api/refunds/' + rff.id + '/decide', {
+          pin: user().pin, decision: mode === 'reject' ? 'reject' : 'approve',
+          note: state.form.note || '', amount_inr: mode === 'change' ? Number(state.form.amount) : undefined
+        }).then(function (res) {
+          if (!res.ok) { state.form.error = (res.data && res.data.detail) || 'The refund was refused'; render({ keepFocus: true }); return; }
+          state.modal = null;
+          if (state.reload) state.reload();
+        });
+        return;
+      }
       if (mode === 'change') {
         var amt = Number(state.form.amount);
         var max = rff.paid - rff.refunded;
@@ -1849,6 +1893,18 @@
       else if (String(fa.pin) !== user().pin) { fa.error = 'That PIN does not match.'; fa.pin = ''; }
       else fa.error = '';
       if (fa.error) { render(); return; }
+      if (state.live) {
+        liveSend('POST', '/api/tickets/' + ap.id + '/refill-decision', {
+          pin: fa.pin, decision: 'approve', checks_confirmed: true,
+          issued_via: fa.via === 'desk' ? 'collect_at_desk' : 'doctor_sent_to_patient',
+          note: fa.note || ''
+        }).then(function (res) {
+          if (!res.ok) { state.form.error = (res.data && res.data.detail) || 'The doctor could not decide'; render(); return; }
+          state.modal = null;
+          if (state.reload) state.reload();
+        });
+        return;
+      }
       var ad = doctor(ap.doctorId);
       ap.status = 'approved';
       ap.outcome = 'Approved by ' + user().name + ' at ' + state.timeLabel + ' · last in-person visit ' + dayLabel(chk.last) + ' · ' + (fa.via === 'desk' ? 'prescription left at the desk' : 'doctor sent the prescription to the patient') + '.';
@@ -2030,4 +2086,50 @@
   bumpIdle();
   if (!location.hash) location.hash = 'today';
   else render();
+
+  function liveSend(method, url, body) {
+    return fetch(url, {
+      method: method,
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) { return { ok: r.ok, status: r.status, data: data }; });
+    });
+  }
+  function applyLive(snap) {
+    ['doctors', 'patients', 'windows', 'bookings', 'callbacks', 'calls', 'payments', 'refunds', 'tickets', 'outbox', 'users', 'alerts'].forEach(function (key) {
+      if (snap[key]) state[key] = snap[key];
+    });
+    state.clinic = snap.clinic || state.clinic;
+    state.address = snap.address || state.address;
+    state.dateLabel = snap.dateLabel || state.dateLabel;
+    state.dateKey = snap.dateKey || state.dateKey;
+    state.timeLabel = snap.timeLabel || state.timeLabel;
+    state.staffOnDesk = !!snap.staffOnDesk;
+    state.live = true;
+    state.syncOk = true;
+    if (!state._liveUser && snap.users && snap.users.length) {
+      state.userId = snap.users[0].id;
+      state._liveUser = true;
+    }
+    if (!state.drawer && !state.modal) render();
+  }
+  if (/[?&]live=1(?:&|$)/.test(location.search)) {
+    function pull() {
+      fetch('/api/console/bootstrap', { credentials: 'same-origin' }).then(function (r) {
+        if (r.status === 401) {
+          return fetch('/api/desk/login', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: '2468' })
+          }).then(function () { return fetch('/api/console/bootstrap', { credentials: 'same-origin' }); });
+        }
+        return r;
+      }).then(function (r) { return r.json(); }).then(applyLive).catch(function () { state.syncOk = false; });
+    }
+    state.reload = pull;
+    pull();
+    setInterval(pull, 8000);
+  }
 })();

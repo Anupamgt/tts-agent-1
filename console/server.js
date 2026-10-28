@@ -7,6 +7,29 @@ const path = require('path');
 const PORT = 8001;
 const HOST = '0.0.0.0';
 const ROOT = path.join(__dirname, 'public');
+const API = process.env.BOLNAI_API || 'http://127.0.0.1:8000';
+
+function proxy(req, res) {
+  const target = new URL(req.url, API);
+  const headers = Object.assign({}, req.headers);
+  headers.host = target.host;
+  const upstream = http.request({
+    protocol: target.protocol,
+    hostname: target.hostname,
+    port: target.port,
+    path: target.pathname + target.search,
+    method: req.method,
+    headers: headers
+  }, (up) => {
+    res.writeHead(up.statusCode || 502, up.headers);
+    up.pipe(res);
+  });
+  upstream.on('error', () => {
+    if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('The clinic API is not running.');
+  });
+  req.pipe(upstream);
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -29,6 +52,11 @@ function safeFile(urlPath) {
 }
 
 const server = http.createServer((req, res) => {
+  const url = req.url || '/';
+  if (url.startsWith('/api') || url.startsWith('/v1') || url.startsWith('/healthz') || url.startsWith('/metrics')) {
+    proxy(req, res);
+    return;
+  }
   const file = safeFile(req.url || '/');
   if (!file) {
     res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });

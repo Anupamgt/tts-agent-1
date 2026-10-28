@@ -478,3 +478,103 @@ def test_refunds_queue_and_reminder(client):
         (early_booking,),
     )[0]["n"]
     assert reminders == 1
+
+
+def test_desk_operations(client):
+    assert sql("SELECT pin FROM staff_users WHERE role = 'admin'")[0]["pin"] == "1357"
+    window = _future_window(1, 9, 0)
+    rohan = sql("SELECT id FROM patients WHERE full_name = 'Rohan Demo'")[0]["id"]
+    held = sql(
+        """INSERT INTO bookings (
+             patient_id, window_id, doctor_id, status, source, hold_expires_at, gcal_sync_status, visit_type)
+           VALUES (%s, %s, 1, 'held', 'agent', now() - interval '2 minutes', 'not_needed', 'general_checkup')
+           RETURNING id""",
+        (rohan, window),
+    )[0]["id"]
+    job = client.post("/api/admin/jobs/run")
+    assert job.status_code == 200, job.text
+    assert sql("SELECT status FROM bookings WHERE id = %s", (held,))[0]["status"] == "cancelled"
+
+    delayed_window = _future_window(1, 11, 0)
+    delayed = sql(
+        """INSERT INTO bookings (
+             patient_id, window_id, doctor_id, status, source, gcal_sync_status, visit_type, delay_sms_count)
+           VALUES (%s, %s, 1, 'booked', 'console', 'not_needed', 'general_checkup', 2)
+           RETURNING id""",
+        (rohan, delayed_window),
+    )[0]["id"]
+    again = client.post("/api/admin/jobs/run")
+    assert again.status_code == 200, again.text
+    assert sql(
+        "SELECT count(*)::int AS n FROM outbound_jobs WHERE booking_id = %s AND kind = 'delay_choice'",
+        (delayed,),
+    )[0]["n"] == 1
+
+    meera = sql("SELECT id FROM patients WHERE full_name = 'Meera Demo'")[0]["id"]
+    kaur_window = _future_window(3, 14, 1)
+    named = sql(
+        """INSERT INTO bookings (
+             patient_id, window_id, doctor_id, status, source, gcal_sync_status, visit_type,
+             appointment_fee_inr, payment_status, fee_consent_at, payment_method)
+           VALUES (%s, %s, 3, 'booked', 'console', 'not_needed', 'general_checkup', 200, 'pending', now(), 'cash_desk')
+           RETURNING id""",
+        (meera, kaur_window),
+    )[0]["id"]
+    cancelled = client.post("/api/doctors/3/cancel-session")
+    assert cancelled.status_code == 200, cancelled.text
+    assert sql(
+        "SELECT count(*)::int AS n FROM outbound_jobs WHERE booking_id = %s AND kind = 'reschedule_offer'",
+        (named,),
+    )[0]["n"] == 1
+
+    walk_window = _future_window(1, 16, 0)
+    walked = client.post("/api/walk-ins", json={
+        "full_name": "Sunil Demo", "phone": "+919800001111", "doctor_id": 1, "window_id": walk_window,
+    })
+    assert walked.status_code == 200, walked.text
+    assert sql("SELECT status, source FROM bookings WHERE id = %s", (walked.json()["booking_id"],))[0]["source"] == "walk_in"
+
+    call_id, _, _ = activate(client, "meera")
+    assert tool(client, call_id, "match_patient", full_name="Meera Demo", patient_code="HC/2026/0412", caller_is_patient=True)["ok"]
+    open_refill = sql(
+        """SELECT id FROM message_tickets
+            WHERE patient_id = %s AND type = 'refill' AND status IN ('new', 'seen')
+            ORDER BY id DESC LIMIT 1""",
+        (meera,),
+    )
+    if open_refill:
+        ticket_id = open_refill[0]["id"]
+    else:
+        ticket = tool(client, call_id, "create_message_ticket", type="refill", medicine_name="TelmaTest", doctor_name="Sharma", days_left=4, body="Same tablets.")
+        assert ticket["ok"] is True, ticket
+        ticket_id = ticket["data"]["ticket_id"]
+    session = sql(
+        """INSERT INTO doctor_sessions (doctor_id, session_date, planned_start, planned_end, status)
+           VALUES (1, current_date - 20, now() - interval '20 days', now() - interval '20 days' + interval '1 hour', 'ended')
+           RETURNING id"""
+    )[0]["id"]
+    past = sql(
+        """INSERT INTO windows (session_id, starts_at, ends_at, capacity, priority_places)
+           VALUES (%s, now() - interval '20 days', now() - interval '20 days' + interval '30 minutes', 4, 0)
+           RETURNING id""",
+        (session,),
+    )[0]["id"]
+    sql(
+        """INSERT INTO bookings (patient_id, window_id, doctor_id, status, source, gcal_sync_status, visit_type)
+           VALUES (%s, %s, 1, 'done', 'console', 'not_needed', 'general_checkup')""",
+        (meera, past),
+    )
+    refused = client.post(f"/api/tickets/{ticket_id}/refill-decision", json={"pin": "2468", "decision": "approve", "checks_confirmed": True, "issued_via": "collect_at_desk"})
+    assert refused.status_code == 401
+    approved = client.post(f"/api/tickets/{ticket_id}/refill-decision", json={"pin": "2222", "decision": "approve", "checks_confirmed": True, "issued_via": "collect_at_desk"})
+    assert approved.status_code == 200, approved.text
+
+    refund_id = sql("SELECT id FROM refunds WHERE status = 'requested' ORDER BY id DESC LIMIT 1")[0]["id"]
+    blocked = client.post(f"/api/refunds/{refund_id}/decide", json={"pin": "2468", "decision": "approve"})
+    assert blocked.status_code == 403
+    ok = client.post(f"/api/refunds/{refund_id}/decide", json={"pin": "1357", "decision": "approve"})
+    assert ok.status_code == 200, ok.text
+    assert sql("SELECT status FROM refunds WHERE id = %s", (refund_id,))[0]["status"] == "approved"
+    snap = client.get("/api/console/bootstrap")
+    assert snap.status_code == 200, snap.text
+    assert snap.json()["doctors"] and snap.json()["clinic"] == "Demo Family Clinic"

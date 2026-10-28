@@ -9,7 +9,7 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const port = Number(process.env.PGLITE_PORT || 54329);
 
 const db = new PGlite({ extensions: { btree_gist } });
-for (const file of ["db/schema.sql", "db/seed.sql", "db/002_runtime.sql", "db/seed_runtime.sql"]) {
+for (const file of ["db/schema.sql", "db/seed.sql", "db/002_runtime.sql", "db/seed_runtime.sql", "db/003_desk.sql"]) {
   const sql = fs.readFileSync(path.join(repo, file), "utf8");
   await db.exec(sql);
   console.log("loaded", file);

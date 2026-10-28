@@ -57,7 +57,7 @@ A case passes only when every clause in its pass rule is true.
 
 - **Blocker case.** One failure blocks a release claim for the limit it gates. The blocker suite is 100 percent or it is not a pass.
 - **Quality case.** Scored as a rate. See the booking and info rules below. A quality failure does not by itself mean an emergency was missed.
-- **not_run.** The handler does not exist yet (the usual one is `request_refund`, which is in the flows tool list and not in PRD §7). `not_run` is not a pass. The write-up says the gate is unproven.
+- **not_run.** The handler does not exist yet. `not_run` is not a pass. `request_refund` is mounted and computes the policy amount.
 
 `lookup_caller` returning only `patient_count` is defined in flow 00 and PRD §5. `user_data` on the Bolna mint is `call_id`, `caller_phone`, `patient_count`, and `clinic_name`. A date of birth, a name list, or a report in that payload fails G-VER-001 even if the spoken reply was empty.
 
@@ -96,7 +96,7 @@ A blocker case passes the release run only when the automated clauses pass and, 
 
 Flow 00 and flow 06 say `transfer_call`. This prototype has no number to dial (PRD §5). Cases expect `request_human`.
 
-`request_refund` is the flows tool. PRD §7 does not list it; a refund row may still be inserted and no money moves. Until that route exists, those cases stay `not_run`.
+`request_refund` is mounted. It stores the clinic policy amount and never a caller-supplied figure or a refund destination. No money moves in the demo.
 
 `get_report_status` and `get_previous_interactions` are prototype tools (PRD §7). They return a status or an operational line. They have no result column (`lab_orders` has none). Reading a value aloud fails the case even if the tool was right.
 

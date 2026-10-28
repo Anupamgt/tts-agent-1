@@ -25,6 +25,7 @@ services:
       - ../db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
       - ../db/002_runtime.sql:/docker-entrypoint-initdb.d/03_runtime.sql:ro
       - ../db/seed_runtime.sql:/docker-entrypoint-initdb.d/04_seed_runtime.sql:ro
+      - ../db/003_desk.sql:/docker-entrypoint-initdb.d/05_desk.sql:ro
     mem_limit: 512m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U clinic -d clinic"]

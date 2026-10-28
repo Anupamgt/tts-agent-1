@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Demo phone · Bolnai</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/console.css">
+</head>
+<body>
+  <main style="max-width: 36rem; margin: 2rem auto; padding: 0 1rem;">
+    <h1>Demo phone</h1>
+    <p>Starts a clinic call. With a Bolna agent id and the web-call SDK loaded, it places the audio call. Otherwise it still creates the call so the desk can see it.</p>
+    <div id="people"></div>
+    <pre id="log" style="white-space: pre-wrap;"></pre>
+  </main>
+  <script>
+    var logEl = document.getElementById('log');
+    function log(line) { logEl.textContent += line + '\n'; }
+    async function api(path, body) {
+      var res = await fetch(path, {
+        method: body ? 'POST' : 'GET',
+        credentials: 'same-origin',
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(data.detail || res.statusText);
+      return data;
+    }
+    async function start(persona) {
+      log('Starting ' + persona + '…');
+      var call = await api('/api/calls', { persona_key: persona });
+      var headers = { 'Content-Type': 'application/json', 'X-Caller-Token': call.caller_token };
+      var session = await fetch('/api/calls/' + call.call_id + '/bolna-session', { method: 'POST', credentials: 'same-origin', headers: headers });
+      var sessionBody = await session.json().catch(function () { return {}; });
+      log('Call ' + call.call_id + ' · files on this number: ' + call.patient_count);
+      if (!session.ok) {
+        log('Bolna session was not minted. Check BOLNA_AGENT_ID and that the API can reach Bolna.');
+        log(JSON.stringify(sessionBody));
+        return;
+      }
+      await fetch('/api/calls/' + call.call_id + '/phase', { method: 'POST', credentials: 'same-origin', headers: headers, body: JSON.stringify({ phase: 'ai_active' }) });
+      if (window.BolnaWebCall && typeof window.BolnaWebCall.start === 'function') {
+        await window.BolnaWebCall.start(sessionBody);
+        log('Web call started. Speak after the assistant introduces itself.');
+      } else {
+        log('Session minted. Load the Bolna web-call SDK on this page to attach the microphone.');
+      }
+    }
+    api('/api/personas').then(function (rows) {
+      var box = document.getElementById('people');
+      rows.forEach(function (row) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'bn-btn bn-btn-primary';
+        button.style.margin = '0 0.5rem 0.5rem 0';
+        button.textContent = row.display_name;
+        button.addEventListener('click', function () { start(row.key).catch(function (err) { log(err.message); }); });
+        box.appendChild(button);
+      });
+    }).catch(function (err) { log(err.message); });
+  </script>
+</body>
+</html>

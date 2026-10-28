@@ -36,6 +36,7 @@ from app.recorder import append_pcm, append_segment, close_recording, decode_pcm
 from app.tools import TOOLS
 from app.tools.desk import set_phase
 from app.handoff_wait import notify
+from app.jobs import note_call_next
 from app.traces import read_jsonl, replay_call
 
 log = logging.getLogger("clinic")
@@ -588,6 +589,7 @@ async def call_next(doctor_id: int, request: Request):
                 (session["id"],),
             )
             if nxt is None:
+                await note_call_next(conn, int(session["id"]))
                 return {"ok": True, "waiting": False}
             await conn.execute(
                 "UPDATE bookings SET status = 'in_consult', consult_started_at = now() WHERE id = %s",
@@ -598,6 +600,7 @@ async def call_next(doctor_id: int, request: Request):
                    VALUES (%s, %s, 'call_next', 'reception')""",
                 (session["id"], nxt["id"]),
             )
+            await note_call_next(conn, int(session["id"]))
     return {"ok": True, "waiting": True, "booking_id": int(nxt["id"]), "patient_name": nxt["full_name"]}
 
 
