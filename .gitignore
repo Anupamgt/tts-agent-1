@@ -18,4 +18,8 @@ uploads/
 # tooling
 node_modules/
 __pycache__/
+.pytest_cache/
+.venv/
+api/.venv/
+data/
 .DS_Store
