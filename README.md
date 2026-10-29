@@ -2,6 +2,7 @@
 
 Voice AI phone help desk for a local clinic (Bolna + admin console + Google Calendar + Postgres).
 
+- `agent/` - Bolna agent: system prompt, fixed welcome message, the 21 custom functions, and `check_agent.py` (static checks against the backend)
 - `docs/prd/TECHNICAL_PRD.md` - local prototype runtime (Bolna web call, LiveKit, Kafka, traces, handoff)
 - `docs/scope.md` - agreed scope and open questions
 - `docs/gtm.md` - go-to-market decisions the product depends on (full plan: https://claude.ai/artifact/BjosXcjEXwY6SnBRMTF6Ud)

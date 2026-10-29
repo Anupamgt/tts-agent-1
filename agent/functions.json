@@ -1,0 +1,837 @@
+[
+  {
+    "name": "lookup_caller",
+    "description": "How many patient files are on the calling number. Returns a count only, never names.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        }
+      },
+      "required": [
+        "call_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/lookup_caller",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s"
+      }
+    }
+  },
+  {
+    "name": "match_patient",
+    "description": "Verify the caller with full name plus the patient id on the card, or full name plus date of birth. Call this before any patient-specific fact or change.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "full_name": {
+          "type": "string",
+          "description": "Patient full name, as spoken."
+        },
+        "patient_code": {
+          "type": "string",
+          "description": "Id printed on the card, as spoken. Omit if they do not know it."
+        },
+        "date_of_birth": {
+          "type": "string",
+          "description": "YYYY-MM-DD. Only when the id is unknown."
+        },
+        "phone_last4": {
+          "type": "string",
+          "description": "Last four digits of the registered mobile. Only if the previous result asked for them."
+        },
+        "caller_is_patient": {
+          "type": "boolean",
+          "description": "False when a relative or someone else is calling for the patient."
+        }
+      },
+      "required": [
+        "call_id",
+        "full_name"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/match_patient",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "full_name": "%(full_name)s",
+        "patient_code": "%(patient_code)s",
+        "date_of_birth": "%(date_of_birth)s",
+        "phone_last4": "%(phone_last4)s",
+        "caller_is_patient": "%(caller_is_patient)s"
+      }
+    },
+    "pre_call_message": "One moment, I am checking the file."
+  },
+  {
+    "name": "register_patient",
+    "description": "Create a file for a new patient who wants to book. Only after two failed matches, or when the caller says they are new. The phone number is taken from the line, never from the caller.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "full_name": {
+          "type": "string",
+          "description": "New patient's full name."
+        },
+        "date_of_birth": {
+          "type": "string",
+          "description": "YYYY-MM-DD, if known."
+        },
+        "age_years": {
+          "type": "string",
+          "description": "Age in years, if the date of birth is not known."
+        }
+      },
+      "required": [
+        "call_id",
+        "full_name"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/register_patient",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "full_name": "%(full_name)s",
+        "date_of_birth": "%(date_of_birth)s",
+        "age_years": "%(age_years)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "get_clinic_info",
+    "description": "Clinic facts: opening hours, address, fees, priority fee, payment options, refund rules, or the list of doctors. No verification needed.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "topic": {
+          "type": "string",
+          "description": "Which fact.",
+          "enum": [
+            "hours",
+            "address",
+            "fees",
+            "priority_fee",
+            "payment",
+            "refunds",
+            "doctors"
+          ]
+        }
+      },
+      "required": [
+        "call_id",
+        "topic"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/get_clinic_info",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "topic": "%(topic)s"
+      }
+    }
+  },
+  {
+    "name": "get_doctor_delay",
+    "description": "Whether a doctor is running late today. No verification needed.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "doctor_name": {
+          "type": "string",
+          "description": "Doctor's name as spoken."
+        }
+      },
+      "required": [
+        "call_id",
+        "doctor_name"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/get_doctor_delay",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "doctor_name": "%(doctor_name)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "get_available_windows",
+    "description": "Open arrival windows for one doctor, or for the general check-up pool when any doctor is fine. Verified callers only.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "doctor_name": {
+          "type": "string",
+          "description": "Doctor's name, for a named doctor or a specialist."
+        },
+        "pool_name": {
+          "type": "string",
+          "description": "Use 'General check-up' when any doctor is fine."
+        }
+      },
+      "required": [
+        "call_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/get_available_windows",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "doctor_name": "%(doctor_name)s",
+        "pool_name": "%(pool_name)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "hold_window",
+    "description": "Hold the chosen arrival window for 90 seconds while the caller confirms. States any fee that needs a yes.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "window_id": {
+          "type": "string",
+          "description": "window_id from get_available_windows."
+        },
+        "any_doctor": {
+          "type": "boolean",
+          "description": "True for the general check-up pool."
+        },
+        "priority": {
+          "type": "boolean",
+          "description": "True only for a priority visit the caller asked for."
+        }
+      },
+      "required": [
+        "call_id",
+        "window_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/hold_window",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "window_id": "%(window_id)s",
+        "any_doctor": "%(any_doctor)s",
+        "priority": "%(priority)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "create_booking",
+    "description": "Book the chosen window after a clear yes to the window and, when there is a fee, a clear yes to the amount.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "window_id": {
+          "type": "string",
+          "description": "Same window_id as the hold."
+        },
+        "fee_consent": {
+          "type": "boolean",
+          "description": "True only if the caller said yes to the fee amount."
+        },
+        "payment_method": {
+          "type": "string",
+          "description": "How the fee is paid.",
+          "enum": [
+            "upi_link",
+            "cash_desk"
+          ]
+        },
+        "priority": {
+          "type": "boolean",
+          "description": "True only for a priority visit."
+        },
+        "any_doctor": {
+          "type": "boolean",
+          "description": "True for the general check-up pool."
+        },
+        "visit_type": {
+          "type": "string",
+          "description": "Kind of visit.",
+          "enum": [
+            "first_visit",
+            "follow_up",
+            "general_checkup",
+            "other"
+          ]
+        }
+      },
+      "required": [
+        "call_id",
+        "window_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/create_booking",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "window_id": "%(window_id)s",
+        "fee_consent": "%(fee_consent)s",
+        "payment_method": "%(payment_method)s",
+        "priority": "%(priority)s",
+        "any_doctor": "%(any_doctor)s",
+        "visit_type": "%(visit_type)s"
+      }
+    },
+    "pre_call_message": "One moment, I am booking it."
+  },
+  {
+    "name": "reschedule_booking",
+    "description": "Move the caller's own visit to a new arrival window after a clear yes.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "booking_id": {
+          "type": "string",
+          "description": "booking_id from get_booking_status."
+        },
+        "window_id": {
+          "type": "string",
+          "description": "New window_id."
+        }
+      },
+      "required": [
+        "call_id",
+        "booking_id",
+        "window_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/reschedule_booking",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "booking_id": "%(booking_id)s",
+        "window_id": "%(window_id)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "cancel_booking",
+    "description": "Cancel the caller's own visit after a clear yes.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "booking_id": {
+          "type": "string",
+          "description": "booking_id from get_booking_status."
+        }
+      },
+      "required": [
+        "call_id",
+        "booking_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/cancel_booking",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "booking_id": "%(booking_id)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "get_booking_status",
+    "description": "Upcoming visits for the verified patient only.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        }
+      },
+      "required": [
+        "call_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/get_booking_status",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "get_report_status",
+    "description": "Status of the verified patient's reports: ready, pending or collected. Never values. Patient only, not relatives.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        }
+      },
+      "required": [
+        "call_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/get_report_status",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "get_previous_interactions",
+    "description": "Recent visits and calls for the verified patient. Patient only, not relatives.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        }
+      },
+      "required": [
+        "call_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/get_previous_interactions",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "create_message_ticket",
+    "description": "Pass a message, or a medicine refill request, to the doctor or desk. Never a decision.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "type": {
+          "type": "string",
+          "description": "Kind of request.",
+          "enum": [
+            "message",
+            "refill",
+            "report_query"
+          ]
+        },
+        "body": {
+          "type": "string",
+          "description": "Short message in the caller's words. Nothing clinical added."
+        },
+        "doctor_name": {
+          "type": "string",
+          "description": "Doctor the message or medicine is for."
+        },
+        "medicine_name": {
+          "type": "string",
+          "description": "Refills: the name exactly as read from the strip."
+        },
+        "days_left": {
+          "type": "string",
+          "description": "Refills: days of medicine left, as a number."
+        },
+        "requester_is_guardian": {
+          "type": "boolean",
+          "description": "Refills for a child: true only if the caller said they are the parent or guardian."
+        },
+        "new_symptoms_mentioned": {
+          "type": "boolean",
+          "description": "True if the caller mentioned new or worse symptoms."
+        }
+      },
+      "required": [
+        "call_id",
+        "type"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/create_message_ticket",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "type": "%(type)s",
+        "body": "%(body)s",
+        "doctor_name": "%(doctor_name)s",
+        "medicine_name": "%(medicine_name)s",
+        "days_left": "%(days_left)s",
+        "requester_is_guardian": "%(requester_is_guardian)s",
+        "new_symptoms_mentioned": "%(new_symptoms_mentioned)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "create_callback",
+    "description": "Ask the desk to call the caller back. P1 emergency or self-harm, P2 same day, P3 next session.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "priority": {
+          "type": "string",
+          "description": "Callback priority.",
+          "enum": [
+            "P1",
+            "P2",
+            "P3"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Short reason for the desk."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Only if the caller asks for a different Indian mobile number, +91 and 10 digits."
+        }
+      },
+      "required": [
+        "call_id",
+        "priority",
+        "reason"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/create_callback",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "priority": "%(priority)s",
+        "reason": "%(reason)s",
+        "phone": "%(phone)s"
+      }
+    }
+  },
+  {
+    "name": "flag_emergency",
+    "description": "Alert the clinic to a possible emergency or self-harm. Call right after saying the emergency line.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Kind of emergency.",
+          "enum": [
+            "medical",
+            "self_harm"
+          ]
+        },
+        "snippet": {
+          "type": "string",
+          "description": "A few of the caller's own words."
+        }
+      },
+      "required": [
+        "call_id",
+        "kind"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/flag_emergency",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "kind": "%(kind)s",
+        "snippet": "%(snippet)s"
+      }
+    }
+  },
+  {
+    "name": "request_human",
+    "description": "Bring someone from the desk into the call. The prompt says the hand-over line itself, so there is no pre-call message.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "priority": {
+          "type": "string",
+          "description": "P1 emergency or self-harm, P2 distress or a failed booking, P3 everything else.",
+          "enum": [
+            "P1",
+            "P2",
+            "P3"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Short reason for the desk."
+        }
+      },
+      "required": [
+        "call_id",
+        "priority",
+        "reason"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/request_human",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "priority": "%(priority)s",
+        "reason": "%(reason)s"
+      }
+    },
+    "pre_call_webhook_url": "https://PUBLIC_BASE/v1/bolna/pre-handoff",
+    "pre_call_webhook_param": {
+      "call_id": "%(call_id)s",
+      "reason": "%(reason)s"
+    }
+  },
+  {
+    "name": "request_refund",
+    "description": "Ask the desk to refund a paid fee, after one offer of another window. The amount comes from the clinic's rule; staff approve.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "booking_id": {
+          "type": "string",
+          "description": "booking_id of the paid visit."
+        }
+      },
+      "required": [
+        "call_id",
+        "booking_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/request_refund",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "booking_id": "%(booking_id)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "send_sms",
+    "description": "Text the verified patient's registered mobile with an approved template.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "template_key": {
+          "type": "string",
+          "description": "Which message.",
+          "enum": [
+            "patient_id",
+            "booking_confirmed",
+            "rescheduled",
+            "cancelled"
+          ]
+        },
+        "booking_id": {
+          "type": "string",
+          "description": "Required for booking_confirmed, rescheduled and cancelled."
+        }
+      },
+      "required": [
+        "call_id",
+        "template_key"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/send_sms",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "template_key": "%(template_key)s",
+        "booking_id": "%(booking_id)s"
+      }
+    }
+  },
+  {
+    "name": "create_payment_link",
+    "description": "Send a UPI payment link for a booked visit's fee by WhatsApp.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "booking_id": {
+          "type": "string",
+          "description": "booking_id from create_booking."
+        }
+      },
+      "required": [
+        "call_id",
+        "booking_id"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/create_payment_link",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "booking_id": "%(booking_id)s"
+      }
+    },
+    "pre_call_message": "One moment, please."
+  },
+  {
+    "name": "set_disposition",
+    "description": "Record how the call ended. Call exactly once, just before the goodbye.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "description": "The call reference from the prompt. Do not ask the caller."
+        },
+        "disposition": {
+          "type": "string",
+          "description": "Outcome.",
+          "enum": [
+            "booked",
+            "rescheduled",
+            "cancelled",
+            "info_provided",
+            "ticket_created",
+            "callback_queued",
+            "transferred_to_human",
+            "emergency_redirected",
+            "verification_failed",
+            "out_of_scope",
+            "abandoned"
+          ]
+        }
+      },
+      "required": [
+        "call_id",
+        "disposition"
+      ]
+    },
+    "key": "custom_task",
+    "value": {
+      "method": "POST",
+      "url": "https://PUBLIC_BASE/v1/tools/set_disposition",
+      "api_token": "Bearer TOKEN",
+      "param": {
+        "call_id": "%(call_id)s",
+        "disposition": "%(disposition)s"
+      }
+    }
+  }
+]

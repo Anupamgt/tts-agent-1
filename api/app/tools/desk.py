@@ -360,7 +360,7 @@ async def create_message_ticket(db, args):
                     )
                     doctor = await one(conn, "SELECT name FROM doctors WHERE id = %s", (doctor_id,))
                     clinic = await one(conn, "SELECT name, phone FROM clinics WHERE id = %s", (call["clinic_id"],))
-                    rendered = render_template(template["body"], [doctor["name"], clinic["phone"] or clinic["name"]])
+                    rendered = render_template(template["body"], [_short_doctor(doctor["name"]), clinic["phone"] or clinic["name"]])
                     await conn.execute(
                         """INSERT INTO messages
                              (clinic_id, channel, patient_id, template_key, language, to_number, rendered_body, status)
@@ -379,6 +379,54 @@ async def create_message_ticket(db, args):
                 return result(False, "There are already several medicine requests on this file. I will ask the desk to call back.", error_code="refill_limit")
             log.error("ticket rejected: %s", message)
             return result(False, "I could not pass that request on. I can ask the desk to call you back.", error_code="ticket_rejected")
+
+
+def _short_doctor(name: str) -> str:
+    # templates already say "Dr {#var#}"
+    return name[3:] if (name or "").startswith("Dr ") else (name or "")
+
+
+async def _sms_values(conn, call, key: str, booking_id):
+    """Real values for each template the agent may send. A template whose details
+    cannot be filled is refused rather than sent with wrong or empty details."""
+    from app.tools.booking import day_label, time_range
+
+    clinic = await one(conn, "SELECT name, phone FROM clinics WHERE id = %s", (call["clinic_id"],))
+    contact = clinic["phone"] or clinic["name"]
+    if key == "patient_id":
+        patient = await one(conn, "SELECT patient_code FROM patients WHERE id = %s", (call["patient_id"],))
+        return [clinic["name"], patient["patient_code"], clinic["name"]], None
+    if key in {"booking_confirmed", "rescheduled", "cancelled"}:
+        if booking_id is None:
+            return None, result(False, "I need the visit before I can send that message.", error_code="need_booking")
+        row = await one(
+            conn,
+            """SELECT b.patient_id, d.name AS doctor, p.full_name, p.patient_code,
+                      w.starts_at + make_interval(mins => w.shift_minutes) AS starts_at,
+                      w.ends_at + make_interval(mins => w.shift_minutes) AS ends_at
+                 FROM bookings b
+                 JOIN doctors d ON d.id = b.doctor_id
+                 JOIN windows w ON w.id = b.window_id
+                 JOIN patients p ON p.id = b.patient_id
+                WHERE b.id = %s""",
+            (booking_id,),
+        )
+        if row is None or int(row["patient_id"]) != int(call["patient_id"]):
+            await write_trace(
+                conn, call, "data_access", "violation",
+                {"tool": "send_sms", "matches_verified_patient": False, "booking_id": booking_id},
+            )
+            return None, result(False, "I can only send a message about a visit on the confirmed file.", error_code="cross_patient", next_="stop")
+        doctor = _short_doctor(row["doctor"])
+        day = day_label(row["starts_at"])
+        window = time_range(row["starts_at"], row["ends_at"])
+        first_name = (row["full_name"] or "").split(" ")[0]
+        if key == "booking_confirmed":
+            return [first_name, doctor, day, window, row["patient_code"], contact, clinic["name"]], None
+        if key == "rescheduled":
+            return [doctor, day, window, contact, clinic["name"]], None
+        return [doctor, day, contact, clinic["name"]], None
+    return None, result(False, "I cannot send that message from here.", error_code="bad_template")
 
 
 async def send_sms(db, args):
@@ -402,8 +450,10 @@ async def send_sms(db, args):
                 phone = await patient_phone(conn, call["patient_id"])
                 if not phone or not MOBILE.match(phone):
                     return result(False, "I can only text the mobile number on the file.", error_code="bad_phone")
-                clinic = await one(conn, "SELECT name FROM clinics WHERE id = %s", (call["clinic_id"],))
-                rendered = render_template(template["body"], [clinic["name"], clinic["name"], clinic["name"], clinic["name"], clinic["name"], clinic["name"]])
+                values, refusal = await _sms_values(conn, call, key, parse_call_id(args.get("booking_id")))
+                if refusal:
+                    return refusal
+                rendered = render_template(template["body"], values)
                 row = await one(
                     conn,
                     """INSERT INTO messages

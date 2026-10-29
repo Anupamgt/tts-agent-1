@@ -362,7 +362,7 @@ Permission matrix (proposed):
 | Privacy notice and DPDP contact | Callers must be told what is recorded and why; the law expects a contact for requests | Drafted in `docs/privacy-notice.md` (D-08); clinic and lawyer review |
 | Console login and permissions (S-06) | Nothing stops misuse today | Add to the design handoff (done) and the API spec |
 | API spec for agent tools and console | Every finding above lands in the API | Write `docs/api/` next, with S-01 and S-02 built in |
-| Agent prompt and Bolna configuration | Voices per language, fillers, translated system messages, tool descriptions | `docs/agent/` |
+| Agent prompt and Bolna configuration | Voices per language, fillers, translated system messages, tool descriptions | Done for the buildathon: `agent/` (prompt, welcome message, 21 functions, static checks). Open items in `agent/README.md` |
 | Emergency and jailbreak test sets | The safety and S-01 promises need proof | 40+ emergency phrasings, 20+ injection scripts, in English, Hindi and Hinglish |
 | Hindi SMS and WhatsApp templates | Only English is drafted | Draft and send for DLT / Meta approval |
 | Monitoring and incident runbook | Bolnai reports to the clinic and CERT-In within 6 hours; the clinic tells patients without delay and the Data Protection Board within 72 hours (D-13) | One-page runbook: who, how, which contacts; due before the pilot |

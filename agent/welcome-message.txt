@@ -1,0 +1,1 @@
+Namaste, you have reached {clinic_name}. I'm the clinic's automated assistant, and this call is recorded for quality and safety. You can speak in English or Hindi, and ask for the desk at any time. How can I help you?

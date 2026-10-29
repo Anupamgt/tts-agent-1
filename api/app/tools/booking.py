@@ -33,12 +33,30 @@ def _hm(moment: datetime) -> str:
     return f"{hour}:{local.minute:02d}", "am" if local.hour < 12 else "pm"
 
 
-def format_window(start: datetime, end: datetime) -> str:
+def day_label(moment: datetime) -> str:
+    """Spoken day for a window, in IST: today, tomorrow, or e.g. Friday 31 October.
+    The agent speaks this word for word, so it never has to work out a weekday itself."""
+    from datetime import timedelta
+
+    local = moment.astimezone(IST).date()
+    today = datetime.now(IST).date()
+    if local == today:
+        return "today"
+    if local == today + timedelta(days=1):
+        return "tomorrow"
+    return f"{local.strftime('%A')} {local.day} {local.strftime('%B')}"
+
+
+def time_range(start: datetime, end: datetime) -> str:
     left, left_suffix = _hm(start)
     right, right_suffix = _hm(end)
     if left_suffix == right_suffix:
         return f"{left}–{right} {right_suffix}"
     return f"{left} {left_suffix}–{right} {right_suffix}"
+
+
+def format_window(start: datetime, end: datetime) -> str:
+    return f"{day_label(start)}, {time_range(start, end)}"
 
 
 async def _require(conn, call, allow_limited: bool):
@@ -86,7 +104,10 @@ async def get_doctor_delay(db, args):
             if session is None:
                 return result(True, f"I do not have a live update for {doctor['name']}.", data={"doctor_name": doctor["name"]})
             delay = int(session["est_delay_min"] or 0)
-            if delay <= 0:
+            if session["est_basis"] != "live":
+                # flow 04 T8b: a schedule-only estimate cannot see delays, so never claim "on time"
+                say = f"I do not have a live update for {doctor['name']}."
+            elif delay <= 0:
                 say = f"{doctor['name']} is on time."
             else:
                 say = f"{doctor['name']} is running about {delay} minutes late."
@@ -383,10 +404,12 @@ async def _write_booking(db, args, hold: bool):
                 await audit(conn, call, "booking.hold" if hold else "booking.create", "booking", booking_id, {"window_id": window_id})
                 if hold:
                     say = f"I am holding {label} with {window['name']}."
+                elif plan["total"] and plan["method"] == "cash_desk":
+                    say = f"The visit is booked with {window['name']} for {label}. The fee is {plan['total']} rupees, paid at the desk."
                 elif plan["total"]:
-                    say = f"The visit is booked with {window['name']} between {label}. The fee is {plan['total']} rupees. I will send a UPI link on WhatsApp."
+                    say = f"The visit is booked with {window['name']} for {label}. The fee is {plan['total']} rupees. I will send a UPI link on WhatsApp."
                 else:
-                    say = f"The visit is booked with {window['name']} between {label}."
+                    say = f"The visit is booked with {window['name']} for {label}."
                 return result(True, say, data={"booking_id": booking_id, "window": label, "fee_inr": plan["total"], "payment": payment})
         except errors.InsufficientPrivilege as exc:
             return privilege_result(exc)

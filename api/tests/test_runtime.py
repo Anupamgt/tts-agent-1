@@ -158,7 +158,8 @@ def test_meera_script_unknown_and_limited(client):
     )
     assert wrapped.status_code == 200 and "Example Road" in wrapped.json()["say"]
     delay = tool(client, call_id, "get_doctor_delay", doctor_name="Sharma")
-    assert delay["ok"] and "on time" in delay["say"].lower()
+    # seed basis is schedule_only: no claim that the doctor is on time (flow 04 T8b, gold G-RS-007)
+    assert delay["ok"] and "live update" in delay["say"].lower() and "on time" not in delay["say"].lower()
 
     window_id = window_for(client, call_id, "Kaur")
     refused = tool(client, call_id, "create_booking", window_id=window_id, doctor_name="Kaur")
@@ -578,3 +579,34 @@ def test_desk_operations(client):
     snap = client.get("/api/console/bootstrap")
     assert snap.status_code == 200, snap.text
     assert snap.json()["doctors"] and snap.json()["clinic"] == "Demo Family Clinic"
+
+
+def test_spoken_facts_are_true(client):
+    """Tool sentences are spoken word for word (agent/system-prompt.txt), so each one must be true:
+    windows carry their day, cash bookings do not promise a UPI link, and SMS bodies hold the real visit."""
+    call_id, _, _ = activate(client, "meera")
+    assert tool(client, call_id, "match_patient", full_name="Meera Demo", patient_code="HC/2026/0412", caller_is_patient=True)["ok"]
+    # earlier tests leave Meera at the upcoming-visit limit
+    sql("""UPDATE bookings SET status = 'cancelled', cancelled_at = now(), hold_expires_at = NULL
+            WHERE patient_id = (SELECT id FROM patients WHERE full_name = 'Meera Demo') AND status IN ('held', 'booked')""")
+    sql("UPDATE clinic_settings SET max_agent_bookings_per_number_day = 50")
+    window_id = _future_window(3, 30, 1)
+    found = tool(client, call_id, "get_available_windows", doctor_name="Kaur")
+    labels = [w["label"] for w in found["data"]["windows"]]
+    assert labels and all(label.split(",")[0] for label in labels)
+    assert all(("today" in l) or ("tomorrow" in l) or any(d in l for d in ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")) for l in labels)
+    booked = tool(client, call_id, "create_booking", window_id=window_id, doctor_name="Kaur", fee_consent=True, payment_method="cash_desk")
+    sql("UPDATE clinic_settings SET max_agent_bookings_per_number_day = 4")
+    assert booked["ok"], booked
+    assert "at the desk" in booked["say"] and "UPI" not in booked["say"]
+    assert any(d in booked["say"] for d in ("today", "tomorrow", "day "))
+    sms = tool(client, call_id, "send_sms", template_key="cancelled")
+    assert sms["ok"] is False and sms["error_code"] == "need_booking"
+    sms = tool(client, call_id, "send_sms", template_key="booking_confirmed", booking_id=booked["data"]["booking_id"])
+    assert sms["ok"], sms
+    body = sql("SELECT rendered_body FROM messages WHERE id = %s", (sms["data"]["message_id"],))[0]["rendered_body"]
+    assert "Dr Demo Kaur" in body and "Dr Dr" not in body and "HC/2026/0412" in body and "Demo Family Clinic is" not in body
+    pid = tool(client, call_id, "send_sms", template_key="patient_id")
+    body = sql("SELECT rendered_body FROM messages WHERE id = %s", (pid["data"]["message_id"],))[0]["rendered_body"]
+    assert "HC/2026/0412" in body
+    assert tool(client, call_id, "send_sms", template_key="delay_update")["error_code"] == "bad_template"

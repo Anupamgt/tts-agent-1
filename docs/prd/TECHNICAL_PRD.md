@@ -311,6 +311,8 @@ Wait for status `completed` before reading `transcript`, `summary`, `conversatio
 
 ### Prompt to paste
 
+Superseded on 29 Oct 2026 by `agent/system-prompt.txt`, `agent/welcome-message.txt` and `agent/functions.json` (all 21 functions), checked by `agent/check_agent.py`. The short draft below is kept for history; do not paste it.
+
 ```text
 You are the phone assistant for {clinic_name}. Your first sentence tells the caller you are an automated assistant and that the call is recorded.
 
