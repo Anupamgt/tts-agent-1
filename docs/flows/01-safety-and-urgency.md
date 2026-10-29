@@ -35,7 +35,7 @@ flowchart TD
     E5 -->|"yes"| E6["transfer_call to staff<br/>say the 112 / 108 line once more"]
     E5 -->|"no"| E7["Repeat 112 / 108 once<br/>create_callback priority P1<br/>stay on the line until the caller hangs up"]
 
-    SH["Calm, caring line, no lecturing<br/>'If you are in immediate danger call 112.'<br/>Give a mental-health helpline"]
+    SH["Calm, caring line, no lecturing<br/>'If you are in immediate danger call 112.'<br/>Give Tele-MANAS: 14416,<br/>free, any time of day"]
     SH --> SH2["flag_emergency<br/>transfer to staff if on desk,<br/>else callback P1"]
 
     classDef safety fill:#fde8e8,stroke:#a32d2d;
@@ -49,7 +49,7 @@ Rules:
 - Third-person reports count the same as first-person ones.
 - Past-tense mentions ("I had chest pain last month, I want a follow-up") are not emergencies, but if the agent cannot tell, it asks once and treats silence as an emergency.
 - Test set: build at least 40 phrasings across English, Hindi and Hinglish, with negatives, and require every emergency case to trigger.
-- Open item: confirm the helpline numbers to read out before launch (112 national emergency, 108 ambulance in most states, a mental-health helpline such as Tele-MANAS 14416).
+- Numbers (decided 29 Oct 2026, D-01 in `docs/decision-log.md`): 112 national emergency, 108 ambulance (most states), and for self-harm or distress Tele-MANAS 14416 (also 1800-891-4416), the free 24x7 national tele mental health line. The agent never tries to transfer a caller to 112. The clinic still signs off the exact wording before any real patient call.
 
 ## B. Same-day request (no emergency signal)
 

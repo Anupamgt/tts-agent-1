@@ -193,7 +193,7 @@ Permission matrix (proposed):
 
 **Fix:**
 
-- **Fixed (schema):** retention settings (`transcript_retention_days` 180, `recording_retention_days` 30; proposed values).
+- **Fixed (schema):** retention settings, decided 29 Oct 2026 (D-09): `recording_retention_days` 30, `transcript_retention_days` 180 (also the text inside decision traces), `access_log_retention_days` 365 (DPDP Rule 6 from May 2027; CERT-In needs 180 days of logs kept in India), `refill_record_retention_days` 1095 (refill and doctor-message tickets are the doctor's teleconsultation log). Payment rows follow the clinic's accountant. A lawyer confirms the periods before the pilot.
 - **To build:**
   - a nightly purge job for transcripts and recordings
   - recordings served through the backend after login, never as raw provider links in the console
@@ -206,7 +206,7 @@ Permission matrix (proposed):
   - Only the clinic bookings calendar is shared with the backend's Google account.
   - The waiting-room display can show patient numbers instead of names.
   - The console never shows health details in lists (already in the brief).
-- **Gap:** a short **privacy notice** for callers is not written yet: what is recorded, why, for how long, and who to contact. Add one line to the greeting and send the full notice by SMS or link when a record is created. DPDP also expects a contact for data requests and complaints.
+- **Drafted (29 Oct 2026, D-07, D-08):** the call opening line and the full privacy notice are in `docs/privacy-notice.md`. The clinic is the data fiduciary and Bolnai its processor under a written contract (D-06). The clinic and a lawyer review the notice before the pilot.
 
 ## S-08 · High · Toll fraud and harassment through outbound contact
 
@@ -309,7 +309,7 @@ Permission matrix (proposed):
 
 **Where:** dependants, for example Kabir (8), booked by a parent.
 
-**Check:** DPDP normally needs verifiable consent from a parent for a child's data. The 2025 rules appear to exempt healthcare providers when they process a child's data to provide health services. Confirm that this applies to the clinic. Bookings for children already come from a parent or guardian (limited mode).
+**Decided (29 Oct 2026, D-10):** the DPDP Rules' Fourth Schedule, Part A, exempts a clinical establishment or healthcare professional from section 9(1) and 9(3) when processing a child's data is restricted to providing health services to the child. Bolnai processes on the clinic's behalf for exactly that, so no separate parental-consent step is added. A child's data is used for nothing else, refills for children still need a registered guardian, and bookings for children come from a parent or guardian (limited mode).
 
 ## S-18 · Low · Duplicate webhooks and race conditions
 
@@ -359,12 +359,12 @@ Permission matrix (proposed):
 
 | Gap | Why it matters | Suggested next step |
 |---|---|---|
-| Privacy notice and DPDP contact | Callers must be told what is recorded and why; the law expects a contact for requests | One greeting line + an SMS link to the full notice |
+| Privacy notice and DPDP contact | Callers must be told what is recorded and why; the law expects a contact for requests | Drafted in `docs/privacy-notice.md` (D-08); clinic and lawyer review |
 | Console login and permissions (S-06) | Nothing stops misuse today | Add to the design handoff (done) and the API spec |
 | API spec for agent tools and console | Every finding above lands in the API | Write `docs/api/` next, with S-01 and S-02 built in |
 | Agent prompt and Bolna configuration | Voices per language, fillers, translated system messages, tool descriptions | `docs/agent/` |
 | Emergency and jailbreak test sets | The safety and S-01 promises need proof | 40+ emergency phrasings, 20+ injection scripts, in English, Hindi and Hinglish |
 | Hindi SMS and WhatsApp templates | Only English is drafted | Draft and send for DLT / Meta approval |
-| Monitoring and incident runbook | DPDP breach reporting within 72 hours | One-page runbook: who, how, which contacts |
+| Monitoring and incident runbook | Bolnai reports to the clinic and CERT-In within 6 hours; the clinic tells patients without delay and the Data Protection Board within 72 hours (D-13) | One-page runbook: who, how, which contacts; due before the pilot |
 | Edge-case catalogue | You planned to define these | Start from `08` and this review |
 | Success metrics and cost model | The demo and GTM need numbers | Calls handled, booking rate, transfer rate, cost per call |

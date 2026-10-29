@@ -16,6 +16,14 @@
 
 In the demo, outbound calls go only to numbers the team controls.
 
+**Pilot rule (decided 29 Oct 2026, D-15 and D-27 in `docs/decision-log.md`):** no automated outbound calls until the telephony provider confirms the clinic's calls go out on a registered number series and the robo-call notice to the operator is filed (TRAI TCCCPR, Feb 2025 amendment). Until then:
+
+- reminders and follow-up reminders go by SMS (DLT service template, evening before, 9 am to 9 pm), controlled by `clinic_settings.reminder_channel = 'sms'`;
+- delay-choice and reschedule-offer calls are placed by staff from the console's callback list, not by the agent;
+- everything else in the table above is already SMS or WhatsApp.
+
+The decision tree below is unchanged and applies once outbound calls are cleared.
+
 ## Decision tree
 
 ```mermaid

@@ -20,7 +20,7 @@ Bolna's cloud still has to reach two routes: tool calls and the execution webhoo
 |---|---|
 | Clinic model: doctors, windows, bookings, fees, tickets, callbacks, verification rules | A call has a phase, a disposition, and an append-only event stream |
 | Flows 00–11 as the agent's behaviour | Decision traces: ordered, hash-chained, written locally before they are published |
-| `db/schema.sql`, `db/seed.sql`, and the 142 schema tests | Tool servers separated by what they are allowed to read |
+| `db/schema.sql`, `db/seed.sql`, and the 146 schema tests | Tool servers separated by what they are allowed to read |
 | Demo Family Clinic, Dr Sharma, Dr Verma, Dr Kaur | Redis for the live call, Postgres for the record, Kafka for the fan-out |
 | | A local LiveKit room as the media path the human joins |
 

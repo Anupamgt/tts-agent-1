@@ -120,9 +120,17 @@ CREATE TABLE clinic_settings (
     max_agent_bookings_per_number_day int NOT NULL DEFAULT 4 CHECK (max_agent_bookings_per_number_day > 0),
     -- verification lockout across calls (S-05): failures per number or per patient in 24 h
     verification_lockout_failures int NOT NULL DEFAULT 5 CHECK (verification_lockout_failures > 0),
-    -- retention (S-07; proposed values, clinic to confirm)
+    -- retention (S-07; decided 29 Oct 2026, D-09; a lawyer confirms before the pilot)
     transcript_retention_days  int  NOT NULL DEFAULT 180 CHECK (transcript_retention_days > 0),
     recording_retention_days   int  NOT NULL DEFAULT 30  CHECK (recording_retention_days > 0),
+    -- decided 29 Oct 2026 (docs/decision-log.md D-05, D-09): access and audit logs 1 year
+    -- (DPDP Rule 6 from May 2027; CERT-In needs at least 180 days kept in India);
+    -- refill and doctor-message tickets are the doctor's teleconsultation log, kept 3 years
+    access_log_retention_days  int  NOT NULL DEFAULT 365  CHECK (access_log_retention_days >= 180),
+    refill_record_retention_days int NOT NULL DEFAULT 1095 CHECK (refill_record_retention_days >= 365),
+    -- D-15: no automated outbound calls in the pilot until the calling number is registered
+    -- under TRAI's commercial communication rules; reminders go by SMS until then
+    reminder_channel           text NOT NULL DEFAULT 'sms' CHECK (reminder_channel IN ('sms', 'call')),
     verification_attempts      int  NOT NULL DEFAULT 2,
     p1_callback_minutes        int  NOT NULL DEFAULT 15,
     p2_callback_minutes        int  NOT NULL DEFAULT 120,

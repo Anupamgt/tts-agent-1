@@ -333,5 +333,17 @@ await ok('limit refill requests to 1 per 30 days for the next check', `UPDATE cl
 await rejects('too many refill requests in 30 days rejected', refill(rid.R20, 1), [], 'too many refill requests');
 await ok('limit back to 4', `UPDATE clinic_settings SET refill_requests_per_30_days = 4`);
 
+// ---- retention and outbound settings (decision log D-09, D-15; 29 Oct 2026)
+await expect('retention and reminder defaults',
+  `SELECT recording_retention_days AS rec, transcript_retention_days AS tr, access_log_retention_days AS logs,
+          refill_record_retention_days AS refill, reminder_channel AS ch FROM clinic_settings WHERE clinic_id = 1`,
+  [{ rec: 30, tr: 180, logs: 365, refill: 1095, ch: 'sms' }]);
+await rejects('access logs cannot be kept under 180 days (CERT-In)',
+  `UPDATE clinic_settings SET access_log_retention_days = 90`, [], 'check constraint');
+await rejects('refill records cannot be kept under a year',
+  `UPDATE clinic_settings SET refill_record_retention_days = 180`, [], 'check constraint');
+await rejects('reminder channel is sms or call only',
+  `UPDATE clinic_settings SET reminder_channel = 'whatsapp'`, [], 'check constraint');
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -59,29 +59,33 @@ Backend jobs (not called by the agent): delay check and window shifting, pool re
 | "Next patient" | Hybrid: schedule-based by default, corrected by the doctor's or assistant's "Call next" taps (09) |
 | Prescription refills | Only the patient's own doctor decides, after an in-person visit with them in the last 6 months; never Schedule X / NDPS drugs; the agent only takes the request and Bolnai never issues prescriptions (11) |
 
-## Settings (editable per clinic or doctor; proposed values unless marked decided)
+## Settings (editable per clinic or doctor)
+
+All values below were decided on 29 Oct 2026; the reasons are in `docs/decision-log.md` (D-numbers). The clinic can still change any of them in settings.
 
 | Setting | Value |
 |---|---|
-| Window length / capacity / priority places | 30 min / 4 patients / 1 priority place (proposed) |
+| Window length / capacity / priority places | 30 min / 4 patients / 1 priority place (D-23; a specialist can be set to 1 patient per window) |
 | Priority fee | Set per doctor, specialists only; empty means no priority visits (clinic to give amounts) |
 | Appointment fee | Set per doctor; empty means none |
-| Payment | UPI link on WhatsApp (valid 30 min, one reminder) or cash at the desk (decided); unpaid links keep the booking and switch to desk payment (proposed) |
-| Refunds | Patient cancels 24 h+ before: full; later: 50%; clinic-caused: full; staff approve (proposed values) |
-| Priority places released to regular booking | 2 hours before the session (proposed) |
-| Planned consult time for the schedule fallback | Window length / capacity, so 7.5 min (proposed; per-doctor override) |
+| Payment | UPI link on WhatsApp (valid 30 min, one reminder) or cash at the desk (decided); unpaid links keep the booking and switch to desk payment (D-20) |
+| Refunds | Patient cancels 24 h+ before: full; later: 50%; no-show: none; clinic-caused: full; an admin approves, never the requester (D-18, D-19) |
+| Priority places released to regular booking | 2 hours before the session (D-22) |
+| Planned consult time for the schedule fallback | Window length / capacity, so 7.5 min (per-doctor override) |
 | Hold on a window while booking | 90 seconds |
 | Same-day routine booking cutoff | window must start 30+ min from now |
 | Delay SMS threshold | doctor 20+ min behind |
 | Delay SMS cap | 2 per patient per visit (decided) |
-| After the cap | Call and ask the patient: keep, move or cancel. Not reached: keep their place if it still fits today, otherwise hold the next free slot and text them (decided; fallback proposed) |
+| After the cap | Call and ask the patient: keep, move or cancel. Not reached: keep their place if it still fits today, otherwise hold the next free slot and text them (decided; fallback D-27). In the pilot staff place the "ask" call (D-15) |
 | "Call next" watchdog | console warning after 30 min without a tap; estimate becomes "schedule only" |
 | Max offer rounds per booking | 3 |
 | Verification attempts | 2 |
 | P1 callback target (emergency, self-harm) | staff call back within 15 min |
 | Standard callback target | next business session, same day if before 6 pm |
-| Outbound call window | 9 am to 9 pm IST (also enforced by Bolna guardrails) |
+| Outbound call window | 9 am to 9 pm IST (also enforced by Bolna guardrails). Pilot: no automated outbound calls until the number is registered (D-15) |
+| Reminder channel | SMS in the pilot (`reminder_channel = 'sms'`); calls only after D-15 clears |
 | Outbound retries | 2, at least 2 hours apart, inside the call window |
 | Refill: follow-up window | 180 days since an in-person visit with the same doctor (from the Telemedicine Practice Guidelines) |
-| Refill: "runs out soon" | 2 days or less left: same-day P2 callback (proposed) |
-| Refill requests per patient | 1 open at a time; at most 4 per 30 days (proposed) |
+| Refill: "runs out soon" | 2 days or less left: same-day P2 callback (D-04) |
+| Refill requests per patient | 1 open at a time; at most 4 per 30 days (D-04) |
+| Retention | Call audio 30 days; transcripts and trace text 180 days; access and audit logs 1 year; refill and doctor-message records 3 years (D-05, D-09) |

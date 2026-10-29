@@ -4,7 +4,7 @@
 - `seed.sql` - one demo clinic; Dr Sharma and Dr Verma (general, "General check-up" pool, no fees), Dr Kaur (paediatrics specialist: appointment fee 200, priority fee 500); today's evening session for all three (windows 1-6, 7-12, 13-18; priority places only for Dr Kaur); two patients sharing a phone; a card holder and dependant sharing an institute ID; info answers; 14 SMS (4 for refill outcomes, no medicine names) and 4 WhatsApp templates; a staff account per doctor
 - `002_runtime.sql` - prototype runtime: call phase, transcript segments, decision traces, recordings, handoff, report status, previous interactions. Applied cleanly on Postgres 16 after the two files above
 - `seed_runtime.sql` - fictional caller personas, report statuses, and visit history for the prototype
-- `tests/schema.test.mjs` - 142 checks run against an in-process Postgres (PGlite): patient ID check digits, existing and institutional IDs, capacity with priority places, specialists-only priority, appointment fee and fee consent, payment rules, refund cap, message templates per channel, doctor/window consistency, pool membership and rollover, expired holds, overlapping windows, queue order, cancellation, the move after the delay cap, doctor-only refill decisions
+- `tests/schema.test.mjs` - 146 checks run against an in-process Postgres (PGlite): patient ID check digits, existing and institutional IDs, capacity with priority places, specialists-only priority, appointment fee and fee consent, payment rules, refund cap, message templates per channel, doctor/window consistency, pool membership and rollover, expired holds, overlapping windows, queue order, cancellation, the move after the delay cap, doctor-only refill decisions, retention and reminder-channel settings
 
 ```
 psql "$DATABASE_URL" -f db/schema.sql
@@ -74,7 +74,7 @@ erDiagram
 - **Audit log** (S-10): append-only (UPDATE, DELETE, TRUNCATE refused).
 - **Retention settings** (S-07): `transcript_retention_days` (180), `recording_retention_days` (30); the purge job is still to build.
 - **Prescription refills** (S-20, flow 11): doctor accounts are tied to their doctor record; only the patient's own doctor can approve, decline or ask for a visit; approval needs a completed in-person visit with that doctor within `refill_followup_days` (180), the doctor's three confirmations and how the prescription was issued; a child's refill needs a registered guardian; one open refill per patient and `refill_requests_per_30_days` (4); the medicine and the caller's words cannot be edited; `runs_out_soon` from `refill_runout_days` (2). The old agent-side `restricted_medicines` list is removed.
-- Tests: 142 checks in `tests/schema.test.mjs`.
+- Tests: 146 checks in `tests/schema.test.mjs`.
 
 ## Known gaps
 

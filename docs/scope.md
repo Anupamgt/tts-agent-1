@@ -24,17 +24,25 @@ Phone help desk voice agent for a real local clinic, shipped end to end for a ha
 - No access to medical records in v1. If needed later, a narrow MCP tool returning single fields, after caller verification, with access logging.
 - Demo: predefined flow plus edge cases (edge cases to be defined later).
 
-## Open questions
-See `docs/alignment.md` section A for the full list. The ones raised by the latest decisions:
-- What "a 30 minute window for each patient" means in decision 13 (see alignment).
-- Specialists with two or more doctors of the same specialty: pool them or not? (explained in alignment, note 1b)
-- Refund shares, staff approval, and what happens to an unpaid UPI link.
-- Payment gateway and WhatsApp Business provider for the demo.
-- A clearer copy of the patient slip (ID format).
-- DLT entity for demo vs production (partner clinic to decide at onboarding).
-- Hosting and pricing options (cloud vs hosted DB) for GTM.
+## Decided on 29 Oct 2026 (was open)
+Every open question was decided on Anupam's instruction; the reasons and rules are in `docs/decision-log.md` (D-01 to D-33) and the doc "Bolnai scope decisions and audit trail" (https://claude.ai/artifact/QuWJEoAzZ5Xv3dvh1NiQAM).
+- The 30-minute window is a shared arrival window of 4 patients; a specialist can be set to 1 (D-23).
+- Same-specialty doctors are pooled when the caller names no doctor (D-24).
+- Refund shares, admin approval and unpaid links: D-18 to D-20. Bolnai never holds patient money (D-21).
+- Payment gateway and WhatsApp for the demo: mocked (policy-only refunds, mock outbox) (D-21, D-17, D-31). Pick the gateway and WhatsApp provider at pilot onboarding.
+- Patient slip: not needed for the demo, which uses fictional cards; collect a clear copy at partner onboarding.
+- DLT: the clinic registers as the principal entity with its own header (D-16).
+- Hosting and pricing: managed cloud in an India region by default (D-12; `docs/gtm.md`).
 
-## Compliance notes
-- Outbound calls in India: 9am to 9pm IST, DND, TRAI rules; production reminders likely need a 160-series number with DLT registration. Demo outbound calls go to team phones only.
-- Patient data falls under India's DPDP Act.
-- Priority fees: the caller's agreement to the fee is recorded with the call. If payment links are sent by SMS later, the link domain must be registered with the DLT template.
+## Build scope
+- **Buildathon (submit 31 Oct, finale 20 Nov):** fictional Demo Family Clinic on the Mac Mini, web call and demo phone, mock SMS and WhatsApp outbox, mocked payments and policy-only refunds, outbound calls only to team phones, gold-set evals. No real patient data (D-31).
+- **Pilot:** starts only when the 12-item pilot gate checklist in `docs/decision-log.md` is done (D-32). Reminders by SMS; no automated outbound calls until the number is registered (D-15).
+- **Out of v1:** ABHA linking, prescriptions to pharmacies, automated outbound calls until D-15 clears, languages beyond English, Hindi and Hinglish (D-33).
+
+## Compliance (decided 29 Oct 2026; not legal advice)
+- **DPDP Act 2023 and Rules 2025** (most duties from 13 May 2027): the clinic is the data fiduciary and Bolnai its processor under a written contract (D-06); notice drafted in `docs/privacy-notice.md` (D-08); access logs kept 1 year (D-09); breach notice to patients without delay and to the Board within 72 hours (D-13). A child's data is processed under the Fourth Schedule's health-services exemption (D-10). Until 13 May 2027 the SPDI Rules treat health information as sensitive.
+- **Telemedicine Practice Guidelines 2020:** no advice or prescribing by the agent (D-02); refills only by the patient's own doctor (flow 11, D-04); refill records kept 3 years (D-05).
+- **TRAI TCCCPR (Feb 2025 amendment):** service calls and SMS are commercial communication on registered headers and number series; robo calls need advance notice; links and callback numbers in SMS are whitelisted on DLT. Pilot reminders by SMS only (D-15, D-16). Outbound calls 9 am to 9 pm IST.
+- **CERT-In Directions 2022:** Bolnai reports incidents within 6 hours and keeps system logs 180 days in India (D-09, D-13).
+- **Emergencies:** 112, 108, and Tele-MANAS 14416 for self-harm or distress; the clinic signs off the script (D-01).
+- Priority fees: the caller's agreement to the fee is recorded with the call. Payment links go by WhatsApp; an SMS link needs its domain whitelisted on DLT.
