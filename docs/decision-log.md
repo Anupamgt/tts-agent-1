@@ -3,6 +3,7 @@
 The full audit trail, with the rules each decision rests on and their sources, is the doc "Bolnai scope decisions and audit trail": https://claude.ai/artifact/QuWJEoAzZ5Xv3dvh1NiQAM. This file is the repository copy that the flows and schema point to.
 
 - **Decided by:** Claude, on Anupam's instruction of 29 Oct 2026, 16:19 IST: "complete the scope with respect to the compliance of Indian regulators and what makes the most sense according to the build".
+- **D-34 to D-36** were added the same day (16:38 to 16:45 IST) after your questions on RAG versus graphs and on hallucination risk, and recorded on your instruction to push them.
 - **Tests, in order:** (1) an Indian rule decides it; (2) the option that keeps patients safer; (3) what fits the build (buildathon submit 31 Oct, finale 20 Nov; backend as of commit 72f9415), then the pilot. If none separates the options, the proposed default stands.
 - **Statuses:** Decided; Decided, needs sign-off (the build follows it now, and a named person confirms it before any real patient call); Deferred.
 - Not legal advice.
@@ -44,6 +45,9 @@ Numbers in brackets are rows of `docs/alignment.md`.
 | D-31 | Buildathon cut | Fictional clinic, web call and demo phone, mock outbox, mocked payments, team phones only, gold-set evals | No real data before contracts | Decided | `docs/evals/`, deploy |
 | D-32 | Pilot gate | Compliance checklist (below) done before the first real patient call | Duties attach on the first real call | Decided | this file |
 | D-33 | Out of v1 | ABHA linking, prescriptions to pharmacies, automated outbound calls until D-15 clears, other languages | Each adds a consent or registration step | Deferred | scope |
+| D-34 | Agent architecture, buildathon | One Bolna conversation agent calling the backend's tools. No RAG for clinic facts or patient data (Bolna's RAG still answers when retrieval fails). Prompt: facts only from tool results, tool sentences spoken as given, success only on `ok: true`, fixed safety lines word for word; disclosure as Bolna's fixed welcome message | Patient data needs live, permission-checked reads (`require_verified_patient`); clinic facts are 6 short rows; 2 days to submission | Decided | `agent/` |
+| D-35 | Hallucination controls, pilot | Bolna graph agent: static (pre-recorded) stages for the emergency, self-harm, medical-decline, disclosure and refill-received lines; a backend safety monitor on the transcript stream that injects the emergency event and flags agent sentences carrying numbers, medicines or diagnosis words that no tool returned (compliance flag, desk alert, handoff); tools limited per stage. RAG later only for a clinic's long documents, on the info stage, never for fees, hours, policy or patient data | No model can be made error-free; the riskiest sentences must not be generated, and detection must not depend on the same model | Decided | pilot build |
+| D-36 | Evidence bar before real callers | Every blocker case in the gold set passes across at least 300 runs (zero failures in 300 puts the 95% upper bound near 1%); a case not run is not a pass; live breaches pause the agent (metrics safety limits) | Testing alone cannot prove a zero rate, so the bar is stated as a bound | Decided | `docs/evals/`, pilot gate |
 
 ## Pilot gate checklist (D-32)
 
@@ -59,3 +63,6 @@ Numbers in brackets are rows of `docs/alignment.md`.
 10. Reminders running on SMS; automated outbound calls off (D-15).
 11. Gold-set safety cases pass: emergency, no advice, no unverified disclosure (`docs/metrics.md` safety limits).
 12. Per-clinic data isolation before a second clinic goes live (`db/README.md` known gaps).
+13. Graph agent with static stages for the fixed safety lines, recorded lines signed off by the clinic (D-35).
+14. Backend safety monitor live: emergency event injection and the agent-sentence check (D-35).
+15. Every blocker case passes across at least 300 runs (D-36).
