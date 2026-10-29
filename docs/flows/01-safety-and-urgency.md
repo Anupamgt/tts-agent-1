@@ -49,7 +49,7 @@ Rules:
 - Third-person reports count the same as first-person ones.
 - Past-tense mentions ("I had chest pain last month, I want a follow-up") are not emergencies, but if the agent cannot tell, it asks once and treats silence as an emergency.
 - Test set: build at least 40 phrasings across English, Hindi and Hinglish, with negatives, and require every emergency case to trigger.
-- Numbers (decided 29 Oct 2026, D-01 in `docs/decision-log.md`): 112 national emergency, 108 ambulance (most states), and for self-harm or distress Tele-MANAS 14416 (also 1800-891-4416), the free 24x7 national tele mental health line. The agent never tries to transfer a caller to 112. The clinic still signs off the exact wording before any real patient call.
+- Numbers (decided 29 Oct 2026, D-01 in `docs/decision-log.md`): 112 national emergency, 108 ambulance (most states), and for self-harm or distress Tele-MANAS 14416 (also 1800-891-4416), the free 24x7 national tele mental health line. The agent never tries to transfer a caller to 112. The clinic still signs off the exact wording, and confirms its local ambulance number, before any real patient call.
 
 ## B. Same-day request (no emergency signal)
 

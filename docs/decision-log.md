@@ -11,7 +11,7 @@ Numbers in brackets are rows of `docs/alignment.md`.
 
 | ID | Decision | Chosen | Why (rule or build) | Status | Lands in |
 |---|---|---|---|---|---|
-| D-01 | Emergency script (4) | Call 112 now, or 108 for an ambulance; said at once, repeated once; staff alerted; P1 callback in 15 min. Self-harm or distress: calm line + Tele-MANAS 14416. Never a transfer to 112 | 112/108 cover the first cities; Tele-MANAS is free and 24x7; DPDP s.7(f) covers the data use in a medical emergency | Needs sign-off: clinic | `flows/01` part A |
+| D-01 | Emergency script (4) | Call 112 now, or 108 for an ambulance; said at once, repeated once; staff alerted; P1 callback in 15 min. Self-harm or distress: calm line + Tele-MANAS 14416. Never a transfer to 112 | 112 works in every state; 108 is the ambulance number in most states, so the clinic confirms its local ambulance number at sign-off; Tele-MANAS is free and 24x7; DPDP s.7(f) covers the data use in a medical emergency | Needs sign-off: clinic | `flows/01` part A |
 | D-02 | Medical advice (5) | Always declined; visit or callback offered | Telemedicine Practice Guidelines 2020: AI may not counsel or prescribe | Decided | `flows/01` part C |
 | D-03 | Reports (11) | Status only, after full verification, never values, never to a relative | Health data is sensitive (SPDI Rules until 13 May 2027); a wrong-person disclosure is a breach | Decided | `flows/05` |
 | D-04 | Refill defaults (10a) | All defaults kept (desk collection or doctor sends; no pharmacy; guardian for children; 2 days = same-day callback; 1 open, 4 per 30 days; PIN per approval) | Telemedicine follow-up and pharmacy-consent rules | Needs sign-off: doctors | `flows/11`, schema |
