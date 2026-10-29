@@ -100,5 +100,14 @@ blob = json.dumps(functions)
 check("functions.json holds placeholders, not real URLs or tokens", "PUBLIC_BASE" in blob and "Bearer TOKEN" in blob
       and "trycloudflare" not in blob and not re.search(r"Bearer (?!TOKEN)\w", blob))
 
+# 8. token budget: the prompt is sent on every model turn, so it must stay within 4,096 tokens (o200k_base, GPT-4o family)
+PROMPT_TOKEN_BUDGET = 4096
+try:
+    import tiktoken
+    n = len(tiktoken.get_encoding("o200k_base").encode(prompt))
+    check(f"prompt is within {PROMPT_TOKEN_BUDGET} tokens (now {n})", n <= PROMPT_TOKEN_BUDGET, f"{n} tokens")
+except Exception as exc:  # tiktoken missing, or its encoding file cannot be downloaded
+    print(f"SKIP prompt token budget ({type(exc).__name__}); pip install tiktoken to run it")
+
 print(f"\n{len(failures)} failed" if failures else "\nall checks passed")
 sys.exit(1 if failures else 0)
