@@ -25,7 +25,7 @@ Phone help desk voice agent for a real local clinic, shipped end to end for a ha
 - Demo: predefined flow plus edge cases (edge cases to be defined later).
 
 ## Decided on 29 Oct 2026 (was open)
-Every open question was decided on Anupam's instruction; the reasons and rules are in `docs/decision-log.md` (D-01 to D-33) and the doc "Bolnai scope decisions and audit trail" (https://claude.ai/artifact/QuWJEoAzZ5Xv3dvh1NiQAM).
+Every open question was decided on Anupam's instruction; the reasons and rules are in `docs/decision-log.md` (D-01 to D-40) and the doc "Bolnai scope decisions and audit trail" (https://claude.ai/artifact/QuWJEoAzZ5Xv3dvh1NiQAM).
 - The 30-minute window is a shared arrival window of 4 patients; a specialist can be set to 1 (D-23).
 - Same-specialty doctors are pooled when the caller names no doctor (D-24).
 - Refund shares, admin approval and unpaid links: D-18 to D-20. Bolnai never holds patient money (D-21).

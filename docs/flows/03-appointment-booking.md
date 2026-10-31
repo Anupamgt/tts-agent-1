@@ -1,5 +1,7 @@
 # 03 - Appointment booking (new visit)
 
+> **New patients (D-37 to D-40):** the diagram below shows the window held before the patient's details are collected. The build registers the new patient first, because the window tools need a verified call; the order, limits and text for new patients are in [12 new patient](12-new-patient.md).
+
 Decided:
 
 - **Named-doctor bookings:** the caller chose a doctor by name, or a specialist. The visit stays with that doctor. If the doctor runs late, the patient waits, and the window shifts in time.

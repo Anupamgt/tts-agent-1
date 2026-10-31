@@ -16,6 +16,7 @@ Read in this order. Every file is a Mermaid diagram plus the rules the diagram c
 | 09 | [day-of-operations](09-day-of-operations.md) | Check-in, walk-ins, "Call next", delay estimate, asking the patient after 2 delay messages, doctor absent |
 | 10 | [payments-and-refunds](10-payments-and-refunds.md) | Appointment and priority fees, UPI link on WhatsApp or cash, unpaid links, refund tree |
 | 11 | [prescription-refills](11-prescription-refills.md) | Refill requests: what the agent may ask, the doctor-only decision in the console, the Indian rules behind it |
+| 12 | [new-patient](12-new-patient.md) | A caller with no file: details asked, file and ID created, limits, the text they receive, build status |
 
 ## Conventions
 
