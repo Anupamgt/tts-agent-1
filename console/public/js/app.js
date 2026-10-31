@@ -21,7 +21,8 @@
     messageTab: 'tickets',
     outboxFilter: 'all',
     patientId: 'kabir',
-    settingsSection: 'clinic',
+    settingsSection: 'profile',
+    settingsQuery: '',
     bookingsView: 'day',
     calDoctor: 'all',
     calPool: 'all',
@@ -54,7 +55,9 @@
     clockMin: 0,
     deskOpenedAt: 0,
     demoFired: {},
-    live: false
+    live: false,
+    emergencyCompact: false,
+    accountOpen: false
   });
 
   var HI = {
@@ -139,7 +142,33 @@
     'Book for them': 'इनके लिए बुक करें',
     'Doctor phone': 'डॉक्टर का फ़ोन',
     'English': 'English',
-    'Hindi': 'हिंदी'
+    'Hindi': 'हिंदी',
+    'Call': 'कॉल',
+    'Account': 'खाता',
+    'Needs an admin.': 'एडमिन की ज़रूरत है।',
+    'Planned': 'योजना में',
+    'Started': 'शुरू',
+    'evening session': 'शाम का सेशन',
+    'Now with doctor': 'डॉक्टर के पास',
+    'Nobody in the cabin': 'केबिन खाली है',
+    'Waiting room order': 'प्रतीक्षा क्रम',
+    'Priority visits first, then arrival order.': 'पहले प्रायोरिटी, फिर आगमन का क्रम।',
+    'No one waiting.': 'कोई इंतज़ार नहीं।',
+    'No patients match': 'कोई मरीज़ नहीं मिला',
+    'Filter by name or number': 'नाम या नंबर से छांटें',
+    'Select a callback.': 'एक कॉलबैक चुनें।',
+    'No attempts yet.': 'अभी कोई कोशिश नहीं।',
+    'Note': 'नोट',
+    'Alerts': 'अलर्ट',
+    'Acknowledged': 'देख लिया',
+    'Back to Today': 'आज पर वापस',
+    'P1 within 15 min · P2 within 2 hours · P3 next session.': 'P1 15 मिनट में · P2 2 घंटे में · P3 अगले सेशन।',
+    'New callbacks from the agent show up here.': 'एजेंट के नए कॉलबैक यहाँ आएँगे।',
+    'No arrival windows left today. Pick another day.': 'आज कोई विंडो नहीं बची। कोई और दिन चुनें।',
+    'Unlock as reception': 'रिसेप्शन के रूप में खोलें',
+    'Unlock to attend': 'देखने के लिए अनलॉक करें',
+    'Enter your PIN': 'अपना पिन डालें',
+    'Possible medical emergency': 'संभव चिकित्सीय इमरजेंसी'
   };
 
   var STATUS = {
@@ -256,11 +285,22 @@
     return /am|pm/i.test(parts[0]) ? parseTime(parts[0]) : parseTime(parts[0] + ' ' + ap);
   }
   function windowEnd(label) { return parseTime(String(label).split('–')[1] || ''); }
+  function doctorDelay(docId) {
+    var d = doctor(docId);
+    return d && d.status === 'started' ? (Number(d.delayMin) || 0) : 0;
+  }
+  function windowShown(docId, label, key) {
+    var delay = key === state.dateKey ? doctorDelay(docId) : 0;
+    var shifted = delay > 0 ? shiftRange(label, delay) : '';
+    return shifted ? (label + ' → ' + shifted) : label;
+  }
   function bookableLabels(key, docId) {
-    var now = parseTime(state.timeLabel);
-    var cur = key === state.dateKey && docId ? state.windows.filter(function (w) { return w.doctorId === docId && w.dateKey === key && w.isNow; })[0] : null;
-    // today: windows that have not ended, plus the doctor's current window (it may be running late)
-    return state.dayWindows.filter(function (lab) { return key !== state.dateKey || windowEnd(lab) > now || (cur && cur.label === lab); });
+    var now = liveNowMin();
+    var delay = key === state.dateKey ? doctorDelay(docId) : 0;
+    // Today: hide windows whose shifted end has passed. A late current window stays because its end moved.
+    return state.dayWindows.filter(function (lab) {
+      return key !== state.dateKey || (windowEnd(lab) + delay) > now;
+    });
   }
   function findWindow(docId, label, key) {
     return state.windows.filter(function (w) { return w.doctorId === docId && w.label === label && w.dateKey === key; })[0];
@@ -268,8 +308,14 @@
   function defaultLabel(docId, key) {
     var labs = bookableLabels(key, docId);
     if (key === state.dateKey) {
-      var cur = state.windows.filter(function (w) { return w.doctorId === docId && w.dateKey === key && w.isNow; })[0];
-      if (cur && labs.indexOf(cur.label) >= 0) return cur.label;
+      var now = liveNowMin();
+      var delay = doctorDelay(docId);
+      var current = labs.filter(function (lab) {
+        var start = windowStart(lab) + delay;
+        var end = windowEnd(lab) + delay;
+        return now >= start && now < end;
+      })[0];
+      if (current) return current;
     }
     return labs[0] || '';
   }
@@ -323,7 +369,13 @@
   }
   function route() {
     var h = (location.hash || '#today').replace(/^#/, '').split('?')[0];
-    return h || 'today';
+    var top = (h || 'today').split('/')[0];
+    return top || 'today';
+  }
+  function hashSection() {
+    var h = (location.hash || '').replace(/^#/, '').split('?')[0];
+    var parts = h.split('/');
+    return parts[1] || '';
   }
   function deskOpen() {
     return state.signedIn && !state.locked && !state.switchOpen;
@@ -337,10 +389,22 @@
     else location.hash = r;
   }
   function setPath(path, value) {
+    if (!path || path === 'user.name' || path === 'user.role') return;
     var parts = path.split('.');
     var obj = state;
     for (var i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
     obj[parts[parts.length - 1]] = value;
+  }
+  function getPath(path) {
+    if (path === 'user.name') return user() ? user().name : '';
+    if (path === 'user.role') return user() ? user().role : '';
+    if (!path) return '';
+    return String(path).split('.').reduce(function (o, k) {
+      return o == null ? undefined : o[k];
+    }, state);
+  }
+  function prefOn(key) {
+    return !state.settings || state.settings[key] !== false;
   }
   function toast(msg) {
     state.toast = msg;
@@ -380,12 +444,14 @@
     if (state.live) return parseTime(state.timeLabel) || seedMinutes();
     return seedMinutes() + Math.floor(elapsedSec() / 60);
   }
-  function liveClockText() {
+  function liveClockText(withSeconds) {
     if (state.live) return state.timeLabel;
     var s = elapsedSec();
     var mins = seedMinutes() + Math.floor(s / 60);
+    var base = fmtTime(mins);
+    if (!withSeconds) return base;
     var sec = s % 60;
-    return fmtTime(mins).replace(/ (am|pm)$/i, ':' + (sec < 10 ? '0' : '') + sec + ' $1');
+    return base.replace(/ (am|pm)$/i, ':' + (sec < 10 ? '0' : '') + sec + ' $1');
   }
   function agoText(atMin) {
     var d = liveNowMin() - Number(atMin || 0);
@@ -540,8 +606,9 @@
       badges += badge(paid ? 'ok' : 'attention', feeWord + money(b.fee.amount), paid ? 'check' : null);
     }
     var action = '';
-    if (b.status === 'booked') action = '<div class="bn-card-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="arrive" data-id="' + b.id + '">' + e('Mark arrived') + '</button></div>';
-    if (b.status === 'arrived') action = '<div class="bn-card-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="send-in" data-id="' + b.id + '">' + e('Send in') + '</button></div>';
+    var cabin = user() && user().role === 'assistant';
+    if (!cabin && b.status === 'booked') action = '<div class="bn-card-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="arrive" data-id="' + b.id + '">' + e('Mark arrived') + '</button></div>';
+    if (!cabin && b.status === 'arrived') action = '<div class="bn-card-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="send-in" data-id="' + b.id + '">' + e('Send in') + '</button></div>';
     var note = b.delayChoice === 'keep' ? 'Delay call: chose to keep place' : b.delayChoice === 'unconfirmed' ? 'Delay call: unconfirmed' : '';
     return '<article class="bn-card bn-card-' + st + (b.priority ? ' is-priority' : '') + '" data-act="open-booking" data-id="' + b.id + '">' +
       '<div class="bn-card-main"><div class="bn-card-who"><span class="body-strong bn-card-name" title="' + esc(p ? p.name : '') + '">' + esc(p ? p.name : 'Patient') + '</span>' +
@@ -604,16 +671,30 @@
       '<button type="button" class="bn-btn bn-btn-onred-solid" data-act="ack"><span class="body-strong">' + e('Acknowledge') + '</span></button>' +
       '</div></div>';
   }
+  function pinPadOpen() {
+    if (state.locked) return true;
+    if (!state.signedIn && state.pinFor) return true;
+    if (state.switchOpen && state.pinFor) return true;
+    return false;
+  }
   function emergencyHighlight() {
     if (state.emergencyAck) return '';
     var deskUser = user();
     var canUnlock = !state.signedIn || (deskUser && deskUser.role === 'receptionist');
-    var cta = canUnlock
+    var cta = canUnlock && !pinPadOpen()
       ? '<button type="button" class="bn-btn bn-btn-onred-solid bn-btn-lg" data-act="attend-emergency">' + e(state.locked ? 'Unlock to attend' : 'Unlock as reception') + '</button>'
       : '';
     return '<div class="emergency-prelogin"><div class="bn-emergency is-new" role="alert">' + emergencyFacts() +
       '<div class="bn-emergency-actions">' + cta + '</div></div>' +
       '<p class="caption emergency-prelogin-hint">A reception PIN is required before anyone can open this call.</p></div>';
+  }
+  function armEmergencyCompact() {
+    if (state.emergencyAck || state.emergencyCompact || state._emTimer) return;
+    state._emTimer = setTimeout(function () {
+      state._emTimer = null;
+      state.emergencyCompact = true;
+      if (deskOpen() && user() && user().role === 'receptionist' && !state.emergencyAck) render();
+    }, 2000);
   }
   function emergencyBanner() {
     // Fixed banner is for an unlocked receptionist only. Login and lock still
@@ -622,24 +703,37 @@
     var u = user();
     if (!deskOpen() || state.emergencyAck) return '';
     if (!u || u.role !== 'receptionist') return '';
-    return '<div class="emergency-wrap">' + emergencyMarkup() + '</div>';
+    armEmergencyCompact();
+    return '<div class="emergency-wrap' + (state.emergencyCompact ? ' is-compact' : '') + '">' + emergencyMarkup() + '</div>';
+  }
+  function p1Chip() {
+    if (!deskOpen() || state.emergencyAck) return '';
+    var u = user();
+    if (!u || u.role === 'receptionist') return '';
+    var call = u.role === 'admin'
+      ? '<button type="button" class="bn-btn" data-act="call-emergency">' + e('Call back now') + '</button>'
+      : '';
+    return '<div class="p1-chip" role="status"><span class="p1-chip-text">' + icon('alert', 14) + '<span><strong>' + e('Possible medical emergency') + '</strong> · 6:08 pm</span></span><button type="button" class="bn-btn bn-btn-primary" data-act="ack">' + e('Acknowledge') + '</button>' + call + '</div>';
   }
 
   function banners() {
     var html = '';
+    var u = user();
+    var cabin = u && u.role === 'assistant';
     var verma = doctor('verma');
-    if (verma && verma.status === 'started' && verma.basis === 'schedule' && verma.watchdogMin >= 30 && !state.dismissed.watch) {
+    if (!cabin && verma && verma.status === 'started' && verma.basis === 'schedule' && verma.watchdogMin >= 30 && !state.dismissed.watch) {
       html += '<div class="banner"><p><strong>No update from Dr Verma’s cabin for ' + verma.watchdogMin + ' min.</strong> The delay is schedule only until someone taps Call next.</p><button type="button" class="bn-btn" data-act="dismiss" data-id="watch">' + e('Close') + '</button></div>';
     }
     state.doctors.forEach(function (d) {
+      if (cabin && d.id !== u.doctorId) return;
       if (d.status === 'started' && d.delayMin >= 60 && !state.dismissed['late' + d.id]) {
         html += '<div class="banner"><p><strong>' + esc(d.name) + ' is ' + d.delayMin + ' min late.</strong> Offer reschedule to affected patients?</p><button type="button" class="bn-btn bn-btn-primary" data-act="offer-reschedule" data-id="' + d.id + '">Offer reschedule</button><button type="button" class="bn-btn" data-act="dismiss" data-id="late' + d.id + '">' + e('Close') + '</button></div>';
       }
     });
-    if (failedMsgs().length && !state.dismissed.failed) {
+    if (!cabin && failedMsgs().length && !state.dismissed.failed) {
       html += '<div class="banner"><p><strong>' + failedMsgs().length + ' messages failed.</strong> Patients may not have the link or the delay update.</p><a class="bn-btn" href="#messages">' + e('Messages') + '</a><button type="button" class="bn-btn" data-act="dismiss" data-id="failed">' + e('Close') + '</button></div>';
     }
-    if (!state.staffOnDesk && !state.dismissed.desk) {
+    if (!cabin && !state.staffOnDesk && !state.dismissed.desk) {
       html += '<div class="banner"><p>Staff on desk is off. Callers who ask for a person get a callback instead of a transfer.</p><button type="button" class="bn-btn" data-act="dismiss" data-id="desk">' + e('Close') + '</button></div>';
     }
     if (state.poorNetwork && !state.dismissed.offline) {
@@ -648,10 +742,18 @@
     return html;
   }
 
+  function accountControls() {
+    var u = user();
+    return '<div class="lang-toggle" role="group" aria-label="Language"><button type="button" class="bn-btn' + (state.lang === 'en' ? ' bn-btn-primary' : '') + '" data-act="lang" data-value="en">English</button><button type="button" class="bn-btn' + (state.lang === 'hi' ? ' bn-btn-primary' : '') + '" data-act="lang" data-value="hi" lang="hi">हिंदी</button></div>' +
+      '<a class="bn-btn" href="#settings">' + e('Settings') + '</a>' +
+      '<button type="button" class="user-btn" data-act="switch-open"><span class="body-strong">' + esc(u.name) + '</span><span class="caption bn-muted">' + esc(roleName(u.role)) + ' · ' + e('Switch user') + '</span></button>' +
+      '<button type="button" class="bn-btn" data-act="lock">' + icon('lock') + e('Lock desk') + '</button>' +
+      '<button type="button" class="bn-btn bn-btn-quiet" data-act="signout">' + e('Sign out') + '</button>';
+  }
   function rail() {
     var u = user();
     var items = NAV.filter(function (n) {
-      if (u.role === 'assistant') return n[0] === 'today';
+      if (u.role === 'assistant') return n[0] === 'today' || n[0] === 'settings';
       return true;
     });
     var links = items.map(function (n) {
@@ -664,16 +766,15 @@
     }).join('');
     return '<aside class="rail"><div class="brand"><div class="body-strong">Bolnai</div><div class="caption bn-muted">' + esc(roleName(u.role)) + '</div></div>' +
       '<nav class="nav" aria-label="Console">' + links + '</nav>' +
-      '<div class="rail-foot">' +
-      '<div class="lang-toggle" role="group" aria-label="Language"><button type="button" class="bn-btn' + (state.lang === 'en' ? ' bn-btn-primary' : '') + '" data-act="lang" data-value="en">English</button><button type="button" class="bn-btn' + (state.lang === 'hi' ? ' bn-btn-primary' : '') + '" data-act="lang" data-value="hi" lang="hi">हिंदी</button></div>' +
-      '<button type="button" class="user-btn" data-act="switch-open"><span class="body-strong">' + esc(u.name) + '</span><span class="caption bn-muted">' + esc(roleName(u.role)) + ' · ' + e('Switch user') + '</span></button>' +
-      '<button type="button" class="bn-btn" data-act="lock">' + icon('lock') + e('Lock desk') + '</button>' +
-      '<button type="button" class="bn-btn bn-btn-quiet" data-act="signout">' + e('Sign out') + '</button></div></aside>';
+      '<div class="rail-foot">' + accountControls() + '</div>' +
+      '<button type="button" class="rail-more" data-act="account-menu" aria-expanded="' + (state.accountOpen ? 'true' : 'false') + '">' + icon('user') + '<span>' + e('Account') + '</span></button></aside>';
   }
   function roleName(r) {
     return { receptionist: 'Reception', assistant: 'Cabin assistant', doctor: 'Doctor', admin: 'Admin' }[r] || r;
   }
   function topbar() {
+    var u = user();
+    var cabin = u && u.role === 'assistant';
     var p1 = openCallbacks().filter(function (c) { return c.priority === 'P1'; }).length;
     var p2 = openCallbacks().filter(function (c) { return c.priority === 'P2'; }).length;
     var held = state.bookings.filter(function (b) { return b.status === 'held'; }).length;
@@ -681,18 +782,20 @@
     var pop = hits.length ? '<div class="search-pop" role="listbox">' + hits.map(function (p) {
       return '<button type="button" class="search-hit" data-act="pick-patient" data-id="' + p.id + '"><span class="body-strong">' + esc(p.name) + '</span><span class="caption bn-muted bn-num">' + esc(p.pid) + ' · ' + esc(p.phones[0].number) + (sharedWith(p).length ? ' · shared phone' : '') + '</span></button>';
     }).join('') + '</div>' : '';
-    var chips = state.doctors.map(chip).join('');
-    return '<header class="topbar"><div class="clinic-lockup"><div class="heading">' + esc(state.clinic) + '</div><div class="caption bn-muted">Bolnai</div></div>' +
-      '<div class="when"><span class="body-strong bn-num">' + esc(state.dateLabel) + '</span><span class="caption bn-muted bn-num" data-live-clock>' + esc(liveClockText()) + '</span></div>' +
-      '<span class="live-pill" title="' + (state.live ? 'Connected to the clinic API' : 'Demo clock is running') + '"><i aria-hidden="true"></i>' + (state.live ? 'Live API' : 'Live') + '</span>' +
-      '<label class="bn-switch ' + (state.staffOnDesk ? 'is-on' : 'is-off') + '"><input class="bn-switch-input" type="checkbox" role="switch" data-bind="staffOnDesk" data-act="desk" ' + (state.staffOnDesk ? 'checked' : '') + ' aria-checked="' + (state.staffOnDesk ? 'true' : 'false') + '"><span class="bn-switch-track" aria-hidden="true"><span class="bn-switch-thumb"></span></span><span class="bn-switch-text"><span class="body-strong">' + e('Staff on desk') + '</span><span class="caption">' + e(state.staffOnDesk ? 'Calls transfer to the desk phone' : 'Callers are offered a callback') + '</span></span></label>' +
-      '<div class="chip-row" aria-label="Doctors in session">' + chips + '</div>' +
-      '<span class="caption' + (held ? ' agent-live' : ' bn-muted') + '" data-live-agent>' + (held ? 'Agent: ' + held + ' call in progress' : 'Agent: idle') + '</span>' +
-      '<div class="search"><input id="q" data-bind="search" data-live="1" placeholder="' + e('Search name, ID or phone') + '" aria-label="' + e('Search name, ID or phone') + '" value="' + esc(state.search) + '" title="Press / to search">' + pop + '</div>' +
-      emergencyChip() +
-      '<div class="counters"><a class="counter" href="#callbacks"><strong>' + p1 + ' P1 · ' + p2 + ' P2</strong> <span class="caption">' + e('Callbacks') + '</span></a>' +
+    var chips = state.doctors.filter(function (d) { return !cabin || d.id === u.doctorId; }).map(chip).join('');
+    var staff = cabin ? '' : '<label class="bn-switch ' + (state.staffOnDesk ? 'is-on' : 'is-off') + '"><input class="bn-switch-input" type="checkbox" role="switch" data-bind="staffOnDesk" data-act="desk" ' + (state.staffOnDesk ? 'checked' : '') + ' aria-checked="' + (state.staffOnDesk ? 'true' : 'false') + '"><span class="bn-switch-track" aria-hidden="true"><span class="bn-switch-thumb"></span></span><span class="bn-switch-text"><span class="body-strong">' + e('Staff on desk') + '</span><span class="caption">' + e(state.staffOnDesk ? 'Calls transfer to the desk phone' : 'Callers are offered a callback') + '</span></span></label>';
+    var agent = cabin ? '' : '<span class="caption' + (held ? ' agent-live' : ' bn-muted') + '" data-live-agent>' + (held ? 'Agent: ' + held + ' call in progress' : 'Agent: idle') + '</span>';
+    var counters = cabin ? '' : '<div class="counters"><a class="counter" href="#callbacks"><strong>' + p1 + ' P1 · ' + p2 + ' P2</strong> <span class="caption">' + e('Callbacks') + '</span></a>' +
       '<a class="counter" href="#payments"><strong>' + waitingRefunds().length + '</strong> <span class="caption">' + e('Refunds') + '</span></a>' +
-      '<a class="counter" href="#messages"><strong>' + failedMsgs().length + '</strong> <span class="caption">Failed</span></a></div></header>';
+      '<a class="counter" href="#messages"><strong>' + failedMsgs().length + '</strong> <span class="caption">Failed</span></a></div>';
+    return '<header class="topbar"><div class="clinic-lockup"><div class="heading">' + esc(state.clinic) + '</div><div class="caption bn-muted">Bolnai</div></div>' +
+      '<div class="when"><span class="body-strong bn-num">' + esc(state.dateLabel) + '</span><span class="caption bn-muted bn-num" data-live-clock>' + esc(liveClockText(false)) + '</span></div>' +
+      '<span class="live-pill" title="' + (state.live ? 'Connected to the clinic API' : 'Demo clock is running') + '"><i aria-hidden="true"></i>' + (state.live ? 'Live API' : 'Live') + '</span>' +
+      staff +
+      '<div class="chip-row" aria-label="Doctors in session">' + chips + '</div>' +
+      agent +
+      '<div class="search"><input id="q" data-bind="search" data-live="1" placeholder="' + e('Search name, ID or phone') + '" aria-label="' + e('Search name, ID or phone') + '" value="' + esc(state.search) + '" title="Press / to search">' + pop + '</div>' +
+      emergencyChip() + p1Chip() + counters + '</header>';
   }
 
   function todayScreen() {
@@ -716,25 +819,26 @@
         .sort(function (a, b) { return (b.priority - a.priority) || (a.arrivedMin - b.arrivedMin); });
       var affected = state.bookings.filter(function (b) { return b.originDoctorId === d.id || (d.status === 'cancelled' && b.doctorId === d.id && b.dateKey === state.dateKey); });
       var headActions = '';
-      if (d.status === 'planned') headActions += '<button type="button" class="bn-btn bn-btn-primary" data-act="start-session" data-id="' + d.id + '">' + e('Start session') + '</button>';
+      var cabin = user().role === 'assistant';
+      if (!cabin && d.status === 'planned') headActions += '<button type="button" class="bn-btn bn-btn-primary" data-act="start-session" data-id="' + d.id + '">' + e('Start session') + '</button>';
       if (d.status === 'started') {
-        headActions += '<button type="button" class="bn-btn" data-act="pause" data-id="' + d.id + '">' + icon('pause') + e('Pause') + '</button>';
-        headActions += '<button type="button" class="bn-btn bn-btn-primary" data-act="call-next" data-id="' + d.id + '">' + e('Call next') + '</button>';
+        if (!cabin) headActions += '<button type="button" class="bn-btn" data-act="pause" data-id="' + d.id + '">' + icon('pause') + e('Pause') + '</button>';
+        headActions += '<button type="button" class="bn-btn bn-btn-primary" data-act="call-next" data-id="' + d.id + '">' + e(cabin ? 'Next' : 'Call next') + '</button>';
       }
-      if (d.status === 'paused') headActions += '<button type="button" class="bn-btn bn-btn-primary" data-act="resume" data-id="' + d.id + '">' + e('Resume') + '</button>';
-      if (d.status === 'started' || d.status === 'paused') {
+      if (!cabin && d.status === 'paused') headActions += '<button type="button" class="bn-btn bn-btn-primary" data-act="resume" data-id="' + d.id + '">' + e('Resume') + '</button>';
+      if (!cabin && (d.status === 'started' || d.status === 'paused')) {
         headActions += '<button type="button" class="bn-btn" data-act="end-session" data-id="' + d.id + '">' + e('End session') + '</button>';
         headActions += '<button type="button" class="bn-btn bn-btn-danger" data-act="cancel-session" data-id="' + d.id + '">' + e('Mark session cancelled') + '</button>';
       }
-      headActions += '<button type="button" class="bn-btn bn-btn-quiet" data-act="doctor-open" data-id="' + d.id + '">' + e('Doctor phone') + '</button>';
+      if (!cabin) headActions += '<button type="button" class="bn-btn bn-btn-quiet" data-act="doctor-open" data-id="' + d.id + '">' + e('Doctor phone') + '</button>';
       var sinceMin = d.nowName && d.nowSince ? Math.max(0, liveNowMin() - parseTime(d.nowSince)) : 0;
-      var now = d.nowName ? '<p class="caption bn-num">Now with doctor: <strong>' + esc(d.nowName) + '</strong> · since ' + esc(d.nowSince) + (sinceMin ? ' · ' + sinceMin + ' min' : '') + '</p>' : '<p class="caption bn-muted">Nobody in the cabin</p>';
+      var now = d.nowName ? '<p class="caption bn-num">' + e('Now with doctor') + ': <strong>' + esc(d.nowName) + '</strong> · since ' + esc(d.nowSince) + (sinceMin ? ' · ' + sinceMin + ' min' : '') + '</p>' : '<p class="caption bn-muted">' + e('Nobody in the cabin') + '</p>';
       var warn = d.status === 'started' && d.basis === 'schedule' && d.watchdogMin >= 30 ? '<p class="caption" style="color:var(--attention-ink)">No update from the cabin for ' + d.watchdogMin + ' min</p>' : '';
-      var queueHtml = '<div class="queue"><div class="label">Waiting room order</div><p class="caption bn-muted">Priority visits first, then arrival order. Token is the queue position.</p>' +
+      var queueHtml = '<div class="queue"><div class="label">' + e('Waiting room order') + '</div><p class="caption bn-muted">' + e('Priority visits first, then arrival order.') + '</p>' +
         (order.length ? '<ol>' + order.map(function (b, i) {
           var p = patient(b.patientId);
           return '<li class="bn-num"><strong>' + esc(p.name) + '</strong> · token ' + (i + 1) + (b.priority ? ' · priority' : '') + ' · arrived ' + esc(b.statusNote) + '</li>';
-        }).join('') + '</ol>' : '<p class="caption bn-muted">No one waiting.</p>') + '</div>';
+        }).join('') + '</ol>' : '<p class="caption bn-muted">' + e('No one waiting.') + '</p>') + '</div>';
       var absent = '';
       if (d.status === 'cancelled') {
         absent = '<div class="stack"><p class="body-strong">Affected bookings</p>' + (affected.length ? affected.map(function (b) {
@@ -746,14 +850,16 @@
       return '<section class="doctor-col' + (d.status === 'cancelled' || d.status === 'ended' ? ' is-' + (d.status === 'cancelled' ? 'cancelled' : 'ended') : '') + '">' +
         '<div class="col-top"><div><h2 class="heading">' + esc(d.name) + '</h2><p class="caption bn-muted">' + esc(d.specialty) + ' · ' + esc(d.session) + (d.pool ? ' · ' + esc(d.pool) : '') + '</p></div>' + badge('neutral', capWord(d.status), null) + '</div>' +
         chip(d) + now + warn + '<div class="row-actions">' + headActions + '</div>' +
-        (q && !blocks ? '<div class="empty"><p class="heading">No patients match</p></div>' : blocks) +
+        (q && !blocks ? '<div class="empty"><p class="heading">' + e('No patients match') + '</p></div>' : blocks) +
         absent + queueHtml + '</section>';
     }).join('');
     var activity = '<div class="activity" aria-label="Agent activity">' + state.activity.map(function (a) {
       return '<div class="activity-item' + (a.fresh ? ' is-fresh' : '') + '"><p>' + esc(a.text) + '</p><p class="caption bn-muted" data-live-ago="' + esc(a.id) + '">' + esc(activityAge(a)) + '</p></div>';
     }).join('') + '</div>';
-    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Today') + '</h1><p class="caption bn-muted">' + e('Live queue') + ' · ' + esc(state.dateLabel) + ' · evening session</p></div>' +
-      '<div class="page-actions"><a class="bn-btn" href="#summary">' + e('Day summary') + '</a><a class="bn-btn" href="#waiting">' + e('Waiting room') + '</a><button type="button" class="bn-btn bn-btn-primary" data-act="walk-in">+ ' + e('Walk-in') + '</button></div></div>' +
+    var pageActions = user().role === 'assistant' ? '' :
+      '<div class="page-actions"><a class="bn-btn" href="#summary">' + e('Day summary') + '</a><a class="bn-btn" href="#waiting">' + e('Waiting room') + '</a><button type="button" class="bn-btn bn-btn-primary" data-act="walk-in">+ ' + e('Walk-in') + '</button></div>';
+    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Today') + '</h1><p class="caption bn-muted">' + e('Live queue') + ' · ' + esc(state.dateLabel) + ' · ' + e('evening session') + '</p></div>' +
+      pageActions + '</div>' +
       activity + '<div class="cols">' + cols + '</div>';
   }
   function capWord(status) {
@@ -858,14 +964,14 @@
     var filters = '<div class="filters">' + ['open', 'overdue', 'done', 'all'].map(function (f) {
       var label = { open: 'Open', overdue: 'Overdue', done: 'Done', all: 'All' }[f];
       return '<button type="button" class="bn-btn" data-act="cb-filter" data-value="' + f + '" aria-pressed="' + (state.callbackFilter === f) + '">' + e(label) + '</button>';
-    }).join('') + '<input id="cbq" data-bind="cbQuery" data-live="1" placeholder="Filter by name or number" aria-label="Filter callbacks" value="' + esc(state.cbQuery) + '" style="height:40px;border:1px solid var(--line-strong);border-radius:6px;padding:0 12px;background:var(--surface)"></div>';
-    var rows = list.length ? list.map(cbRow).join('') : '<div class="empty"><p class="heading">' + e('No callbacks. Nice.') + '</p><p class="bn-muted">New callbacks from the agent show up here.</p></div>';
-    var acked = state.alerts.length ? '<section class="panel"><header class="panel-hd"><h2 class="heading">Alerts</h2></header><div class="panel-bd">' + state.alerts.map(function (a) {
-      return '<p><span class="bn-badge bn-badge-emergency label">Acknowledged</span> <span class="bn-num">' + esc(a.at) + '</span> · ' + esc(a.kind) + ' · ' + esc(a.number) + '<br><span class="caption bn-muted">By ' + esc(a.by) + (a.ackAt ? ' at ' + esc(a.ackAt) : '') + '. Caller said: “' + esc(a.snippet) + '”</span></p>';
+    }).join('') + '<input id="cbq" data-bind="cbQuery" data-live="1" placeholder="' + e('Filter by name or number') + '" aria-label="' + e('Filter by name or number') + '" value="' + esc(state.cbQuery) + '" style="height:40px;border:1px solid var(--line-strong);border-radius:6px;padding:0 12px;background:var(--surface)"></div>';
+    var rows = list.length ? list.map(cbRow).join('') : '<div class="empty"><p class="heading">' + e('No callbacks. Nice.') + '</p><p class="bn-muted">' + e('New callbacks from the agent show up here.') + '</p></div>';
+    var acked = state.alerts.length ? '<section class="panel"><header class="panel-hd"><h2 class="heading">' + e('Alerts') + '</h2></header><div class="panel-bd">' + state.alerts.map(function (a) {
+      return '<p><span class="bn-badge bn-badge-emergency label">' + e('Acknowledged') + '</span> <span class="bn-num">' + esc(a.at) + '</span> · ' + esc(a.kind) + ' · ' + esc(a.number) + '<br><span class="caption bn-muted">By ' + esc(a.by) + (a.ackAt ? ' at ' + esc(a.ackAt) : '') + '. Caller said: “' + esc(a.snippet) + '”</span></p>';
     }).join('') + '</div></section>' : '';
     var selected = cbBy(state.callbackId);
-    var detail = selected ? cbDetail(selected) : '<section class="panel"><div class="empty"><p class="bn-muted">Select a callback.</p></div></section>';
-    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Callbacks') + '</h1><p class="caption bn-muted">P1 within 15 min · P2 within 2 hours · P3 next session. Sorted by priority, then by due time.</p></div></div>' +
+    var detail = selected ? cbDetail(selected) : '<section class="panel"><div class="empty"><p class="bn-muted">' + e('Select a callback.') + '</p></div></section>';
+    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Callbacks') + '</h1><p class="caption bn-muted">' + e('P1 within 15 min · P2 within 2 hours · P3 next session.') + '</p></div></div>' +
       filters + '<div class="split"><div class="list-clip">' + rows + '</div><div class="stack">' + detail + acked + '</div></div>';
   }
   function cbRow(c) {
@@ -882,10 +988,10 @@
       (c.differs ? badge('attention', 'Different number', 'phone') : '') +
       (c.smsSent ? badge('ok', 'SMS sent', 'check') : '') +
       (c.lockout ? badge('attention', 'Verification paused', 'lock') : '') + '</div>' +
-      '<button type="button" class="bn-btn ' + (c.overdue ? 'bn-btn-primary' : '') + '" data-act="cb-call" data-id="' + c.id + '">' + icon('phone') + (c.status === 'calling' ? e('Calling…') : 'Call') + '</button></div>';
+      '<button type="button" class="bn-btn ' + (c.overdue ? 'bn-btn-primary' : '') + '" data-act="cb-call" data-id="' + c.id + '">' + icon('phone') + (c.status === 'calling' ? e('Calling…') : e('Call')) + '</button></div>';
   }
   function cbDetail(c) {
-    var attempts = c.attempts.length ? '<ul class="timeline">' + c.attempts.map(function (a) { return '<li><span class="caption bn-num">' + esc(a.at) + '</span><span>' + esc(a.outcome) + '</span></li>'; }).join('') + '</ul>' : '<p class="caption bn-muted">No attempts yet.</p>';
+    var attempts = c.attempts.length ? '<ul class="timeline">' + c.attempts.map(function (a) { return '<li><span class="caption bn-num">' + esc(a.at) + '</span><span>' + esc(a.outcome) + '</span></li>'; }).join('') + '</ul>' : '<p class="caption bn-muted">' + e('No attempts yet.') + '</p>';
     return '<section class="panel"><header class="panel-hd"><h2 class="heading">' + esc(c.caller || 'Unknown caller') + '</h2>' + prio(c.priority, c.priority === 'P1' && !c.overdue && !c.isNew) + '</header><div class="panel-bd">' +
       '<p class="bn-num">' + esc(c.number) + (c.differs ? ' · callback number ' + esc(c.callbackNumber) : '') + '</p>' +
       (c.snippet ? '<p><span class="label">Caller said: </span>“' + esc(c.snippet) + '”</p>' : '') +
@@ -894,7 +1000,7 @@
       (c.lockout ? '<p>' + badge('attention', 'Phone verification paused: 5 failed attempts today', 'lock') + '</p><button type="button" class="bn-btn" data-act="clear-lockout" data-id="' + c.id + '">Clear after in-person check</button>' : '') +
       (c.smsSent ? '<p>' + badge('ok', 'SMS sent', 'check') + ' <span class="caption">Two no-answer attempts.</span></p>' : '') +
       '<div><div class="label">Attempts</div>' + attempts + '</div>' +
-      '<label class="field"><span class="label">Note</span><textarea id="cbnote" data-bind="cbNote">' + esc(state.cbNote) + '</textarea></label>' +
+      '<label class="field"><span class="label">' + e('Note') + '</span><textarea id="cbnote" data-bind="cbNote">' + esc(state.cbNote) + '</textarea></label>' +
       '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="cb-call" data-id="' + c.id + '">' + e('Calling…') + '</button>' +
       '<button type="button" class="bn-btn" data-act="cb-outcome" data-id="' + c.id + '" data-value="reached">' + e('Reached') + '</button>' +
       '<button type="button" class="bn-btn" data-act="cb-outcome" data-id="' + c.id + '" data-value="no_answer">' + e('No answer') + '</button>' +
@@ -977,17 +1083,18 @@
       var p = patient(r.patientId);
       var admin = user().role === 'admin';
       var self = r.requesterId && r.requesterId === user().id;
-      var why = !admin ? 'Only an admin can approve a refund.' : self ? 'Another admin must approve this.' : '';
       var done = r.status !== 'requested';
       return '<section class="panel"><header class="panel-hd"><div><h2 class="heading">' + esc(p.name) + ' · ' + money(r.amount) + '</h2><p class="caption bn-num">' + money(r.paid) + ' paid · ' + money(r.refunded) + ' refunded so far</p></div>' + badge(r.status === 'requested' ? 'attention' : r.status === 'rejected' ? 'neutral' : 'ok', r.status, null) + '</header><div class="panel-bd">' +
         '<p>Policy: ' + esc(r.policy) + '</p><p class="caption">Requested by ' + esc(r.requestedByName) + '. ' + esc(r.reason) + '</p>' +
         (r.callId ? '<button type="button" class="bn-btn bn-btn-quiet" data-act="open-call" data-id="' + r.callId + '">' + e('Open call') + '</button>' : '') +
         (r.approvedBy ? '<p class="caption">Approved by ' + esc(r.approvedBy) + ' at ' + esc(r.approvedAt) + '. ' + (r.method === 'UPI' ? 'Processed by gateway.' : 'Hand cash at the desk.') + '</p>' : '') +
         (r.status === 'rejected' ? '<p class="caption">Rejected. ' + esc(r.note) + '</p>' : '') +
-        '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="refund" data-id="' + r.id + '" data-value="approve"' + (done || !admin || self ? ' disabled' : '') + '>' + e('Approve') + '</button>' +
-        '<button type="button" class="bn-btn" data-act="refund" data-id="' + r.id + '" data-value="change"' + (done || !admin || self ? ' disabled' : '') + '>' + e('Change amount') + '</button>' +
-        '<button type="button" class="bn-btn bn-btn-danger" data-act="refund" data-id="' + r.id + '" data-value="reject"' + (done || !admin || self ? ' disabled' : '') + '>' + e('Reject') + '</button></div>' +
-        (why && !done ? '<p class="caption bn-muted">' + esc(why) + '</p>' : '') +
+        (done ? '' : admin
+          ? '<div class="row-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="refund" data-id="' + r.id + '" data-value="approve"' + (self ? ' disabled' : '') + '>' + e('Approve') + '</button>' +
+            '<button type="button" class="bn-btn" data-act="refund" data-id="' + r.id + '" data-value="change"' + (self ? ' disabled' : '') + '>' + e('Change amount') + '</button>' +
+            '<button type="button" class="bn-btn bn-btn-danger" data-act="refund" data-id="' + r.id + '" data-value="reject"' + (self ? ' disabled' : '') + '>' + e('Reject') + '</button></div>' +
+            (self ? '<p class="caption bn-muted">Another admin must approve this.</p>' : '')
+          : '<p class="body-strong">' + e('Needs an admin.') + '</p>') +
         '<button type="button" class="bn-btn bn-btn-quiet" data-act="history" data-kind="refund" data-id="' + r.id + '">History</button></div></section>';
     }).join('');
   }
@@ -1070,83 +1177,272 @@
       '<button type="button" class="bn-btn bn-btn-primary" data-act="book-patient" data-id="' + p.id + '">Book a visit</button></div></section>';
   }
 
-  function settingsScreen() {
-    if (user().role !== 'admin') {
-      return '<div class="empty"><p class="heading">Settings are for clinic admins</p><p class="bn-muted">Reception can run the day. Fees, refunds rules, and staff changes need an admin. Switch user and use the demo PIN.</p><button type="button" class="bn-btn bn-btn-primary" data-act="switch-open">' + e('Switch user') + '</button></div>';
+  function ensureSettingsCatalog() {
+    if (window.settingsNavFor && window.settingsRowsFor && window.settingAccess) return;
+    function roles(rec, ast, doc, adm) {
+      return { receptionist: rec, assistant: ast, doctor: doc, admin: adm };
     }
-    var sections = [['clinic', 'Clinic'], ['doctors', 'Doctors'], ['payments', 'Payments and refunds'], ['delays', 'Delays'], ['calls', 'Calls'], ['staff', 'Staff']];
-    var nav = '<div class="subnav">' + sections.map(function (s) {
-      return '<button type="button" data-act="settings-tab" data-value="' + s[0] + '" aria-current="' + (state.settingsSection === s[0]) + '">' + esc(s[1]) + '</button>';
-    }).join('') + '</div>';
-    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Settings') + '</h1><p class="caption bn-muted">Each number shows its default. Changes stay on this desk only.</p></div><button type="button" class="bn-btn" data-act="export-day">Export day summary</button></div>' +
-      '<div class="settings-grid">' + nav + '<div class="stack">' + settingsBody() + auditPanel() + '</div></div>';
-  }
-  function field(label, bind, help, type) {
-    var val = bind.split('.').reduce(function (o, k) { return o[k]; }, state);
-    var input = type === 'area'
-      ? '<textarea id="s-' + bind.replace(/\W/g, '') + '" data-bind="' + bind + '" data-live="1">' + esc(val) + '</textarea>'
-      : '<input id="s-' + bind.replace(/\W/g, '') + '" data-bind="' + bind + '" data-live="1" value="' + esc(val) + '">';
-    return '<label class="field"><span class="label">' + esc(label) + '</span>' + input + '<span class="caption bn-muted">' + esc(help) + '</span></label>';
-  }
-  function settingsBody() {
-    var s = state.settingsSection;
-    if (s === 'clinic') {
-      return '<section class="panel"><div class="panel-bd">' +
-        field('Clinic name', 'clinic', 'The name the agent speaks. Patients never hear “Bolnai”.', 'text') +
-        field('Address', 'address', 'Default: 12 Example Road, Chandigarh.', 'text') +
-        field('Hours', 'settings.hours', 'Default: Mon–Fri 5:00–8:00 pm, Sat 10:00 am–1:00 pm.', 'area') +
-        field('Hours in Hindi', 'settings.hoursHi', 'Shown when the console language is Hindi. Needs a native speaker’s review before a real clinic.', 'area') +
-        field('Address in Hindi', 'settings.addressHi', 'Hindi info answer for the agent and the desk.', 'area') +
-        field('Holidays', 'settings.holidays', 'Default: Sunday and 2 Oct.', 'text') +
-        field('Fees', 'settings.feesEn', 'Info answer. General visits have no booking fee.', 'area') +
-        field('Fees in Hindi', 'settings.feesHi', 'Hindi info answer.', 'area') +
-        field('Parking', 'settings.parkingEn', 'Info answer.', 'area') +
-        field('Parking in Hindi', 'settings.parkingHi', 'Hindi info answer.', 'area') +
-        field('Payment', 'settings.payEn', 'UPI link or cash. Never ask for a PIN.', 'area') +
-        field('Refunds', 'settings.refundEn', 'Clinic-caused: full. 24 h or more: full. Later: half.', 'area') +
-        '</div></section>';
+    function row(id, section, label, help, bind, type, def, roleMap, options) {
+      var item = { id: id, section: section, label: label, help: help, bind: bind, type: type, def: def, roles: roleMap };
+      if (options) item.options = options;
+      return item;
     }
-    if (s === 'doctors') {
-      return state.doctors.map(function (d, i) {
-        return '<section class="panel"><header class="panel-hd"><h2 class="heading">' + esc(d.name) + '</h2><span class="caption">' + esc(d.tier) + '</span></header><div class="panel-bd">' +
-          '<p class="caption bn-muted">' + esc(d.specialty) + (d.pool ? ' · pool ' + esc(d.pool) : ' · no pool') + ' · session ' + esc(d.session) + '</p>' +
-          field('Window length (min)', 'doctors.' + i + '.windowMin', 'Default 30. Places are shared inside the window.', 'text') +
-          field('Capacity', 'doctors.' + i + '.capacity', 'Default 4 places in each arrival window.', 'text') +
-          field('Priority places', 'doctors.' + i + '.priorityPlaces', 'Specialists only. General doctors stay at 0.', 'text') +
-          field('Appointment fee', 'doctors.' + i + '.appointmentFee', 'Default ₹0 for general, ₹200 for Dr Kaur. Empty means none.', 'text') +
-          field('Priority fee', 'doctors.' + i + '.priorityFee', 'Default ₹500 for Dr Kaur. Not offered by general doctors.', 'text') +
-          field('Planned consult (min)', 'doctors.' + i + '.consultMin', 'Default 12 for general, 15 for Dr Kaur. Used only for the finish estimate.', 'text') +
-          '</div></section>';
+    var ALL_W = roles('w', 'w', 'w', 'w');
+    var ALL_R = roles('r', 'r', 'r', 'r');
+    var CLINIC_INFO = roles('r', '', 'r', 'w');
+    var ADMIN_REC = roles('r', '', '', 'w');
+    var ADMIN_ONLY = roles('', '', '', 'w');
+    window.SETTINGS_NAV = window.SETTINGS_NAV || [
+      { group: 'you', label: 'Your preferences', id: 'profile' },
+      { group: 'you', id: 'language', label: 'Language' },
+      { group: 'you', id: 'notifications', label: 'Notifications' },
+      { group: 'you', id: 'desk', label: 'Desk and lock' },
+      { group: 'clinic', label: 'Clinic', id: 'clinic' },
+      { group: 'clinic', id: 'hours', label: 'Hours and info' },
+      { group: 'clinic', id: 'doctors', label: 'Doctors' },
+      { group: 'clinic', id: 'payments', label: 'Payments and refunds' },
+      { group: 'clinic', id: 'staff', label: 'Staff and devices' },
+      { group: 'clinic', id: 'audit', label: 'Audit' }
+    ];
+    window.SETTINGS_ROWS = window.SETTINGS_ROWS || [
+      row('profile-name', 'profile', 'Name', 'The name on this signed-in session.', 'user.name', 'status', '', ALL_R),
+      row('profile-role', 'profile', 'Role', 'Reception, cabin, doctor, or admin.', 'user.role', 'status', '', ALL_R),
+      row('language', 'language', 'Language', 'English or Hindi for this desk.', 'lang', 'select', 'en', ALL_W, [{ value: 'en', label: 'English' }, { value: 'hi', label: 'Hindi' }]),
+      row('notify-callback', 'notifications', 'New callback', 'Toast when a new callback lands.', 'settings.notifyCallback', 'switch', true, ALL_W),
+      row('notify-failed', 'notifications', 'Failed message', 'Toast when a send fails.', 'settings.notifyFailed', 'switch', true, ALL_W),
+      row('notify-delay', 'notifications', 'Live delay', 'Toast when a cabin delay updates.', 'settings.notifyDelay', 'switch', true, ALL_W),
+      row('auto-lock', 'desk', 'Auto-lock (minutes)', 'Default 3.', 'settings.autoLockMin', 'number', 3, roles('w', '', 'r', 'w')),
+      row('privacy-numbers', 'desk', 'Waiting-room privacy numbers', 'Show numbers instead of names.', 'privacyNumbers', 'switch', false, roles('w', 'w', 'r', 'w')),
+      row('staff-on-desk', 'desk', 'Staff on desk', 'Live switch stays on Today.', 'staffOnDesk', 'status', true, roles('r', '', '', 'r')),
+      row('refund-en', 'hours', 'Refunds', 'Clinic-caused: full. 24 h or more: full. Later: half.', 'settings.refundEn', 'area', '', CLINIC_INFO),
+      row('refund-full-hours', 'payments', 'Full refund if cancelled before (hours)', 'Default 24.', 'settings.refundFullHours', 'number', 24, ADMIN_REC),
+      row('export-day', 'staff', 'Export day summary', 'Download today’s counts.', 'export-day', 'action', 'export-day', ADMIN_ONLY),
+      row('signout', 'staff', 'Sign this device out', 'This browser only.', 'signout', 'action', 'signout', ALL_W),
+      row('remote-signout', 'staff', 'Remote sign-out', 'Sign out cabin and doctor phones.', 'remote-signout', 'action', 'remote-signout', ADMIN_ONLY),
+      row('audit-log', 'audit', 'Recent settings changes', 'Who changed a setting.', 'audit', 'status', '', roles('r', '', '', 'r'))
+    ];
+    window.settingAccess = window.settingAccess || function (role, item) {
+      if (!item || !item.roles) return '';
+      var access = item.roles[role];
+      return access === 'w' || access === 'r' ? access : '';
+    };
+    window.settingsRowsFor = window.settingsRowsFor || function (role, section, query) {
+      var q = String(query || '').toLowerCase().replace(/^\s+|\s+$/g, '');
+      return window.SETTINGS_ROWS.filter(function (item) {
+        if (section && item.section !== section) return false;
+        if (!window.settingAccess(role, item)) return false;
+        if (!q) return true;
+        return String(item.label || '').toLowerCase().indexOf(q) !== -1 || String(item.help || '').toLowerCase().indexOf(q) !== -1;
+      });
+    };
+    window.settingsNavFor = window.settingsNavFor || function (role, query) {
+      return window.SETTINGS_NAV.filter(function (nav) {
+        if (role === 'assistant' && nav.group === 'clinic') return false;
+        return window.settingsRowsFor(role, nav.id, query).length > 0;
+      });
+    };
+  }
+  function settingAccessFor(role, row) {
+    ensureSettingsCatalog();
+    return window.settingAccess(role, row);
+  }
+  function doctorBindPrefix(u) {
+    if (!u || u.role !== 'doctor' || !u.doctorId) return '';
+    var i = -1;
+    state.doctors.forEach(function (d, idx) { if (d.id === u.doctorId) i = idx; });
+    return i < 0 ? '' : 'doctors.' + i + '.';
+  }
+  function catalogRowByBind(bind) {
+    ensureSettingsCatalog();
+    var rows = window.SETTINGS_ROWS || [];
+    for (var i = 0; i < rows.length; i++) if (rows[i].bind === bind) return rows[i];
+    return null;
+  }
+  function canWriteSetting(bind) {
+    var u = user();
+    if (!u) return false;
+    var row = catalogRowByBind(bind);
+    if (!row) return true;
+    if (u.role === 'doctor' && row.section === 'doctors') {
+      var prefix = doctorBindPrefix(u);
+      if (!prefix || String(bind).indexOf(prefix) !== 0) return false;
+      if (/fee/i.test(bind)) return false;
+    }
+    return settingAccessFor(u.role, row) === 'w';
+  }
+  function scopedDoctorRows(role, rows) {
+    if (role !== 'doctor') return rows;
+    var u = user();
+    var prefix = doctorBindPrefix(u);
+    var slug = u && u.doctorId ? 'doc-' + u.doctorId + '-' : '';
+    return rows.filter(function (row) {
+      if (row.section !== 'doctors') return true;
+      if (prefix && row.bind && String(row.bind).indexOf(prefix) === 0) return true;
+      if (slug && row.id && String(row.id).indexOf(slug) === 0) return true;
+      return false;
+    });
+  }
+  function extraStaffRows(role, query) {
+    if (role !== 'admin' && role !== 'receptionist') return [];
+    var q = String(query || '').toLowerCase();
+    return state.users.map(function (u) {
+      var help = roleName(u.role);
+      if (q && String(u.name).toLowerCase().indexOf(q) < 0 && help.toLowerCase().indexOf(q) < 0 && 'staff'.indexOf(q) < 0) return null;
+      return { id: 'staff-user-' + u.id, section: 'staff', label: u.name, help: help, bind: '', type: 'status', def: help, roles: { receptionist: 'r', admin: 'r' } };
+    }).filter(Boolean);
+  }
+  function isAuditPlaceholder(row) {
+    return row && (row.id === 'audit-log' || row.bind === 'audit');
+  }
+  function collectSettingsRows(role, section, query) {
+    ensureSettingsCatalog();
+    var q = String(query || '').replace(/^\s+|\s+$/g, '');
+    var rows = q ? window.settingsRowsFor(role, '', q) : window.settingsRowsFor(role, section, '');
+    if ((q || section === 'staff')) rows = extraStaffRows(role, q).concat(rows);
+    return scopedDoctorRows(role, rows).filter(function (row) { return !isAuditPlaceholder(row); });
+  }
+  function collectSettingsNav(role, query) {
+    ensureSettingsCatalog();
+    var nav = window.settingsNavFor(role, query);
+    if (role === 'doctor') {
+      nav = nav.filter(function (item) {
+        if (item.id !== 'doctors') return true;
+        return collectSettingsRows(role, 'doctors', query).length > 0;
+      });
+    }
+    return nav;
+  }
+  function defaultSettingsSection(role) {
+    return role === 'admin' ? 'clinic' : 'profile';
+  }
+  function settingsSectionId(role) {
+    return hashSection() || defaultSettingsSection(role);
+  }
+  function settingSnapValue(value) {
+    return String(value == null ? '' : value);
+  }
+  var settingSnap = {};
+  function rememberSetting(bind, value) {
+    if (bind && settingSnap[bind] == null) settingSnap[bind] = settingSnapValue(value);
+  }
+  function maybeAuditSettings(el) {
+    if (!el || !el.dataset || el.dataset.settingsRow !== '1' || !el.dataset.bind) return;
+    var bind = el.dataset.bind;
+    if (!canWriteSetting(bind)) return;
+    var value = el.type === 'checkbox' ? el.checked : el.value;
+    var next = settingSnapValue(value);
+    if (settingSnap[bind] == null) {
+      settingSnap[bind] = next;
+      return;
+    }
+    if (settingSnap[bind] === next) return;
+    settingSnap[bind] = next;
+    var who = user();
+    audit((who ? who.name : 'Staff') + ' changed ' + (el.dataset.settingsLabel || bind));
+    if (bind === 'settings.autoLockMin') bumpIdle();
+  }
+  function settingRawValue(row) {
+    if (row.type === 'action') return '';
+    var raw = row.bind ? getPath(row.bind) : row.def;
+    if (raw === undefined) raw = row.def;
+    return raw;
+  }
+  function settingReadValue(row, raw) {
+    if (row.bind === 'user.role') return roleName(raw);
+    if (row.bind === 'staffOnDesk') return raw ? 'On — calls transfer to the desk phone' : 'Off — callers are offered a callback';
+    if (row.type === 'switch' || typeof raw === 'boolean') return raw ? 'On' : 'Off';
+    if (row.type === 'select' && row.options) {
+      var opt = row.options.filter(function (o) { return String(o.value) === String(raw); })[0];
+      return opt ? opt.label : (raw == null || raw === '' ? '—' : String(raw));
+    }
+    if (raw == null || raw === '') return '—';
+    return String(raw);
+  }
+  function settingsControl(row, raw) {
+    var bind = row.bind || '';
+    var id = 's-' + String(row.id || bind).replace(/\W/g, '');
+    var labelAttr = ' data-settings-row="1" data-settings-label="' + esc(row.label) + '"';
+    if (row.type === 'switch') {
+      return '<label class="bn-switch ' + (raw ? 'is-on' : 'is-off') + '"><input class="bn-switch-input" type="checkbox" role="switch" id="' + id + '" data-bind="' + esc(bind) + '" data-act="refresh"' + labelAttr + (raw ? ' checked' : '') + ' aria-checked="' + (raw ? 'true' : 'false') + '"><span class="bn-switch-track"><span class="bn-switch-thumb"></span></span></label>';
+    }
+    if (row.type === 'select') {
+      var opts = (row.options || []).map(function (o) {
+        return '<option value="' + esc(o.value) + '"' + (String(o.value) === String(raw) ? ' selected' : '') + '>' + esc(o.label) + '</option>';
       }).join('');
+      return '<select id="' + id + '" data-bind="' + esc(bind) + '" data-act="refresh"' + labelAttr + '>' + opts + '</select>';
     }
-    if (s === 'payments') {
-      return '<section class="panel"><div class="panel-bd">' +
-        '<p>Accepted methods: UPI link on WhatsApp, and cash at the desk.</p>' +
-        field('Link validity (min)', 'settings.linkMinutes', 'Default 30 min. After that the link expires and the desk can take cash.', 'text') +
-        field('Reminders', 'settings.reminders', 'Default 1 reminder before a link expires.', 'text') +
-        '<label class="bn-switch ' + (state.settings.payToKeep ? 'is-on' : 'is-off') + '"><input class="bn-switch-input" type="checkbox" data-bind="settings.payToKeep" data-act="refresh" ' + (state.settings.payToKeep ? 'checked' : '') + '><span class="bn-switch-track"><span class="bn-switch-thumb"></span></span><span class="bn-switch-text"><span class="body-strong">Payment required to keep the booking</span><span class="caption">Default off. Unpaid UPI links stay booked and can be paid at the desk.</span></span></label>' +
-        field('Full refund if cancelled before (hours)', 'settings.refundFullHours', 'Default 24. Cancel sooner than this and the share below applies.', 'text') +
-        field('Later cancellation refund (%)', 'settings.refundLateShare', 'Default 50. Clinic-caused cancellations stay at 100%.', 'text') +
-        '<p class="caption bn-muted">Refund approval required: on. The person who raised a refund cannot approve it.</p></div></section>';
+    if (row.type === 'area') {
+      return '<textarea id="' + id + '" data-bind="' + esc(bind) + '" data-live="1"' + labelAttr + '>' + esc(raw == null ? '' : raw) + '</textarea>';
     }
-    if (s === 'delays') {
-      return '<section class="panel"><div class="panel-bd">' +
-        field('SMS threshold (min)', 'settings.delayThreshold', 'Default 20 min. Delay messages start at this lateness. The chip turns amber, never red.', 'text') +
-        field('Max delay messages', 'settings.maxDelaySms', 'Default 2. After that, a delay-choice call asks the patient to keep the place or move.', 'text') +
-        field('Call next watchdog (min)', 'settings.watchdog', 'Default 30 min. With no tap, the delay is marked schedule only.', 'text') +
-        '</div></section>';
+    var inputType = row.type === 'number' ? 'number' : 'text';
+    return '<input id="' + id + '" type="' + inputType + '" data-bind="' + esc(bind) + '" data-live="1"' + labelAttr + ' value="' + esc(raw == null ? '' : raw) + '">';
+  }
+  function settingsAction(row) {
+    var act = row.bind || row.id;
+    var danger = act === 'signout' || act === 'remote-signout';
+    return '<button type="button" class="bn-btn' + (danger ? ' bn-btn-danger' : '') + '" data-act="' + esc(act) + '">' + esc(row.label) + '</button>';
+  }
+  function settingsRowHtml(row, role) {
+    var access = settingAccessFor(role, row) || (row.type === 'status' ? 'r' : '');
+    if (!access && row.type !== 'status') return '';
+    var raw = settingRawValue(row);
+    if (access === 'w' && row.bind && row.type !== 'action' && row.type !== 'status') rememberSetting(row.bind, raw);
+    var help = row.help || '';
+    if (row.def != null && row.def !== '' && String(help).indexOf('Default') === -1 && row.type !== 'status' && row.type !== 'action') {
+      help = (help ? help + ' · ' : '') + 'Default ' + row.def;
     }
-    if (s === 'calls') {
-      return '<section class="panel"><div class="panel-bd">' +
-        field('Staff transfer number', 'settings.transfer', 'Default +91 98000 00000. Used only when staff on desk is on.', 'text') +
-        field('Outbound from', 'settings.outboundFrom', 'Default 9:00 am. Reminders and delay calls stay inside these hours.', 'text') +
-        field('Outbound to', 'settings.outboundTo', 'Default 9:00 pm.', 'text') +
-        field('Retries', 'settings.retries', 'Default 2. After two no-answers the desk sends an SMS.', 'text') +
-        '</div></section>';
+    var copy = '<div class="settings-row-copy"><span class="body-strong">' + esc(row.label) + '</span>' +
+      (help ? '<span class="caption bn-muted">' + esc(help) + '</span>' : '') + '</div>';
+    var control;
+    if (row.type === 'action') control = settingsAction(row);
+    else if (access === 'w' && row.type !== 'status') control = settingsControl(row, raw);
+    else control = '<span class="body">' + esc(settingReadValue(row, raw)) + '</span>';
+    var readonly = access !== 'w' || row.type === 'status';
+    return '<div class="settings-row' + (readonly ? ' is-readonly' : '') + '">' + copy + '<div class="settings-row-control">' + control + '</div></div>';
+  }
+  function showAuditPanel(role, section, query) {
+    var access = settingAccessFor(role, { roles: { receptionist: 'r', assistant: '', doctor: '', admin: 'r' } });
+    if (!access) return false;
+    var q = String(query || '').toLowerCase();
+    if (q) return q.indexOf('audit') !== -1;
+    return section === 'audit';
+  }
+  function settingsScreen() {
+    var u = user();
+    var role = u ? u.role : '';
+    var query = state.settingsQuery || '';
+    var section = settingsSectionId(role);
+    var navItems = collectSettingsNav(role, query);
+    if (!String(query).replace(/^\s+|\s+$/g, '') && navItems.length && !navItems.some(function (n) { return n.id === section; })) {
+      section = navItems[0].id;
     }
-    return '<section class="panel"><div class="panel-bd"><div class="label">Staff</div>' + state.users.map(function (u) {
-      return '<p><strong>' + esc(u.name) + '</strong> · ' + esc(roleName(u.role)) + '</p>';
-    }).join('') + '<p class="caption bn-muted">Doctor and cabin phones stay signed in until an admin signs the device out. This button signs out this browser only.</p><button type="button" class="bn-btn bn-btn-danger" data-act="signout">Sign this device out</button></div></section>';
+    state.settingsSection = section;
+    var rows = collectSettingsRows(role, section, query);
+    var lastGroup = '';
+    var railHtml = '<input class="settings-search" id="settings-q" data-bind="settingsQuery" data-live="1" placeholder="Find a setting" aria-label="Find a setting" value="' + esc(query) + '">';
+    navItems.forEach(function (item) {
+      if (item.group && item.group !== lastGroup) {
+        railHtml += '<p class="settings-group">' + esc(item.group === 'clinic' ? 'Clinic' : item.group === 'you' ? 'Your preferences' : item.group) + '</p>';
+        lastGroup = item.group;
+      }
+      railHtml += '<button type="button" class="settings-nav" data-act="settings-tab" data-value="' + esc(item.id) + '"' + (section === item.id ? ' aria-current="true"' : '') + '>' + esc(item.label) + '</button>';
+    });
+    var title = String(query).replace(/^\s+|\s+$/g, '') ? 'Search results' : ((navItems.filter(function (n) { return n.id === section; })[0] || {}).label || 'Settings');
+    var list = rows.map(function (row) { return settingsRowHtml(row, role); }).join('');
+    var hasReadonly = rows.some(function (row) { return settingAccessFor(role, row) === 'r' || row.type === 'status'; });
+    var paneInner = '';
+    if (!list && !showAuditPanel(role, section, query)) {
+      paneInner = '<div class="settings-empty"><p class="heading">No settings match</p><p class="caption bn-muted">Try another word, or clear the search.</p></div>';
+    } else {
+      paneInner = (list ? '<div class="settings-list">' + list + '</div>' : '') +
+        (hasReadonly ? '<p class="settings-readonly-hint">Ask an admin to change this</p>' : '') +
+        (showAuditPanel(role, section, query) ? auditPanel() : '');
+    }
+    var extra = section === 'profile' && !String(query).replace(/^\s+|\s+$/g, '')
+      ? '<button type="button" class="bn-btn" data-act="switch-open">' + e('Switch user') + '</button>'
+      : '';
+    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Settings') + '</h1><p class="caption bn-muted">Personal preferences for everyone. Clinic policy is admin-write.</p></div></div>' +
+      '<div class="settings-shell"><aside class="settings-rail">' + railHtml + '</aside><div class="settings-pane"><header class="settings-pane-hd"><h2 class="heading">' + esc(title) + '</h2>' + extra + '</header>' + paneInner + '</div></div>';
   }
   function auditPanel() {
     var lines = state.audit.slice(0, 8).map(function (a) {
@@ -1227,7 +1523,7 @@
     var disabled = !next || d.status === 'paused' || d.status === 'ended' || d.status === 'cancelled';
     var flash = state.flash ? '<div class="flash"><div class="label">Calling</div><div class="wait-name" style="font-size:40px">' + esc(state.flash) + '</div></div>' : '';
     var callBtn = '<div class="bn-callnext"><div class="bn-callnext-next">' + (next && !state.flash ? '<span class="label bn-muted">' + e('Next') + '</span><span class="heading-lg">' + esc(patient(next.patientId).name) + '</span><span class="caption bn-muted bn-num">' + esc(nextMeta) + '</span>' : '<span class="bn-muted">' + esc(state.flash ? '' : empty) + '</span>') + '</div>' +
-      '<button type="button" class="bn-callnext-btn" data-act="call-next" data-id="' + d.id + '"' + (disabled ? ' disabled' : '') + '><span class="' + (state.lang === 'hi' ? 'hi-call-next' : 'call-next') + '">' + (state.lang === 'hi' ? 'अगले मरीज़ को बुलाएँ' : e('Call next')) + '</span></button>' +
+      '<button type="button" class="bn-callnext-btn" data-act="call-next" data-id="' + d.id + '"' + (disabled ? ' disabled' : '') + '><span class="' + (u.role !== 'assistant' && state.lang === 'hi' ? 'hi-call-next' : 'call-next') + '">' + (u.role === 'assistant' ? e('Next') : (state.lang === 'hi' ? 'अगले मरीज़ को बुलाएँ' : e('Call next'))) + '</span></button>' +
       '<span class="caption bn-muted bn-num">' + (d.nowName ? 'With ' + esc(d.nowName) + ' since ' + esc(d.nowSince) : 'Cabin is free') + '</span></div>';
     var remaining = state.bookings.filter(function (b) { return b.doctorId === d.id && b.dateKey === state.dateKey && ['done', 'cancelled', 'no_show', 'rescheduled'].indexOf(b.status) < 0; }).length;
     var finish = fmtTime(20 * 60 + (d.delayMin || 0));
@@ -1235,7 +1531,7 @@
       var p = patient(b.patientId);
       return '<div class="queue-line"><span><strong>' + (i + 1) + '. ' + esc(p.name) + '</strong><div class="caption">' + esc(p.pid) + (b.priority ? ' · priority' : '') + '</div></span><span class="caption bn-num">' + esc(b.statusNote) + '</span></div>';
     }).join('') : '<p class="bn-muted">' + esc(empty) + '</p>') + '</div></div>' : '';
-    var back = u.role === 'doctor' ? '' : '<a class="bn-btn" href="#today">' + e('Back to desk') + '</a>';
+    var back = (u.role === 'doctor' || u.role === 'assistant') ? '' : '<a class="bn-btn" href="#today">' + e('Back to desk') + '</a>';
     var modeToggle = u.role === 'receptionist' || u.role === 'admin' ? '<div class="filters"><button type="button" class="bn-btn" data-act="phone-mode" data-value="doctor" aria-pressed="' + (mode === 'doctor') + '">Doctor</button><button type="button" class="bn-btn" data-act="phone-mode" data-value="cabin" aria-pressed="' + (mode === 'cabin') + '">Cabin assistant</button></div>' : '';
     var small = '<div class="row-actions">' +
       (d.status === 'started' ? '<button type="button" class="bn-btn" data-act="pause" data-id="' + d.id + '">' + e('Pause') + '</button>' : '') +
@@ -1254,8 +1550,10 @@
       (reqs.length ? '<h2 class="heading">Medicine requests <span class="caption bn-muted bn-num">' + openReqs + ' open</span></h2>' + reqs.map(refillCard).join('') : '') +
       (msgs.length ? '<h2 class="heading">Messages for you <span class="caption bn-muted bn-num">' + openMsgs + ' open</span></h2>' + msgs.map(messageCard).join('') : '') + '</div>' : '';
     var jump = openReqs + openMsgs ? '<button type="button" class="bn-btn" data-act="jump-requests">' + icon('msg') + (openReqs + openMsgs) + ' waiting for you: ' + [openReqs ? openReqs + ' medicine' : '', openMsgs ? openMsgs + ' message' + (openMsgs > 1 ? 's' : '') : ''].filter(Boolean).join(', ') + '</button>' : '';
-    return '<div class="phone-wrap"><div class="phone"><div class="phone-top">' + back + '<div><div class="body-strong">' + esc(d.name) + '</div><div class="caption bn-muted">' + esc(d.cabin) + '</div></div><button type="button" class="bn-btn" data-act="switch-open">' + esc(user().name.split(' ')[0]) + '</button></div>' +
-      modeToggle + chip(d) + jump + net + paused +
+    var phoneLinks = (u.role === 'assistant' ? '<a class="bn-btn" href="#today">' + e('Today') + '</a>' : '') +
+      '<a class="bn-btn" href="#settings">' + e('Settings') + '</a>';
+    return '<div class="phone-wrap"><div class="phone"><div class="phone-top">' + back + '<div><div class="body-strong">' + esc(d.name) + '</div><div class="caption bn-muted">' + esc(d.cabin) + '</div></div>' + phoneLinks + '<button type="button" class="bn-btn" data-act="switch-open">' + esc(u.name) + '</button></div>' +
+      p1Chip() + modeToggle + chip(d) + jump + net + paused +
       '<p class="bn-num"><strong>' + remaining + '</strong> <span class="caption">remaining today · finish about ' + esc(finish) + '</span></p>' +
       cabinList + (state.flash ? flash : callBtn) + small + reqHtml + '</div></div>';
   }
@@ -1288,11 +1586,11 @@
         '<p class="caption bn-muted demo-hint">Demo ' + (state.needOtp ? 'code ' + esc(picking.otp || '') : 'PIN ' + esc(picking.pin)) + '</p>' +
         '<button type="button" class="bn-btn bn-btn-quiet" data-act="pin-cancel">Choose someone else</button>'
       : list;
-    return '<div class="signin">' + emergencyHighlight() + '<div class="signin-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock>' + esc(liveClockText()) + '</p><p class="bn-muted">Sign in with your own PIN. The desk never shares one login.</p>' + pinBlock + '</div></div>';
+    return '<div class="signin">' + emergencyHighlight() + '<div class="signin-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock="sec">' + esc(liveClockText(true)) + '</p><p class="bn-muted">Sign in with your own PIN. The desk never shares one login.</p>' + pinBlock + '</div></div>';
   }
   function lockScreen() {
     var who = user();
-    return '<div class="lock">' + emergencyHighlight() + '<div class="lock-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock>' + esc(liveClockText()) + '</p><p class="bn-muted">Desk locked.</p>' +
+    return '<div class="lock">' + emergencyHighlight() + '<div class="lock-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock="sec">' + esc(liveClockText(true)) + '</p><p class="bn-muted">Desk locked.</p>' +
       (who ? '<div class="signin-who"><p class="body-strong">' + esc(who.name) + '</p><p class="caption bn-muted">' + esc(roleName(who.role)) + '</p></div>' : '') +
       '<p class="label">Enter your PIN</p>' + pinPad() +
       (who ? '<p class="caption bn-muted demo-hint">Demo PIN ' + esc(who.pin) + '</p>' : '') +
@@ -1307,7 +1605,9 @@
         '<p class="label">' + (state.needOtp ? 'Authenticator code' : 'Enter your PIN') + '</p>' +
         pinPad() +
         '<p class="caption bn-muted demo-hint">Demo ' + (state.needOtp ? 'code ' + esc(picking.otp || '') : 'PIN ' + esc(picking.pin)) + '</p></div>' : '') +
-      '<button type="button" class="bn-btn" data-act="switch-close">' + e('Close') + '</button></div></div>';
+      '<button type="button" class="bn-btn" data-act="switch-close">' + e('Close') + '</button>' +
+      (state.signedIn && !state.locked ? '<div class="row-actions"><button type="button" class="bn-btn" data-act="lock">' + e('Lock desk') + '</button><button type="button" class="bn-btn bn-btn-quiet" data-act="signout">' + e('Sign out') + '</button></div>' : '') +
+      '</div></div>';
   }
 
   function drawer() {
@@ -1352,13 +1652,13 @@
           return '<option value="' + wk.key + '"' + (bDate === wk.key ? ' selected' : '') + (shut ? ' disabled' : '') + '>' + esc(dayLabel(wk.key) + (wk.key === state.dateKey ? ' (today)' : '') + (shut ? ' · ' + shut : '')) + '</option>';
         }).join('') + '</select></label>' +
         '<label class="field"><span class="label">Arrival window</span><select id="f-win" data-bind="form.windowLabel" data-act="refresh">' +
-        bookableLabels(bDate, bDoc).map(function (lab) {
+        (bookableLabels(bDate, bDoc).length ? bookableLabels(bDate, bDoc).map(function (lab) {
           var w = findWindow(bDoc, lab, bDate);
           var o = w ? occupancy(w) : { taken: 0, priorityTaken: 0 };
           var cap = (w ? w.capacity : (doc && doc.capacity) || 4) - (w ? w.priorityPlaces : (doc && doc.priorityPlaces) || 0);
           var chosen = (f.windowLabel || defaultLabel(bDoc, bDate)) === lab;
-          return '<option value="' + esc(lab) + '"' + (chosen ? ' selected' : '') + '>' + esc(lab + ' · ' + (o.taken >= cap ? 'full' : o.taken + '/' + cap)) + '</option>';
-        }).join('') + '</select></label></div>';
+          return '<option value="' + esc(lab) + '"' + (chosen ? ' selected' : '') + '>' + esc(windowShown(bDoc, lab, bDate) + ' · ' + (o.taken >= cap ? 'full' : o.taken + '/' + cap)) + '</option>';
+        }).join('') : '<option value="">' + e('No arrival windows left today. Pick another day.') + '</option>') + '</select></label></div>';
       var today = bDate === state.dateKey;
       body += '<div class="stack" style="padding:0;gap:4px"><span class="label">How did they reach the desk?</span>' +
         '<label class="check-line"><input type="radio" name="f-src" value="walk_in" data-bind="form.source" data-act="refresh" ' + (f.source === 'walk_in' && today ? 'checked' : '') + (today ? '' : ' disabled') + '><span>Walk-in at the desk' + (today ? '' : ' (today only)') + '</span></label>' +
@@ -1395,7 +1695,7 @@
         body += '<div class="row-actions"><button type="button" class="bn-btn" data-act="collect-cash" data-id="' + b.id + '">' + e('Collect cash') + '</button><button type="button" class="bn-btn" data-act="show-qr" data-id="' + b.id + '">' + e('Show UPI QR') + '</button></div>';
         if (f.showQr) body += '<div class="qr" role="img" aria-label="UPI QR for this visit"></div><button type="button" class="bn-btn bn-btn-primary" data-act="mark-paid" data-id="' + b.id + '">' + e('Mark paid') + '</button>';
       }
-      if (b.status === 'booked') body += '<button type="button" class="bn-btn bn-btn-primary" data-act="arrive" data-id="' + b.id + '">' + e('Arrived') + '</button>';
+      if (b.status === 'booked' && user().role !== 'assistant') body += '<button type="button" class="bn-btn bn-btn-primary" data-act="arrive" data-id="' + b.id + '">' + e('Arrived') + '</button>';
     }
     if (b) {
       body += '<div><div class="label">Timeline</div><ul class="timeline">' + (b.timeline || []).map(function (ev) {
@@ -1478,7 +1778,7 @@
   }
   function screen() {
     var r = route();
-    if (user().role === 'assistant' && r !== 'today' && r !== 'summary' && r !== 'waiting' && r !== 'doctor') {
+    if (user().role === 'assistant' && r !== 'today' && r !== 'summary' && r !== 'waiting' && r !== 'doctor' && r !== 'settings') {
       return '<div class="empty"><p class="heading">This desk only shows Dr Sharma’s queue.</p><a class="bn-btn bn-btn-primary" href="#today">Back to Today</a></div>';
     }
     if (r === 'bookings') return bookingsScreen();
@@ -1497,10 +1797,11 @@
     if (state.locked) return '<div class="shell">' + lockScreen() + '</div>';
     var u = user();
     var inner;
-    if (u.role === 'doctor' || route() === 'doctor') inner = doctorScreen();
-    else if (route() === 'waiting') inner = waitingRoom();
+    if (route() === 'waiting') inner = waitingRoom();
+    else if (route() === 'settings') inner = shell(screen());
+    else if (u.role === 'doctor' || route() === 'doctor') inner = doctorScreen();
     else inner = shell(screen());
-    return '<div class="shell">' + emergencyBanner() + inner + drawer() + modal() + switchSheet() + (state.toast ? '<div class="toast" role="status">' + esc(state.toast) + '</div>' : '') + '</div>';
+    return '<div class="shell">' + emergencyBanner() + inner + drawer() + modal() + switchSheet() + (state.accountOpen && deskOpen() ? '<div class="account-pop">' + accountControls() + '</div>' : '') + (state.toast ? '<div class="toast" role="status">' + esc(state.toast) + '</div>' : '') + '</div>';
   }
 
   // Replacing the page can blur a focused input, whose change handler renders again while the first
@@ -1737,9 +2038,9 @@
       arrivedMin: 0, delaySms: '0/2', delayChoice: '', outreach: '',
       timeline: [{ at: state.timeLabel, text: how + ' · ' + dayLabel(dateKey) + ', ' + label + (f.squeeze ? ' · over capacity' : '') + (fee && fee.state === 'waived' ? '. Fee waived: ' + f.waiveReason : '') }]
     });
-    pushActivity(user().name + (source === 'walk_in' ? ' added a walk-in for ' : ' booked ') + patient(pid).name + ' with ' + doc.name + ', ' + dayLabel(dateKey) + ' ' + label + '.');
+    pushActivity(user().name + (source === 'walk_in' ? ' added a walk-in for ' : ' booked ') + patient(pid).name + ' with ' + doc.name + ', ' + dayLabel(dateKey) + ' ' + windowShown(docId, label, dateKey) + '.');
     state.drawer = null;
-    audit((source === 'walk_in' ? 'Walk-in booked for ' : 'Booked ') + patient(pid).name + ' · ' + dayLabel(dateKey) + ', ' + label, { patientId: pid });
+    audit((source === 'walk_in' ? 'Walk-in booked for ' : 'Booked ') + patient(pid).name + ' · ' + dayLabel(dateKey) + ', ' + windowShown(docId, label, dateKey), { patientId: pid });
     render();
   }
   function tryPin() {
@@ -1795,11 +2096,18 @@
     state.needOtp = false;
     state.pinFor = '';
     state.pinError = '';
+    state.accountOpen = false;
     if (!state.deskOpenedAt) state.deskOpenedAt = Date.now();
     audit('Signed in');
+    if (u.role === 'receptionist') {
+      state.emergencyCompact = false;
+      clearTimeout(state._emTimer);
+      state._emTimer = null;
+    }
     if (u.role !== 'receptionist') {
       state.pendingEmergency = null;
-      if (u.role === 'doctor') go('doctor');
+      if (u.role === 'doctor' || u.role === 'assistant') go('doctor');
+      else if (u.role === 'admin') go('settings');
       else go('today');
       return;
     }
@@ -1830,6 +2138,9 @@
       }
       if (act !== 'pick-user' && act !== 'pin-digit' && act !== 'pin-clear' && act !== 'pin-ok' && act !== 'pin-cancel' && act !== 'switch-close') return;
     }
+    if (act !== 'account-menu') state.accountOpen = false;
+    if (user() && user().role === 'assistant' && ['walk-in', 'arrive', 'send-in', 'cancel-session', 'cancel-confirm', 'desk', 'start-session'].indexOf(act) >= 0) return;
+    if (act === 'account-menu') { state.accountOpen = !state.accountOpen; render(); return; }
     if (act === 'desk') {
       if (state.live) {
         liveSend('PATCH', '/api/desk', { staff_on_desk: !!state.staffOnDesk }).then(function () { if (state.reload) state.reload(); });
@@ -1840,7 +2151,7 @@
     if (act === 'refresh') { render({ keepFocus: true }); return; }
     if (act === 'lang') { state.lang = value; render(); return; }
     if (act === 'lock') { state.locked = true; state.pin = ''; state.pinFor = state.userId; state.needOtp = false; state.pinError = ''; render(); return; }
-    if (act === 'signout') { state.signedIn = false; state.locked = false; state.switchOpen = false; state.userId = ''; state.pendingEmergency = null; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; state.deskOpenedAt = 0; state.demoFired = {}; render(); return; }
+    if (act === 'signout') { state.signedIn = false; state.locked = false; state.switchOpen = false; state.userId = ''; state.pendingEmergency = null; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; state.deskOpenedAt = 0; state.demoFired = {}; state.accountOpen = false; state.emergencyCompact = false; clearTimeout(state._emTimer); state._emTimer = null; render(); return; }
     if (act === 'switch-open') { state.switchOpen = true; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'switch-close' || act === 'pin-cancel') { state.switchOpen = false; state.pinFor = ''; state.pin = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'pick-user') { state.pinFor = id; state.pin = ''; state.otp = ''; state.needOtp = false; state.pinError = ''; render(); return; }
@@ -1963,12 +2274,14 @@
     if (act === 'play') { state.playing = !state.playing; render(); return; }
     if (act === 'pay-tab') { state.paymentTab = value; render(); return; }
     if (act === 'refund') {
+      if (!user() || user().role !== 'admin') return;
       var rf = state.refunds.filter(function (r) { return r.id === id; })[0];
       state.modal = { kind: 'refund', mode: value, id: id };
       blankForm({ amount: String(rf.amount), note: '', error: '' });
       render(); return;
     }
     if (act === 'refund-confirm') {
+      if (!user() || user().role !== 'admin') return;
       var rff = state.refunds.filter(function (r) { return r.id === state.modal.id; })[0];
       var mode = state.modal.mode;
       if ((mode === 'reject' || mode === 'change') && !String(state.form.note || '').trim()) { state.form.error = 'A note is required.'; render({ keepFocus: true }); return; }
@@ -2144,7 +2457,13 @@
       blankForm({ patientId: id, name: who.name, phone: who.phones[0].number, age: String(who.age) });
       render(); return;
     }
-    if (act === 'settings-tab') { state.settingsSection = value; render(); return; }
+    if (act === 'settings-tab') { state.settingsSection = value; go('settings/' + value); return; }
+    if (act === 'remote-signout') {
+      if (!user() || user().role !== 'admin') return;
+      audit('Signed out cabin and doctor phones remotely');
+      render();
+      return;
+    }
     if (act === 'export-day') {
       if (user().role !== 'admin') return;
       var csv = 'Item,Value\nCalls handled,31\nOpen callbacks,' + openCallbacks().length + '\nRefunds waiting,' + waitingRefunds().length + '\n';
@@ -2212,21 +2531,53 @@
   }
   function onChange(e) {
     var el = e.target;
-    if (el.dataset && el.dataset.bind) setPath(el.dataset.bind, el.type === 'checkbox' ? el.checked : el.value);
+    if (el.dataset && el.dataset.bind) {
+      if (el.dataset.settingsRow === '1' && !canWriteSetting(el.dataset.bind)) return;
+      setPath(el.dataset.bind, el.type === 'checkbox' ? el.checked : el.value);
+      if (el.dataset.settingsRow === '1') maybeAuditSettings(el);
+    }
     if (el.dataset && el.dataset.act) doAct(el.dataset.act, el);
     else if (el.dataset && el.dataset.bind) render({ keepFocus: true });
   }
   function onInput(e) {
     var el = e.target;
     if (!el.dataset || !el.dataset.bind) return;
+    if (el.dataset.settingsRow === '1' && !canWriteSetting(el.dataset.bind)) return;
     setPath(el.dataset.bind, el.value);
     if (el.dataset.live === '1') render({ keepFocus: true });
   }
+  function onFocusOut(e) {
+    var el = e.target;
+    if (!el.dataset || el.dataset.settingsRow !== '1' || !el.dataset.bind) return;
+    if (!canWriteSetting(el.dataset.bind)) return;
+    setPath(el.dataset.bind, el.type === 'checkbox' ? el.checked : el.value);
+    maybeAuditSettings(el);
+  }
   function typing(el) { return el && el.matches && el.matches('input, textarea, select'); }
   function onKey(e) {
-    if (e.key === 'Escape') { state.drawer = null; state.modal = null; state.switchOpen = false; render(); return; }
+    if (pinPadOpen() && !typing(e.target)) {
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        doAct('pin-digit', { dataset: { value: e.key, id: '' } });
+        return;
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        if (state.needOtp) state.otp = state.otp.slice(0, -1);
+        else state.pin = state.pin.slice(0, -1);
+        state.pinError = '';
+        render();
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        doAct('pin-ok', { dataset: { id: '', value: '' } });
+        return;
+      }
+    }
+    if (e.key === 'Escape') { state.drawer = null; state.modal = null; state.switchOpen = false; state.accountOpen = false; render(); return; }
     if (e.key === '/' && !typing(e.target)) { e.preventDefault(); var q = document.getElementById('q'); if (q) q.focus(); }
-    if ((e.key === 'w' || e.key === 'W') && !e.metaKey && !e.ctrlKey && !e.altKey && !typing(e.target) && state.signedIn && !state.locked && !state.switchOpen) {
+    if ((e.key === 'w' || e.key === 'W') && !e.metaKey && !e.ctrlKey && !e.altKey && !typing(e.target) && state.signedIn && !state.locked && !state.switchOpen && user() && user().role !== 'assistant') {
       e.preventDefault(); doAct('walk-in', { dataset: {} });
     }
     if (e.key === 'Enter' && e.target && e.target.dataset && e.target.dataset.act && !e.target.matches('button, a, input, select, textarea')) doAct(e.target.dataset.act, e.target);
@@ -2252,19 +2603,22 @@
   document.body.addEventListener('click', onClick);
   document.body.addEventListener('change', onChange);
   document.body.addEventListener('input', onInput);
-  document.body.addEventListener('keydown', onKey);
+  document.body.addEventListener('focusout', onFocusOut);
+  document.addEventListener('keydown', onKey);
   document.body.addEventListener('dragstart', onDragStart);
   document.body.addEventListener('dragover', function (e) { if (e.target.closest('[data-drop]')) e.preventDefault(); });
   document.body.addEventListener('drop', onDrop);
-  window.addEventListener('hashchange', function () { render(); });
+  window.addEventListener('hashchange', function () { state.accountOpen = false; render(); });
   var idle;
   function bumpIdle() {
     clearTimeout(idle);
+    var mins = Number(state.settings && state.settings.autoLockMin);
+    if (!mins || mins < 1) mins = 3;
     idle = setTimeout(function () {
       if (state.signedIn && !state.locked && user() && user().role === 'receptionist') {
         state.locked = true; state.pin = ''; state.pinFor = state.userId; render();
       }
-    }, 180000);
+    }, mins * 60000);
   }
   document.addEventListener('pointerdown', bumpIdle);
   bumpIdle();
@@ -2313,6 +2667,34 @@
     });
     once('new-cb', 18, function () {
       if (state.callbacks.some(function (c) { return c.id === 'cb-live'; })) return;
+      if (!state.calls.some(function (c) { return c.id === 'call-live'; })) {
+        state.calls.unshift({
+          id: 'call-live',
+          time: state.timeLabel,
+          mins: liveNowMin(),
+          direction: 'in',
+          patientId: '',
+          caller: 'Unknown caller',
+          number: '+91 98001 22334',
+          language: 'HI',
+          intent: 'booking',
+          outcome: 'callback',
+          duration: '1 min 10 sec',
+          cost: '₹1.10',
+          tags: [],
+          outbound: false,
+          verified: 'Not verified',
+          relative: '',
+          summary: 'Caller asked if any general place was left today. The agent could not confirm a window and created a P2 callback.',
+          recording: false,
+          produced: [{ type: 'Callback', label: 'P2 · due in 14 min' }],
+          transcript: [
+            { who: 'caller', text: 'Koi last slot hai kya aaj?' },
+            { who: 'agent', text: 'Today’s last general windows are shifting. I will ask the desk to call you back.' },
+            { who: 'system', text: 'P2 callback created' }
+          ]
+        });
+      }
       state.callbacks.unshift({
         id: 'cb-live',
         priority: 'P2',
@@ -2327,7 +2709,7 @@
         language: 'HI',
         verified: false,
         reason: 'Asked for today’s last general place. Agent could not confirm a window.',
-        callId: '',
+        callId: 'call-live',
         status: 'open',
         attempts: [],
         smsSent: false,
@@ -2339,14 +2721,14 @@
         lockout: false
       });
       pushActivity('Agent created a P2 callback for a new caller.');
-      toast('New P2 callback from the agent');
+      if (prefOn('notifyCallback')) toast('New P2 callback from the agent');
     });
     once('delay', 32, function () {
       var d = doctor('sharma');
       if (d && d.status === 'started' && d.basis === 'live') {
         d.delayMin += 1;
         pushActivity('Dr Sharma’s live delay is now +' + d.delayMin + ' min.');
-        toast('Live delay updated');
+        if (prefOn('notifyDelay')) toast('Live delay updated');
       }
     });
     once('sms', 48, function () {
@@ -2360,13 +2742,14 @@
         text: 'Dr Sharma is running late. Your new arrival window will follow. - Demo Family Clinic'
       });
       pushActivity('Delay SMS to Fatima Shaikh failed. Retry from Messages.');
-      toast('A delay SMS failed');
+      if (prefOn('notifyFailed')) toast('A delay SMS failed');
     });
     return changed;
   }
   function paintLive() {
-    var clock = liveClockText();
-    document.querySelectorAll('[data-live-clock]').forEach(function (el) { el.textContent = clock; });
+    document.querySelectorAll('[data-live-clock]').forEach(function (el) {
+      el.textContent = liveClockText(el.getAttribute('data-live-clock') === 'sec');
+    });
     document.querySelectorAll('[data-live-hold]').forEach(function (el) { el.textContent = holdNote(); });
     var held = state.bookings.filter(function (b) { return b.status === 'held'; }).length;
     document.querySelectorAll('[data-live-agent]').forEach(function (el) {

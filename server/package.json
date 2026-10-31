@@ -1,0 +1,22 @@
+{
+  "name": "clinic-voice-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js api",
+    "test": "node --test --test-concurrency=1 --test-timeout=180000"
+  },
+  "dependencies": {
+    "ioredis": "^5.8.1",
+    "kafkajs": "^2.2.4",
+    "pg": "^8.16.3",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.7"
+  }
+}
