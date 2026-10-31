@@ -2,9 +2,9 @@
   'use strict';
 
   var state = Object.assign(JSON.parse(JSON.stringify(window.SEED)), {
-    signedIn: true,
+    signedIn: false,
     locked: false,
-    userId: 'priya',
+    userId: '',
     lang: 'en',
     staffOnDesk: true,
     emergencyAck: false,
@@ -48,7 +48,8 @@
     toast: '',
     flash: '',
     audit: [{ at: '5:21 pm', who: 'Priya Shah', text: 'Acknowledged a medical emergency' }],
-    dragId: ''
+    dragId: '',
+    pendingEmergency: null
   });
 
   var HI = {
@@ -319,7 +320,14 @@
     var h = (location.hash || '#today').replace(/^#/, '').split('?')[0];
     return h || 'today';
   }
+  function deskOpen() {
+    return state.signedIn && !state.locked && !state.switchOpen;
+  }
+  function deskClosed() {
+    return !state.signedIn || state.locked;
+  }
   function go(r) {
+    if (!state.signedIn || state.locked) return;
     if (location.hash === '#' + r) render();
     else location.hash = r;
   }
@@ -498,19 +506,43 @@
     var al = state.alerts.filter(function (a) { return a.id === 'al-new'; })[0] || {};
     return '<button type="button" class="emerg-chip" data-act="emerg-open">' + icon('alert', 14) + '<span><strong>Emergency 6:08 pm</strong> · acknowledged by ' + esc(al.by || '') + ' at ' + esc(al.ackAt || '') + ' · P1 callback ' + (cb.status === 'calling' ? 'in progress' : 'still open') + '</span></button>';
   }
-  function emergencyBanner() {
-    if (state.emergencyAck) return '';
-    return '<div class="emergency-wrap"><div class="bn-emergency is-new" role="alert">' +
-      '<div class="bn-emergency-icon" aria-hidden="true">' + icon('alert', 28) + '</div>' +
+  function receptionUser() {
+    return state.users.filter(function (u) { return u.role === 'receptionist'; })[0];
+  }
+  function emergencyFacts() {
+    return '<div class="bn-emergency-icon" aria-hidden="true">' + icon('alert', 28) + '</div>' +
       '<div class="bn-emergency-body"><div class="bn-emergency-title"><span class="bn-prio-marks heading" aria-hidden="true">!!!</span>' +
       '<span class="heading">Possible medical emergency on a call</span><span class="label bn-num">6:08 pm</span></div>' +
       '<p class="body"><span class="label">Caller said: </span>“Papa ko seene mein dard ho raha hai, saans phool rahi hai”</p>' +
-      '<p class="caption bn-num">+91 98777 77777 · Agent said 112 / 108 · transfer did not connect · P1 callback created</p></div>' +
+      '<p class="caption bn-num">+91 98777 77777 · Agent said 112 / 108 · transfer did not connect · P1 callback created</p></div>';
+  }
+  function emergencyMarkup() {
+    return '<div class="bn-emergency is-new" role="alert">' + emergencyFacts() +
       '<div class="bn-emergency-actions">' +
       '<button type="button" class="bn-btn bn-btn-onred" data-act="open-call" data-id="call-emerg">' + e('Open call') + '</button>' +
       '<button type="button" class="bn-btn bn-btn-onred" data-act="call-emergency">' + icon('phone') + '<span class="body-strong">' + e('Call back now') + '</span></button>' +
       '<button type="button" class="bn-btn bn-btn-onred-solid" data-act="ack"><span class="body-strong">' + e('Acknowledge') + '</span></button>' +
-      '</div></div></div>';
+      '</div></div>';
+  }
+  function emergencyHighlight() {
+    if (state.emergencyAck) return '';
+    var deskUser = user();
+    var canUnlock = !state.signedIn || (deskUser && deskUser.role === 'receptionist');
+    var cta = canUnlock
+      ? '<button type="button" class="bn-btn bn-btn-onred-solid bn-btn-lg" data-act="attend-emergency">' + e(state.locked ? 'Unlock to attend' : 'Unlock as reception') + '</button>'
+      : '';
+    return '<div class="emergency-prelogin"><div class="bn-emergency is-new" role="alert">' + emergencyFacts() +
+      '<div class="bn-emergency-actions">' + cta + '</div></div>' +
+      '<p class="caption emergency-prelogin-hint">A reception PIN is required before anyone can open this call.</p></div>';
+  }
+  function emergencyBanner() {
+    // Fixed banner is for an unlocked receptionist only. Login and lock still
+    // highlight the same alert in-flow so it cannot cover the PIN pad or open
+    // the desk. Doctors, cabin assistants, and admins never get this box.
+    var u = user();
+    if (!deskOpen() || state.emergencyAck) return '';
+    if (!u || u.role !== 'receptionist') return '';
+    return '<div class="emergency-wrap">' + emergencyMarkup() + '</div>';
   }
 
   function banners() {
@@ -1153,31 +1185,46 @@
     for (var i = 0; i < (state.needOtp ? 6 : 4); i++) dots += '<i class="' + (i < n ? 'on' : '') + '"></i>';
     var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'ok'];
     return '<div class="pin-dots" aria-hidden="true">' + dots + '</div><div class="pad">' + keys.map(function (k) {
-      if (k === 'clear') return '<button type="button" data-act="pin-clear">Clear</button>';
-      if (k === 'ok') return '<button type="button" data-act="pin-ok">OK</button>';
+      if (k === 'clear') return '<button type="button" class="pad-clear" data-act="pin-clear">Clear</button>';
+      if (k === 'ok') return '<button type="button" class="pad-ok" data-act="pin-ok">Unlock</button>';
       return '<button type="button" data-act="pin-digit" data-value="' + k + '">' + k + '</button>';
-    }).join('') + '</div>' + (state.pinError ? '<p class="caption" style="color:var(--emergency)">' + esc(state.pinError) + '</p>' : '');
+    }).join('') + '</div>' + (state.pinError ? '<p class="caption pin-error">' + esc(state.pinError) + '</p>' : '');
+  }
+  function staffRow(u) {
+    var initial = (u.name || '?').charAt(0);
+    return '<button type="button" class="bn-btn staff-row' + (state.pinFor === u.id ? ' is-selected' : '') + '" data-act="pick-user" data-id="' + u.id + '">' +
+      '<span class="staff-initial" aria-hidden="true">' + esc(initial) + '</span>' +
+      '<span class="staff-meta"><span class="body-strong">' + esc(u.name) + '</span><span class="caption bn-muted">' + esc(roleName(u.role)) + '</span></span></button>';
   }
   function signin() {
     var picking = state.pinFor ? state.users.filter(function (u) { return u.id === state.pinFor; })[0] : null;
-    var list = '<div class="staff-pick">' + state.users.map(function (u) {
-      return '<button type="button" class="bn-btn" data-act="pick-user" data-id="' + u.id + '"><span><span class="body-strong">' + esc(u.name) + '</span><span class="caption bn-muted"> ' + esc(roleName(u.role)) + ' · demo PIN ' + esc(u.pin) + (u.otp ? ' · code ' + esc(u.otp) : '') + '</span></span></button>';
-    }).join('') + '</div>';
-    return '<div class="signin"><div class="signin-card"><p class="caption bn-muted">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p>Sign in with your own PIN. The desk never shares one login. Admins also enter the authenticator code.</p>' +
-      (picking ? '<p class="body-strong">' + esc(picking.name) + '</p><p class="caption">' + (state.needOtp ? 'Authenticator code' : 'PIN') + '</p>' + pinPad() + '<button type="button" class="bn-btn bn-btn-quiet" data-act="pin-cancel">Choose someone else</button>' : list) +
-      '</div></div>';
+    var list = '<div class="staff-pick">' + state.users.map(staffRow).join('') + '</div>';
+    var pinBlock = picking
+      ? '<div class="signin-who"><p class="body-strong">' + esc(picking.name) + '</p><p class="caption bn-muted">' + esc(roleName(picking.role)) + '</p></div>' +
+        '<p class="label">' + (state.needOtp ? 'Authenticator code' : 'Enter your PIN') + '</p>' +
+        pinPad() +
+        '<p class="caption bn-muted demo-hint">Demo ' + (state.needOtp ? 'code ' + esc(picking.otp || '') : 'PIN ' + esc(picking.pin)) + '</p>' +
+        '<button type="button" class="bn-btn bn-btn-quiet" data-act="pin-cancel">Choose someone else</button>'
+      : list;
+    return '<div class="signin">' + emergencyHighlight() + '<div class="signin-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="bn-muted">Sign in with your own PIN. The desk never shares one login.</p>' + pinBlock + '</div></div>';
   }
   function lockScreen() {
-    return '<div class="lock"><div class="lock-card"><p class="caption bn-muted">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num">' + esc(state.timeLabel) + '</p><p class="bn-muted">Desk locked. Alerts stay on screen.</p>' +
-      '<p class="body-strong">' + esc(user().name) + '</p>' + pinPad() + '</div></div>';
+    var who = user();
+    return '<div class="lock">' + emergencyHighlight() + '<div class="lock-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num">' + esc(state.timeLabel) + '</p><p class="bn-muted">Desk locked.</p>' +
+      (who ? '<div class="signin-who"><p class="body-strong">' + esc(who.name) + '</p><p class="caption bn-muted">' + esc(roleName(who.role)) + '</p></div>' : '') +
+      '<p class="label">Enter your PIN</p>' + pinPad() +
+      (who ? '<p class="caption bn-muted demo-hint">Demo PIN ' + esc(who.pin) + '</p>' : '') +
+      '</div></div>';
   }
   function switchSheet() {
     if (!state.switchOpen || !state.signedIn || state.locked) return '';
-    return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="sw-title"><h2 id="sw-title" class="heading">' + e('Switch user') + '</h2><p class="caption bn-muted">Demo PINs are printed here so the desk can change role. A real clinic would not show them.</p>' +
-      state.users.map(function (u) {
-        return '<button type="button" class="bn-btn" data-act="pick-user" data-id="' + u.id + '">' + esc(u.name) + ' · ' + esc(roleName(u.role)) + ' · ' + esc(u.pin) + '</button>';
-      }).join('') +
-      (state.pinFor ? '<div class="stack"><p class="body-strong">' + esc((state.users.filter(function (u) { return u.id === state.pinFor; })[0] || {}).name || '') + '</p>' + (state.needOtp ? '<p class="caption">Authenticator code for this demo: 190026</p>' : '') + pinPad() + '</div>' : '') +
+    var picking = state.pinFor ? state.users.filter(function (u) { return u.id === state.pinFor; })[0] : null;
+    return '<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="sw-title"><h2 id="sw-title" class="heading">' + e('Switch user') + '</h2><p class="caption bn-muted">Each person uses their own PIN.</p>' +
+      '<div class="staff-pick">' + state.users.map(staffRow).join('') + '</div>' +
+      (picking ? '<div class="stack"><div class="signin-who"><p class="body-strong">' + esc(picking.name) + '</p><p class="caption bn-muted">' + esc(roleName(picking.role)) + '</p></div>' +
+        '<p class="label">' + (state.needOtp ? 'Authenticator code' : 'Enter your PIN') + '</p>' +
+        pinPad() +
+        '<p class="caption bn-muted demo-hint">Demo ' + (state.needOtp ? 'code ' + esc(picking.otp || '') : 'PIN ' + esc(picking.pin)) + '</p></div>' : '') +
       '<button type="button" class="bn-btn" data-act="switch-close">' + e('Close') + '</button></div></div>';
   }
 
@@ -1364,11 +1411,11 @@
   }
   function view() {
     document.documentElement.lang = state.lang === 'hi' ? 'hi' : 'en';
-    if (!state.signedIn) return '<div class="shell">' + emergencyBanner() + signin() + '</div>';
+    if (!state.signedIn) return '<div class="shell">' + signin() + '</div>';
+    if (state.locked) return '<div class="shell">' + lockScreen() + '</div>';
     var u = user();
     var inner;
-    if (state.locked) inner = lockScreen();
-    else if (u.role === 'doctor' || route() === 'doctor') inner = doctorScreen();
+    if (u.role === 'doctor' || route() === 'doctor') inner = doctorScreen();
     else if (route() === 'waiting') inner = waitingRoom();
     else inner = shell(screen());
     return '<div class="shell">' + emergencyBanner() + inner + drawer() + modal() + switchSheet() + (state.toast ? '<div class="toast" role="status">' + esc(state.toast) + '</div>' : '') + '</div>';
@@ -1625,7 +1672,38 @@
     if (u.otp !== state.otp) { state.otp = ''; state.pinError = 'That authenticator code does not match.'; render(); return; }
     finishSignIn(u);
   }
+  function acknowledgeEmergency() {
+    state.emergencyAck = true;
+    state.pendingEmergency = null;
+    var fresh = cbBy('cb-new');
+    if (fresh) fresh.isNew = false;
+    state.alerts.unshift({ id: 'al-new', kind: 'medical', at: '6:08 pm', number: '+91 98777 77777', by: user().name, ackAt: state.timeLabel, snippet: 'Papa ko seene mein dard ho raha hai, saans phool rahi hai', callId: 'call-emerg' });
+    audit('Acknowledged a medical emergency');
+  }
+  function runPendingEmergency() {
+    var pending = state.pendingEmergency;
+    state.pendingEmergency = null;
+    if (!pending) { go('today'); return; }
+    if (pending.act === 'open-call') {
+      state.callId = pending.id || 'call-emerg';
+      state.modal = null;
+      go('calls');
+      return;
+    }
+    if (pending.act === 'call-emergency') {
+      state.modal = { kind: 'call', number: '+91 98777 77777', body: 'Call +91 98777 77777? The agent already told them to ring 112 / 108.', id: 'cb-new' };
+      go('today');
+      return;
+    }
+    if (pending.act === 'ack') {
+      acknowledgeEmergency();
+      go('today');
+      return;
+    }
+    go('today');
+  }
   function finishSignIn(u) {
+    var pending = state.pendingEmergency;
     state.userId = u.id;
     state.signedIn = true;
     state.locked = false;
@@ -1636,12 +1714,39 @@
     state.pinFor = '';
     state.pinError = '';
     audit('Signed in');
-    if (u.role === 'doctor') go('doctor');
-    else render();
+    if (u.role !== 'receptionist') {
+      state.pendingEmergency = null;
+      if (u.role === 'doctor') go('doctor');
+      else go('today');
+      return;
+    }
+    if (pending) runPendingEmergency();
+    else go('today');
   }
   function doAct(act, el) {
     var id = el.dataset.id || '';
     var value = el.dataset.value || '';
+    if (deskClosed()) {
+      if (act === 'attend-emergency') {
+        var rec = receptionUser();
+        if (!state.emergencyAck) state.pendingEmergency = { act: 'open-call', id: 'call-emerg' };
+        if (!state.signedIn && rec) {
+          state.pinFor = rec.id;
+          state.pin = '';
+          state.otp = '';
+          state.needOtp = false;
+          state.pinError = '';
+        }
+        render();
+        return;
+      }
+      if (act === 'open-call' || act === 'call-emergency' || act === 'ack') {
+        if (!state.emergencyAck) state.pendingEmergency = { act: act, id: id };
+        render();
+        return;
+      }
+      if (act !== 'pick-user' && act !== 'pin-digit' && act !== 'pin-clear' && act !== 'pin-ok' && act !== 'pin-cancel' && act !== 'switch-close') return;
+    }
     if (act === 'desk') {
       if (state.live) {
         liveSend('PATCH', '/api/desk', { staff_on_desk: !!state.staffOnDesk }).then(function () { if (state.reload) state.reload(); });
@@ -1652,7 +1757,7 @@
     if (act === 'refresh') { render({ keepFocus: true }); return; }
     if (act === 'lang') { state.lang = value; render(); return; }
     if (act === 'lock') { state.locked = true; state.pin = ''; state.pinFor = state.userId; state.needOtp = false; state.pinError = ''; render(); return; }
-    if (act === 'signout') { state.signedIn = false; state.locked = false; state.switchOpen = false; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; render(); return; }
+    if (act === 'signout') { state.signedIn = false; state.locked = false; state.switchOpen = false; state.userId = ''; state.pendingEmergency = null; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; render(); return; }
     if (act === 'switch-open') { state.switchOpen = true; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'switch-close' || act === 'pin-cancel') { state.switchOpen = false; state.pinFor = ''; state.pin = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'pick-user') { state.pinFor = id; state.pin = ''; state.otp = ''; state.needOtp = false; state.pinError = ''; render(); return; }
@@ -1665,11 +1770,7 @@
     if (act === 'pin-ok') { if (state.locked && !state.pinFor) state.pinFor = state.userId; tryPin(); return; }
     if (act === 'dismiss') { state.dismissed[id] = true; render(); return; }
     if (act === 'ack') {
-      state.emergencyAck = true;
-      var fresh = cbBy('cb-new');
-      if (fresh) fresh.isNew = false;
-      state.alerts.unshift({ id: 'al-new', kind: 'medical', at: '6:08 pm', number: '+91 98777 77777', by: user().name, ackAt: state.timeLabel, snippet: 'Papa ko seene mein dard ho raha hai, saans phool rahi hai', callId: 'call-emerg' });
-      audit('Acknowledged a medical emergency');
+      acknowledgeEmergency();
       render(); return;
     }
     if (act === 'call-emergency') {

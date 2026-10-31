@@ -243,6 +243,22 @@ button.bn-badge { border: 0; font: inherit; cursor: pointer; }
 .bn-callnext-btn:disabled { background: var(--surface-sunken); color: var(--ink-muted); cursor: not-allowed; }
 
 .emergency-wrap { position: fixed; top: 0; left: 0; right: 0; z-index: 65; }
+.emergency-prelogin {
+  width: min(440px, 100%);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.emergency-prelogin .bn-emergency {
+  border-radius: var(--radius-lg);
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-raised);
+}
+.emergency-prelogin .bn-emergency-actions { width: 100%; }
+.emergency-prelogin .bn-emergency-actions .bn-btn { width: 100%; }
+.emergency-prelogin-hint { margin: 0; color: var(--ink-muted); text-align: center; }
 .shell { padding-top: var(--emergency-h); min-height: 100vh; }
 
 .app { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); min-height: 100vh; }
@@ -445,22 +461,40 @@ table.data tr[data-act]:hover { background: var(--accent-soft); }
 .wait-name { font-size: clamp(40px, 6vw, 72px); line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; }
 .wait-next { display: flex; flex-direction: column; gap: var(--space-2); font-size: 28px; line-height: 36px; font-weight: 600; }
 .lock, .signin {
-  min-height: calc(100vh - var(--emergency-h));
-  display: flex; align-items: center; justify-content: center; padding: var(--space-5);
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-4); padding: var(--space-6) var(--space-5);
 }
 .lock-card, .signin-card {
   width: min(440px, 100%); background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); padding: var(--space-6);
   display: flex; flex-direction: column; gap: var(--space-4);
 }
-.pin-dots { display: flex; gap: 8px; }
+.signin-brand { letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+.signin-who { display: flex; flex-direction: column; gap: 2px; }
+.demo-hint { margin-top: calc(var(--space-1) * -1); }
+.pin-error { color: var(--emergency); }
+.pin-dots { display: flex; gap: 10px; justify-content: center; }
 .pin-dots i { width: 12px; height: 12px; border-radius: var(--radius-pill); border: 1.5px solid var(--line-strong); display: block; }
 .pin-dots i.on { background: var(--accent); border-color: var(--accent); }
 .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
-.pad button { min-height: 48px; border-radius: var(--radius-md); border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600; font-size: 18px; }
+.pad button { min-height: 52px; border-radius: var(--radius-md); border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 18px; }
 .pad button:hover { background: var(--surface-sunken); }
+.pad .pad-ok { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-size: 15px; }
+.pad .pad-ok:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.pad .pad-clear { color: var(--ink-muted); font-size: 14px; }
 .staff-pick { display: flex; flex-direction: column; gap: var(--space-2); }
-.staff-pick button { text-align: left; }
+.staff-row {
+  display: flex; align-items: center; gap: var(--space-3); text-align: left;
+  height: auto; min-height: 56px; padding: var(--space-2) var(--space-3);
+}
+.staff-row.is-selected { border-color: var(--accent); background: var(--accent-soft); }
+.staff-initial {
+  width: 36px; height: 36px; border-radius: var(--radius-pill); flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent); font-weight: 700;
+}
+.staff-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 
 .help { color: var(--ink-muted); }
 .qr {
