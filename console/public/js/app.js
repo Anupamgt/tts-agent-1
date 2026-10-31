@@ -750,6 +750,9 @@
       '<button type="button" class="bn-btn" data-act="lock">' + icon('lock') + e('Lock desk') + '</button>' +
       '<button type="button" class="bn-btn bn-btn-quiet" data-act="signout">' + e('Sign out') + '</button>';
   }
+  function brandLogo() {
+    return '<img class="brand-logo" src="brand/deskie-logo.svg" alt="Deskie" width="660" height="200">';
+  }
   function rail() {
     var u = user();
     var items = NAV.filter(function (n) {
@@ -764,7 +767,7 @@
       var cur = route() === n[0] ? ' aria-current="page"' : '';
       return '<a href="#' + n[0] + '"' + cur + '>' + icon(n[2]) + '<span>' + e(n[1]) + '</span>' + count + '</a>';
     }).join('');
-    return '<aside class="rail"><div class="brand"><div class="body-strong">Deskie</div><div class="caption bn-muted">' + esc(roleName(u.role)) + '</div></div>' +
+    return '<aside class="rail"><div class="brand">' + brandLogo() + '<div class="caption bn-muted">' + esc(roleName(u.role)) + '</div></div>' +
       '<nav class="nav" aria-label="Console">' + links + '</nav>' +
       '<div class="rail-foot">' + accountControls() + '</div>' +
       '<button type="button" class="rail-more" data-act="account-menu" aria-expanded="' + (state.accountOpen ? 'true' : 'false') + '">' + icon('user') + '<span>' + e('Account') + '</span></button></aside>';
@@ -788,7 +791,7 @@
     var counters = cabin ? '' : '<div class="counters"><a class="counter" href="#callbacks"><strong>' + p1 + ' P1 · ' + p2 + ' P2</strong> <span class="caption">' + e('Callbacks') + '</span></a>' +
       '<a class="counter" href="#payments"><strong>' + waitingRefunds().length + '</strong> <span class="caption">' + e('Refunds') + '</span></a>' +
       '<a class="counter" href="#messages"><strong>' + failedMsgs().length + '</strong> <span class="caption">Failed</span></a></div>';
-    return '<header class="topbar"><div class="clinic-lockup"><div class="heading">' + esc(state.clinic) + '</div><div class="caption bn-muted">Deskie</div></div>' +
+    return '<header class="topbar"><div class="clinic-lockup"><div class="heading">' + esc(state.clinic) + '</div><div class="product-line"><img class="brand-mark" src="brand/deskie-mark.svg" alt="" width="200" height="200"><span class="caption bn-muted">Deskie</span></div></div>' +
       '<div class="when"><span class="body-strong bn-num">' + esc(state.dateLabel) + '</span><span class="caption bn-muted bn-num" data-live-clock>' + esc(liveClockText(false)) + '</span></div>' +
       '<span class="live-pill" title="' + (state.live ? 'Connected to the clinic API' : 'Demo clock is running') + '"><i aria-hidden="true"></i>' + (state.live ? 'Live API' : 'Live') + '</span>' +
       staff +
@@ -1586,11 +1589,11 @@
         '<p class="caption bn-muted demo-hint">Demo ' + (state.needOtp ? 'code ' + esc(picking.otp || '') : 'PIN ' + esc(picking.pin)) + '</p>' +
         '<button type="button" class="bn-btn bn-btn-quiet" data-act="pin-cancel">Choose someone else</button>'
       : list;
-    return '<div class="signin">' + emergencyHighlight() + '<div class="signin-card"><p class="caption bn-muted signin-brand">Deskie</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock="sec">' + esc(liveClockText(true)) + '</p><p class="bn-muted">Sign in with your own PIN. The desk never shares one login.</p>' + pinBlock + '</div></div>';
+    return '<div class="signin">' + emergencyHighlight() + '<div class="signin-card">' + brandLogo() + '<h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock="sec">' + esc(liveClockText(true)) + '</p><p class="bn-muted">Sign in with your own PIN. The desk never shares one login.</p>' + pinBlock + '</div></div>';
   }
   function lockScreen() {
     var who = user();
-    return '<div class="lock">' + emergencyHighlight() + '<div class="lock-card"><p class="caption bn-muted signin-brand">Deskie</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock="sec">' + esc(liveClockText(true)) + '</p><p class="bn-muted">Desk locked.</p>' +
+    return '<div class="lock">' + emergencyHighlight() + '<div class="lock-card">' + brandLogo() + '<h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock="sec">' + esc(liveClockText(true)) + '</p><p class="bn-muted">Desk locked.</p>' +
       (who ? '<div class="signin-who"><p class="body-strong">' + esc(who.name) + '</p><p class="caption bn-muted">' + esc(roleName(who.role)) + '</p></div>' : '') +
       '<p class="label">Enter your PIN</p>' + pinPad() +
       (who ? '<p class="caption bn-muted demo-hint">Demo PIN ' + esc(who.pin) + '</p>' : '') +
