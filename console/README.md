@@ -1,4 +1,4 @@
-# Bolnai helpdesk console
+# Deskie helpdesk console
 
 Staff console for Demo Family Clinic. The sample day at `/` does not call a backend. `/?live=1` reads the clinic API through this server.
 

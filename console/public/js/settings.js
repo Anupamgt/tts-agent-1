@@ -95,7 +95,7 @@
       row('auto-lock', 'desk', 'Auto-lock (minutes)', 'Default 3. Locks this shared PC after idle time.', 'settings.autoLockMin', 'number', 3, DESK_LOCK),
       row('privacy-numbers', 'desk', 'Waiting-room privacy numbers', 'Show patient numbers instead of names on the waiting-room display.', 'privacyNumbers', 'switch', false, WAITING_PRIVACY),
       row('staff-on-desk', 'desk', 'Staff on desk', 'Live switch stays on the Today top bar. Settings only shows the current state.', 'staffOnDesk', 'status', true, DESK_STATUS),
-      row('clinic-name', 'clinic', 'Clinic name', 'The name the agent speaks. Patients never hear “Bolnai”.', 'clinic', 'text', 'Demo Family Clinic', CLINIC_INFO),
+      row('clinic-name', 'clinic', 'Clinic name', 'The name the agent speaks. Patients never hear “Deskie”.', 'clinic', 'text', 'Demo Family Clinic', CLINIC_INFO),
       row('clinic-address', 'clinic', 'Address', 'Default: 12 Example Road, Chandigarh.', 'address', 'text', '12 Example Road, Chandigarh', CLINIC_INFO),
       row('timezone', 'clinic', 'Timezone', 'Default Asia/Kolkata. Outbound hours follow this zone.', 'settings.timezone', 'text', 'Asia/Kolkata', ADMIN_REC),
       row('clinic-phone', 'clinic', 'Clinic phone', 'Default +91 98000 00000. Printed on messages and the day summary.', 'settings.clinicPhone', 'text', '+91 98000 00000', ADMIN_REC),
