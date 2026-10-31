@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deskie Logo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* layout idea: one calm sheet, hero logo first, then variants, small sizes, colours and rules */
+:root {
+  --bg: #F6FBFA; --surface: #FFFFFF; --ink: #0E2A2B; --muted: #4B6566; --line: #D5E6E3;
+  --teal: #12A594; --deep: #0A5F5C; --mint: #D9F4EC; --coral: #FF8A6B;
+  --display: "Poppins", system-ui, sans-serif; --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0A1819; --surface: #112425; --ink: #E6F4F2; --muted: #93B0AE; --line: #1F3A3B; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0A1819; --surface: #112425; --ink: #E6F4F2; --muted: #93B0AE; --line: #1F3A3B; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); }
+main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 40px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(28px, 5vw, 40px); }
+h2 { font-size: 20px; }
+p { margin: 0; max-width: 65ch; color: var(--muted); }
+section { display: flex; flex-direction: column; gap: 16px; }
+.hero { background: var(--mint); border-radius: 20px; padding: clamp(24px, 6vw, 56px); display: flex; justify-content: center; }
+.hero img { width: min(100%, 560px); height: auto; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.card .stage { border-radius: 10px; min-height: 140px; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.card img { max-width: 100%; height: auto; max-height: 120px; }
+.card h3 { margin: 0; font-size: 15px; font-family: var(--display); font-weight: 600; }
+.card p { font-size: 14px; }
+.on-light { background: #FFFFFF; } .on-dark { background: #0E2A2B; } .on-mint { background: var(--mint); }
+.sizes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+.sizes figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.tab { display: flex; align-items: center; gap: 8px; background: #E6EBEA; color: #1B2B2B; border-radius: 10px 10px 0 0; padding: 8px 14px; font-size: 13px; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.sw { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.sw i { display: block; height: 64px; }
+.sw div { padding: 10px 12px; font-size: 13px; line-height: 1.4; }
+.sw b { display: block; font-family: var(--display); font-size: 14px; }
+.sw code { color: var(--muted); }
+ul.rules { margin: 0; padding-left: 20px; color: var(--muted); max-width: 65ch; display: flex; flex-direction: column; gap: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Deskie, the voice at the front desk</h1>
+    <p>A friendly speech-bubble mascot wearing a headset: it answers the phone for a clinic. Clean teal, calm shapes, nothing that looks like a doctor or a person.</p>
+  </header>
+
+  <div class="hero"><img src="deskie-logo.svg" alt="Deskie logo, mascot and wordmark"></div>
+
+  <section aria-labelledby="v">
+    <h2 id="v">Versions</h2>
+    <div class="grid">
+      <div class="card"><div class="stage on-light"><img src="deskie-logo.svg" alt="Deskie full colour logo"></div><h3>Full colour</h3><p>Default. Slides, the console header, documents.</p></div>
+      <div class="card"><div class="stage on-dark"><img src="deskie-logo-on-dark.svg" alt="Deskie logo for dark backgrounds"></div><h3>On dark</h3><p>Dark slides and the dark console theme.</p></div>
+      <div class="card"><div class="stage on-light"><img src="deskie-logo-mono-black.svg" alt="Deskie one-colour black logo"></div><h3>One colour, black</h3><p>The printed desk card, stamps, fax and photocopies.</p></div>
+      <div class="card"><div class="stage on-dark"><img src="deskie-logo-mono-white.svg" alt="Deskie one-colour white logo"></div><h3>One colour, white</h3><p>Over photos or a single brand colour.</p></div>
+      <div class="card"><div class="stage on-mint"><img src="deskie-profile.svg" alt="Deskie round profile picture"></div><h3>Profile picture</h3><p>WhatsApp, SMS sender and social avatars. Crops to a circle.</p></div>
+      <div class="card"><div class="stage on-light"><img src="deskie-mark.svg" alt="Deskie mascot alone"></div><h3>Mascot alone</h3><p>Stickers, empty states, the end of a slide deck.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s">
+    <h2 id="s">Favicon and small sizes</h2>
+    <p>Below 40 px the headset turns to mush, so the favicon is a simplified tile: a white bubble with the face, on teal.</p>
+    <div class="sizes">
+      <figure><img src="favicon.svg" width="96" height="96" alt="Favicon at 96 pixels">96</figure>
+      <figure><img src="favicon.svg" width="48" height="48" alt="Favicon at 48 pixels">48</figure>
+      <figure><img src="favicon.svg" width="32" height="32" alt="Favicon at 32 pixels">32</figure>
+      <figure><img src="favicon.svg" width="16" height="16" alt="Favicon at 16 pixels">16</figure>
+      <figure><div class="tab"><img src="favicon.svg" width="16" height="16" alt="">Deskie console</div>in a browser tab</figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="c">
+    <h2 id="c">Colour</h2>
+    <div class="swatches">
+      <div class="sw"><i style="background:#12A594"></i><div><b>Deskie teal</b><code>#12A594</code><br>The mascot body, the dot on the i</div></div>
+      <div class="sw"><i style="background:#0A5F5C"></i><div><b>Headset teal</b><code>#0A5F5C</code><br>Headset, mic, favicon face</div></div>
+      <div class="sw"><i style="background:#0E2A2B"></i><div><b>Ink</b><code>#0E2A2B</code><br>Wordmark, eyes, dark backgrounds</div></div>
+      <div class="sw"><i style="background:#D9F4EC"></i><div><b>Mint</b><code>#D9F4EC</code><br>Cheeks, profile picture, light panels</div></div>
+      <div class="sw"><i style="background:#FF8A6B"></i><div><b>Coral</b><code>#FF8A6B</code><br>The i-dot on dark only. One small accent</div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="r">
+    <h2 id="r">Using it</h2>
+    <ul class="rules">
+      <li>Leave clear space around the logo equal to the height of the letter d's bowl.</li>
+      <li>Keep the full logo at 120 px wide or more. Below that, use the mascot alone, and below 40 px the favicon tile.</li>
+      <li>Do not recolour the mascot, tilt it, or give it a different expression on a screen that shows patient information.</li>
+      <li>Say what Deskie is wherever the logo appears on a call surface: "automated assistant". The logo does not replace the spoken disclosure.</li>
+      <li>The wordmark is outlined from Poppins Bold (SIL Open Font License), so the files need no font installed.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
