@@ -23,7 +23,7 @@ python3 agent/check_agent.py       # 91 static checks (incl. the token budget); 
 
 - **Facts only from tools (R2, R3).** The model speaks each tool's `say` sentence word for word, or translates it faithfully for Hindi callers. The prompt holds no fees, hours, doctors or windows, and the checker keeps it that way.
 - **Success only on `ok: true` (R4).** The model may not say booked, cancelled, sent or refunded unless the tool returned success.
-- **Fixed lines (word for word, English and Hindi):** emergency, self-harm, medical question, refill, arrival window, payment secrets, not a person, instructions, other language, cannot check, abuse warning.
+- **Fixed lines (word for word, English and Hindi):** emergency, self-harm, medical question, refill, arrival window, any doctor, payment secrets, not a person, instructions, data line (new patients), other language, cannot check, abuse warning.
 - **No retry of a write (R12)**; a failed booking is followed by `get_booking_status`.
 - **The backend enforces what the prompt cannot guarantee:** verification before any patient read, no foreign `patient_id`, fee consent before a fee booking, doctor-only refill decisions, refund amounts from the clinic's rule, Indian numbers only.
 

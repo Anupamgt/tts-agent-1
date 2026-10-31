@@ -105,8 +105,8 @@ D-37, D-38, D-39 and D-40 in `docs/decision-log.md`.
 | `register_patient`: name plus date of birth or age, line number only, Indian mobile, after two failed matches, queues the patient ID text | Built |
 | New-patient section in the agent prompt | Built |
 | Gold case `G-VER-016` (new patient path, phone taken from the line) | Written, not run against a live agent; the cases for the tests below are still to be written |
-| Data line and Hindi questions as fixed lines | Not yet in the prompt (it is at its 4,096-token limit; moves to a static step in the pilot graph, D-35) |
-| Under-18 check, two-per-number limit, same-name check, no priority on the first call | Not built; the prompt and `register_patient` need these |
+| Prompt: DATA LINE (English and Hindi), who the visit is for, under-18 needs a parent or guardian, read-back before `register_patient`, no priority visit, reports, history or refills, callback when the tool refuses. Fits the 4,096-token limit | Built (31 Oct). The Hindi ask-name, ask-age and read-back questions are not fixed lines, so the agent words them; they move to static steps in the pilot graph (D-35) |
+| Backend enforcement: two-per-number limit, same-name-and-date-of-birth check, under-18 check, no priority visit on a new file | Not built; today only the prompt holds these, and the backend would let a model that ignores it through |
 | Combined `new_patient_confirmed` text | Pilot (DLT approval) |
 | Merge screen, "details not complete" badge, 30-day archive list | Console, not built |
 
