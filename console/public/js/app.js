@@ -49,7 +49,12 @@
     flash: '',
     audit: [{ at: '5:21 pm', who: 'Priya Shah', text: 'Acknowledged a medical emergency' }],
     dragId: '',
-    pendingEmergency: null
+    pendingEmergency: null,
+    clockOrigin: Date.now(),
+    clockMin: 0,
+    deskOpenedAt: 0,
+    demoFired: {},
+    live: false
   });
 
   var HI = {
@@ -365,6 +370,81 @@
     var h = h24 % 12 || 12;
     return h + ':' + (mm < 10 ? '0' : '') + mm + ' ' + ap;
   }
+  function elapsedSec() {
+    return Math.max(0, Math.floor((Date.now() - state.clockOrigin) / 1000));
+  }
+  function seedMinutes() {
+    return parseTime((window.SEED && window.SEED.timeLabel) || '6:10 pm');
+  }
+  function liveNowMin() {
+    if (state.live) return parseTime(state.timeLabel) || seedMinutes();
+    return seedMinutes() + Math.floor(elapsedSec() / 60);
+  }
+  function liveClockText() {
+    if (state.live) return state.timeLabel;
+    var s = elapsedSec();
+    var mins = seedMinutes() + Math.floor(s / 60);
+    var sec = s % 60;
+    return fmtTime(mins).replace(/ (am|pm)$/i, ':' + (sec < 10 ? '0' : '') + sec + ' $1');
+  }
+  function agoText(atMin) {
+    var d = liveNowMin() - Number(atMin || 0);
+    if (d <= 0) return 'just now';
+    if (d === 1) return '1 min ago';
+    return d + ' min ago';
+  }
+  function activityAge(a) {
+    return a.atMin != null ? agoText(a.atMin) : (a.ago || '');
+  }
+  function pushActivity(text) {
+    state.activity.unshift({
+      id: 'a-' + Date.now(),
+      text: text,
+      atMin: liveNowMin(),
+      ago: 'just now',
+      fresh: true
+    });
+  }
+  function holdSeconds() {
+    return Math.max(0, 90 - elapsedSec());
+  }
+  function holdNote() {
+    var left = holdSeconds();
+    return left ? 'caller on the line · ' + left + 's left' : 'hold expired · still on the line';
+  }
+  function windowStartEnd(w, delay) {
+    var label = delay > 0 ? (shiftRange(w.label, delay) || w.label) : w.label;
+    var parts = String(label).split(/[–-]/);
+    if (parts.length < 2) return null;
+    var ap = (parts[1].match(/am|pm/i) || ['pm'])[0];
+    var start = /am|pm/i.test(parts[0]) ? parseTime(parts[0]) : parseTime(parts[0] + ' ' + ap);
+    var end = parseTime(parts[1]);
+    return { start: start, end: end };
+  }
+  function refreshWindowsNow() {
+    var now = liveNowMin();
+    state.windows.forEach(function (w) {
+      if (w.dateKey !== state.dateKey) { w.isNow = false; return; }
+      var d = doctor(w.doctorId);
+      var delay = d && d.status === 'started' ? d.delayMin : 0;
+      var range = windowStartEnd(w, delay);
+      w.isNow = !!(range && now >= range.start && now < range.end);
+    });
+  }
+  function refreshOpenDue() {
+    var now = liveNowMin();
+    state.callbacks.forEach(function (c) {
+      if (c.status !== 'open' && c.status !== 'calling') return;
+      if (String(c.dueText || '').indexOf('acknowledged') === 0) return;
+      if (c.dueMin >= 2000) return;
+      var diff = c.dueMin - now;
+      c.overdue = diff <= 0;
+      c.dueSoon = diff > 0 && diff <= 15;
+      if (c.overdue) c.dueText = 'overdue ' + (-diff) + ' min';
+      else if (c.dueSoon) c.dueText = 'due in ' + diff + ' min';
+      else c.dueText = 'due by ' + fmtTime(c.dueMin);
+    });
+  }
   function shiftRange(label, delay) {
     if (!delay) return '';
     var parts = String(label).split('–');
@@ -424,7 +504,7 @@
         ? '<span class="bn-chip-basis caption">' + e('live') + '</span>'
         : '<span class="bn-chip-basis caption">' + icon('clock', 12) + ' ' + e('schedule only') + '</span>';
     }
-    return '<span class="bn-chip bn-chip-' + tone + '" title="' + esc(title) + '"><span class="bn-chip-dot" aria-hidden="true"></span><span class="body-strong">' + esc(d.name) + '</span><span class="bn-chip-sep" aria-hidden="true">·</span><span class="label bn-num">' + esc(delayText) + '</span>' + basisHtml + '</span>';
+    return '<span class="bn-chip bn-chip-' + tone + (running && basis === 'live' ? ' is-ticking' : '') + '" title="' + esc(title) + '"><span class="bn-chip-dot" aria-hidden="true"></span><span class="body-strong">' + esc(d.name) + '</span><span class="bn-chip-sep" aria-hidden="true">·</span><span class="label bn-num">' + esc(delayText) + '</span>' + basisHtml + '</span>';
   }
   function places(cap, pp, taken, pt) {
     var reg = cap - pp;
@@ -467,7 +547,7 @@
       '<div class="bn-card-main"><div class="bn-card-who"><span class="body-strong bn-card-name" title="' + esc(p ? p.name : '') + '">' + esc(p ? p.name : 'Patient') + '</span>' +
       (meta ? '<span class="caption bn-muted bn-num">' + esc(meta) + '</span>' : '') + '</div>' +
       '<div class="bn-card-state">' + badge(STATUS[st][0], STATUS[st][1]) +
-      (b.statusNote ? '<span class="caption bn-muted bn-num">' + esc(b.statusNote) + '</span>' : '') + '</div></div>' +
+      (b.status === 'held' ? '<span class="caption bn-muted bn-num" data-live-hold>' + esc(holdNote()) + '</span>' : (b.statusNote ? '<span class="caption bn-muted bn-num">' + esc(b.statusNote) + '</span>' : '')) + '</div></div>' +
       (badges ? '<div class="bn-card-badges">' + badges + '</div>' : '') +
       (note ? '<span class="caption bn-muted">' + esc(note) + '</span>' : '') +
       (b.outreach === 'calling' ? '<span class="caption">Outreach: calling now</span>' : '') +
@@ -603,10 +683,11 @@
     }).join('') + '</div>' : '';
     var chips = state.doctors.map(chip).join('');
     return '<header class="topbar"><div class="clinic-lockup"><div class="heading">' + esc(state.clinic) + '</div><div class="caption bn-muted">Bolnai</div></div>' +
-      '<div class="when"><span class="body-strong bn-num">' + esc(state.dateLabel) + '</span><span class="caption bn-muted bn-num">' + esc(state.timeLabel) + '</span></div>' +
+      '<div class="when"><span class="body-strong bn-num">' + esc(state.dateLabel) + '</span><span class="caption bn-muted bn-num" data-live-clock>' + esc(liveClockText()) + '</span></div>' +
+      '<span class="live-pill" title="' + (state.live ? 'Connected to the clinic API' : 'Demo clock is running') + '"><i aria-hidden="true"></i>' + (state.live ? 'Live API' : 'Live') + '</span>' +
       '<label class="bn-switch ' + (state.staffOnDesk ? 'is-on' : 'is-off') + '"><input class="bn-switch-input" type="checkbox" role="switch" data-bind="staffOnDesk" data-act="desk" ' + (state.staffOnDesk ? 'checked' : '') + ' aria-checked="' + (state.staffOnDesk ? 'true' : 'false') + '"><span class="bn-switch-track" aria-hidden="true"><span class="bn-switch-thumb"></span></span><span class="bn-switch-text"><span class="body-strong">' + e('Staff on desk') + '</span><span class="caption">' + e(state.staffOnDesk ? 'Calls transfer to the desk phone' : 'Callers are offered a callback') + '</span></span></label>' +
       '<div class="chip-row" aria-label="Doctors in session">' + chips + '</div>' +
-      (held ? '<span class="caption bn-muted">Agent: ' + held + ' call in progress</span>' : '') +
+      '<span class="caption' + (held ? ' agent-live' : ' bn-muted') + '" data-live-agent>' + (held ? 'Agent: ' + held + ' call in progress' : 'Agent: idle') + '</span>' +
       '<div class="search"><input id="q" data-bind="search" data-live="1" placeholder="' + e('Search name, ID or phone') + '" aria-label="' + e('Search name, ID or phone') + '" value="' + esc(state.search) + '" title="Press / to search">' + pop + '</div>' +
       emergencyChip() +
       '<div class="counters"><a class="counter" href="#callbacks"><strong>' + p1 + ' P1 · ' + p2 + ' P2</strong> <span class="caption">' + e('Callbacks') + '</span></a>' +
@@ -646,7 +727,8 @@
         headActions += '<button type="button" class="bn-btn bn-btn-danger" data-act="cancel-session" data-id="' + d.id + '">' + e('Mark session cancelled') + '</button>';
       }
       headActions += '<button type="button" class="bn-btn bn-btn-quiet" data-act="doctor-open" data-id="' + d.id + '">' + e('Doctor phone') + '</button>';
-      var now = d.nowName ? '<p class="caption bn-num">Now with doctor: <strong>' + esc(d.nowName) + '</strong> · since ' + esc(d.nowSince) + '</p>' : '<p class="caption bn-muted">Nobody in the cabin</p>';
+      var sinceMin = d.nowName && d.nowSince ? Math.max(0, liveNowMin() - parseTime(d.nowSince)) : 0;
+      var now = d.nowName ? '<p class="caption bn-num">Now with doctor: <strong>' + esc(d.nowName) + '</strong> · since ' + esc(d.nowSince) + (sinceMin ? ' · ' + sinceMin + ' min' : '') + '</p>' : '<p class="caption bn-muted">Nobody in the cabin</p>';
       var warn = d.status === 'started' && d.basis === 'schedule' && d.watchdogMin >= 30 ? '<p class="caption" style="color:var(--attention-ink)">No update from the cabin for ' + d.watchdogMin + ' min</p>' : '';
       var queueHtml = '<div class="queue"><div class="label">Waiting room order</div><p class="caption bn-muted">Priority visits first, then arrival order. Token is the queue position.</p>' +
         (order.length ? '<ol>' + order.map(function (b, i) {
@@ -668,7 +750,7 @@
         absent + queueHtml + '</section>';
     }).join('');
     var activity = '<div class="activity" aria-label="Agent activity">' + state.activity.map(function (a) {
-      return '<div class="activity-item"><p>' + esc(a.text) + '</p><p class="caption bn-muted">' + esc(a.ago) + '</p></div>';
+      return '<div class="activity-item' + (a.fresh ? ' is-fresh' : '') + '"><p>' + esc(a.text) + '</p><p class="caption bn-muted" data-live-ago="' + esc(a.id) + '">' + esc(activityAge(a)) + '</p></div>';
     }).join('') + '</div>';
     return '<div class="page-head"><div><h1 class="heading-lg">' + e('Today') + '</h1><p class="caption bn-muted">' + e('Live queue') + ' · ' + esc(state.dateLabel) + ' · evening session</p></div>' +
       '<div class="page-actions"><a class="bn-btn" href="#summary">' + e('Day summary') + '</a><a class="bn-btn" href="#waiting">' + e('Waiting room') + '</a><button type="button" class="bn-btn bn-btn-primary" data-act="walk-in">+ ' + e('Walk-in') + '</button></div></div>' +
@@ -1206,11 +1288,11 @@
         '<p class="caption bn-muted demo-hint">Demo ' + (state.needOtp ? 'code ' + esc(picking.otp || '') : 'PIN ' + esc(picking.pin)) + '</p>' +
         '<button type="button" class="bn-btn bn-btn-quiet" data-act="pin-cancel">Choose someone else</button>'
       : list;
-    return '<div class="signin">' + emergencyHighlight() + '<div class="signin-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="bn-muted">Sign in with your own PIN. The desk never shares one login.</p>' + pinBlock + '</div></div>';
+    return '<div class="signin">' + emergencyHighlight() + '<div class="signin-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock>' + esc(liveClockText()) + '</p><p class="bn-muted">Sign in with your own PIN. The desk never shares one login.</p>' + pinBlock + '</div></div>';
   }
   function lockScreen() {
     var who = user();
-    return '<div class="lock">' + emergencyHighlight() + '<div class="lock-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num">' + esc(state.timeLabel) + '</p><p class="bn-muted">Desk locked.</p>' +
+    return '<div class="lock">' + emergencyHighlight() + '<div class="lock-card"><p class="caption bn-muted signin-brand">Bolnai</p><h1 class="heading-lg">' + esc(state.clinic) + '</h1><p class="figure-lg bn-num" data-live-clock>' + esc(liveClockText()) + '</p><p class="bn-muted">Desk locked.</p>' +
       (who ? '<div class="signin-who"><p class="body-strong">' + esc(who.name) + '</p><p class="caption bn-muted">' + esc(roleName(who.role)) + '</p></div>' : '') +
       '<p class="label">Enter your PIN</p>' + pinPad() +
       (who ? '<p class="caption bn-muted demo-hint">Demo PIN ' + esc(who.pin) + '</p>' : '') +
@@ -1655,7 +1737,7 @@
       arrivedMin: 0, delaySms: '0/2', delayChoice: '', outreach: '',
       timeline: [{ at: state.timeLabel, text: how + ' · ' + dayLabel(dateKey) + ', ' + label + (f.squeeze ? ' · over capacity' : '') + (fee && fee.state === 'waived' ? '. Fee waived: ' + f.waiveReason : '') }]
     });
-    state.activity.unshift({ id: id, text: user().name + (source === 'walk_in' ? ' added a walk-in for ' : ' booked ') + patient(pid).name + ' with ' + doc.name + ', ' + dayLabel(dateKey) + ' ' + label + '.', ago: 'just now' });
+    pushActivity(user().name + (source === 'walk_in' ? ' added a walk-in for ' : ' booked ') + patient(pid).name + ' with ' + doc.name + ', ' + dayLabel(dateKey) + ' ' + label + '.');
     state.drawer = null;
     audit((source === 'walk_in' ? 'Walk-in booked for ' : 'Booked ') + patient(pid).name + ' · ' + dayLabel(dateKey) + ', ' + label, { patientId: pid });
     render();
@@ -1713,6 +1795,7 @@
     state.needOtp = false;
     state.pinFor = '';
     state.pinError = '';
+    if (!state.deskOpenedAt) state.deskOpenedAt = Date.now();
     audit('Signed in');
     if (u.role !== 'receptionist') {
       state.pendingEmergency = null;
@@ -1757,7 +1840,7 @@
     if (act === 'refresh') { render({ keepFocus: true }); return; }
     if (act === 'lang') { state.lang = value; render(); return; }
     if (act === 'lock') { state.locked = true; state.pin = ''; state.pinFor = state.userId; state.needOtp = false; state.pinError = ''; render(); return; }
-    if (act === 'signout') { state.signedIn = false; state.locked = false; state.switchOpen = false; state.userId = ''; state.pendingEmergency = null; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; render(); return; }
+    if (act === 'signout') { state.signedIn = false; state.locked = false; state.switchOpen = false; state.userId = ''; state.pendingEmergency = null; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; state.deskOpenedAt = 0; state.demoFired = {}; render(); return; }
     if (act === 'switch-open') { state.switchOpen = true; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'switch-close' || act === 'pin-cancel') { state.switchOpen = false; state.pinFor = ''; state.pin = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'pick-user') { state.pinFor = id; state.pin = ''; state.otp = ''; state.needOtp = false; state.pinError = ''; render(); return; }
@@ -1801,7 +1884,7 @@
       held.status = 'booked';
       held.statusNote = 'Fee due ' + money(held.fee.amount);
       held.timeline.push({ at: state.timeLabel, text: 'Hold confirmed by ' + user().name });
-      state.activity.unshift({ id: 'hold-done', text: 'Agent booking confirmed for ' + patient(held.patientId).name + '.', ago: 'just now' });
+      pushActivity('Agent booking confirmed for ' + patient(held.patientId).name + '.');
       audit('Confirmed the held booking for ' + patient(held.patientId).name);
       render(); return;
     }
@@ -2187,6 +2270,124 @@
   bumpIdle();
   if (!location.hash) location.hash = 'today';
   else render();
+
+  function uiBusy() {
+    if (state.drawer || state.modal || state.switchOpen) return true;
+    var el = document.activeElement;
+    return !!(el && el.matches && el.matches('input, textarea, select'));
+  }
+  function tickCabin() {
+    var now = liveNowMin();
+    if (state.clockMin === now) return false;
+    var first = !state.clockMin;
+    state.clockMin = now;
+    state.timeLabel = fmtTime(now);
+    if (!state.live && !first) {
+      state.doctors.forEach(function (d) {
+        if (d.status === 'started' && d.basis === 'schedule') d.watchdogMin = (d.watchdogMin || 0) + 1;
+      });
+      state.activity.forEach(function (a) {
+        if (a.atMin != null) {
+          a.ago = agoText(a.atMin);
+          if (a.ago !== 'just now') a.fresh = false;
+        }
+      });
+      refreshOpenDue();
+      refreshWindowsNow();
+    }
+    return !first;
+  }
+  function runDemoBeats() {
+    if (state.live || !deskOpen() || !state.deskOpenedAt) return false;
+    var s = Math.floor((Date.now() - state.deskOpenedAt) / 1000);
+    var changed = false;
+    function once(id, at, fn) {
+      if (state.demoFired[id] || s < at) return;
+      state.demoFired[id] = true;
+      fn();
+      changed = true;
+    }
+    once('hold-tick', 8, function () {
+      pushActivity('Agent is still on the line with Anaya Singh’s parent.');
+      toast('Agent still on a call');
+    });
+    once('new-cb', 18, function () {
+      if (state.callbacks.some(function (c) { return c.id === 'cb-live'; })) return;
+      state.callbacks.unshift({
+        id: 'cb-live',
+        priority: 'P2',
+        isNew: true,
+        overdue: false,
+        dueSoon: true,
+        dueText: 'due in 14 min',
+        dueMin: liveNowMin() + 14,
+        caller: 'Unknown caller',
+        patientId: '',
+        number: '+91 98001 22334',
+        language: 'HI',
+        verified: false,
+        reason: 'Asked for today’s last general place. Agent could not confirm a window.',
+        callId: '',
+        status: 'open',
+        attempts: [],
+        smsSent: false,
+        differs: false,
+        callbackNumber: '',
+        preferred: 'This evening',
+        wanted: 'Any general doctor today.',
+        snippet: 'Koi last slot hai kya aaj?',
+        lockout: false
+      });
+      pushActivity('Agent created a P2 callback for a new caller.');
+      toast('New P2 callback from the agent');
+    });
+    once('delay', 32, function () {
+      var d = doctor('sharma');
+      if (d && d.status === 'started' && d.basis === 'live') {
+        d.delayMin += 1;
+        pushActivity('Dr Sharma’s live delay is now +' + d.delayMin + ' min.');
+        toast('Live delay updated');
+      }
+    });
+    once('sms', 48, function () {
+      state.outbox.unshift({
+        id: 'mx-live',
+        at: state.timeLabel,
+        patientId: 'fatima',
+        channel: 'SMS',
+        template: 'Delay update',
+        status: 'failed',
+        text: 'Dr Sharma is running late. Your new arrival window will follow. - Demo Family Clinic'
+      });
+      pushActivity('Delay SMS to Fatima Shaikh failed. Retry from Messages.');
+      toast('A delay SMS failed');
+    });
+    return changed;
+  }
+  function paintLive() {
+    var clock = liveClockText();
+    document.querySelectorAll('[data-live-clock]').forEach(function (el) { el.textContent = clock; });
+    document.querySelectorAll('[data-live-hold]').forEach(function (el) { el.textContent = holdNote(); });
+    var held = state.bookings.filter(function (b) { return b.status === 'held'; }).length;
+    document.querySelectorAll('[data-live-agent]').forEach(function (el) {
+      el.textContent = held ? 'Agent: ' + held + ' call in progress' : 'Agent: idle';
+      el.classList.toggle('agent-live', !!held);
+      el.classList.toggle('bn-muted', !held);
+    });
+    state.activity.forEach(function (a) {
+      var node = document.querySelector('[data-live-ago="' + a.id + '"]');
+      if (node) node.textContent = activityAge(a);
+    });
+  }
+  function pulse() {
+    state.timeLabel = fmtTime(liveNowMin());
+    var minuteChanged = tickCabin();
+    var demoChanged = runDemoBeats();
+    paintLive();
+    if ((minuteChanged || demoChanged) && !uiBusy()) render({ keepFocus: true });
+  }
+  setInterval(pulse, 1000);
+  paintLive();
 
   function liveSend(method, url, body) {
     return fetch(url, {

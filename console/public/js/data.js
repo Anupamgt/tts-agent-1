@@ -116,10 +116,10 @@ window.SEED = {
     { id: 'mx-7', at: '11:06 am', patientId: 'meera', channel: 'SMS', template: 'Reminder', status: 'delivered', text: 'Reminder: Kabir’s visit with Dr Kaur is on Mon, 19 Oct, arrival window 6:00–6:30 pm. Call the clinic to cancel or reschedule. - Demo Family Clinic' }
   ],
   activity: [
-    { id: 'a1', text: 'Agent is holding a priority visit for Anaya Singh with Dr Kaur, 6:30–7:00 pm.', ago: '1 min ago' },
-    { id: 'a2', text: 'Agent booked Fatima Shaikh for 6:00–6:30 pm, any doctor.', ago: '20 min ago' },
-    { id: 'a3', text: 'Agent flagged a possible medical emergency and advised 112 / 108.', ago: '2 min ago' },
-    { id: 'a4', text: 'Delay SMS 1/2 sent to Fatima Shaikh.', ago: '6 min ago' }
+    { id: 'a1', text: 'Agent is holding a priority visit for Anaya Singh with Dr Kaur, 6:30–7:00 pm.', ago: '1 min ago', atMin: 1089 },
+    { id: 'a2', text: 'Agent booked Fatima Shaikh for 6:00–6:30 pm, any doctor.', ago: '20 min ago', atMin: 1070 },
+    { id: 'a3', text: 'Agent flagged a possible medical emergency and advised 112 / 108.', ago: '2 min ago', atMin: 1088 },
+    { id: 'a4', text: 'Delay SMS 1/2 sent to Fatima Shaikh.', ago: '6 min ago', atMin: 1084 }
   ],
   alerts: [
     { id: 'al-old', kind: 'medical', at: '5:21 pm', number: '+91 98888 88888', by: 'Priya Shah', ackAt: '5:21 pm', snippet: 'Caller asked for help and then the line went quiet.', callId: 'call-old' }

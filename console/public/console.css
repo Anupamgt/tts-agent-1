@@ -302,6 +302,24 @@ button.bn-badge { border: 0; font: inherit; cursor: pointer; }
 }
 .clinic-lockup { display: flex; flex-direction: column; min-width: 180px; }
 .when { display: flex; flex-direction: column; }
+.live-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 10px; border-radius: var(--radius-pill);
+  background: var(--ok-soft); color: var(--ok-ink);
+  font-weight: 600; font-size: 12px; letter-spacing: 0.02em;
+}
+.live-pill i {
+  width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(47, 138, 99, 0.55);
+  animation: live-dot 1.6s ease-out infinite;
+}
+.agent-live { color: var(--ok-ink); font-weight: 600; }
+.bn-chip.is-ticking .bn-chip-dot { animation: live-dot 1.6s ease-out infinite; }
+@keyframes live-dot {
+  0% { box-shadow: 0 0 0 0 rgba(47, 138, 99, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(47, 138, 99, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(47, 138, 99, 0); }
+}
 .chip-row { display: flex; gap: var(--space-2); flex-wrap: wrap; flex: 1 1 100%; overflow: visible; }
 .search { position: relative; flex: 1 1 220px; max-width: 320px; }
 .search input, .field input, .field select, .field textarea {
@@ -344,6 +362,15 @@ button.bn-badge { border: 0; font: inherit; cursor: pointer; }
 .activity-item {
   flex: 0 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3); box-shadow: var(--shadow-raised); max-width: 420px;
+}
+.activity-item.is-fresh {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  animation: slide-in 0.35s ease;
+}
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
 }
 .cols { display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: var(--space-4); align-items: start; }
 .doctor-col {
