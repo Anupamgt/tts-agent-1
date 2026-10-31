@@ -432,6 +432,7 @@ async def _sms_values(conn, call, key: str, booking_id):
 async def send_sms(db, args):
     call_id = parse_call_id(args.get("call_id"))
     key = (args.get("template_key") or "").strip()
+    message_id = None
     async with db.connection() as conn:
         try:
             async with conn.transaction():
@@ -462,9 +463,14 @@ async def send_sms(db, args):
                        RETURNING id""",
                     (call["clinic_id"], call["patient_id"], key, phone, rendered),
                 )
-                return result(True, "I have queued that message. Nothing is sent in this demo.", data={"message_id": int(row["id"]), "status": "queued"})
+                message_id = int(row["id"])
         except errors.InsufficientPrivilege as exc:
             return privilege_result(exc)
+    from app.sms import dispatch_one
+
+    status = await dispatch_one(message_id) if message_id else "queued"
+    say = "I have sent that message." if status == "sent" else "I have queued that message. Nothing is sent in this demo."
+    return result(True, say, data={"message_id": message_id, "status": status})
 
 
 async def create_payment_link(db, args):

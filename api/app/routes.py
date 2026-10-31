@@ -34,6 +34,7 @@ from app.livekit_tokens import livekit_token
 from app.metrics import metrics
 from app.recorder import append_pcm, append_segment, close_recording, decode_pcm, is_open, open_recording, recording_path
 from app.tools import TOOLS
+from app.tools_common import indian_mobile
 from app.tools.desk import set_phase
 from app.handoff_wait import notify
 from app.jobs import note_call_next
@@ -44,8 +45,10 @@ router = APIRouter()
 
 
 def _loopback_or_404(request: Request):
-    if not is_loopback(request):
-        raise HTTPException(status_code=404, detail="not found")
+    # The desk on the public console is not loopback. A signed-in session is the same gate.
+    if is_loopback(request) or desk_token_from(request):
+        return
+    raise HTTPException(status_code=404, detail="not found")
 
 
 def _desk_or_401(request: Request):
@@ -91,6 +94,84 @@ async def tool_route(name: str, request: Request):
         execution_id=request.headers.get("x-bolna-execution-id"),
     )
     return JSONResponse(body, status_code=status)
+
+
+async def spoken_clinic_name() -> str:
+    """Name Bolna substitutes for {clinic_name}. The desk record wins; Deskie is the fallback."""
+    try:
+        async with db.connection() as conn:
+            row = await one(conn, "SELECT name FROM clinics WHERE id = 1")
+        name = ((row or {}).get("name") or "").strip()
+        if name:
+            return name
+    except Exception:
+        log.exception("clinic name lookup failed")
+    return CLINIC_NAME
+
+
+def _inbound_vars(call_id: int, phone: str, count: int, clinic_name: str) -> dict:
+    return {
+        "call_id": str(call_id),
+        "clinic_name": clinic_name,
+        "patient_count": str(count),
+        "channel": "phone",
+        "contact_number": phone,
+    }
+
+
+@router.get("/v1/bolna/inbound")
+async def inbound_caller(request: Request):
+    """Bolna caller-data lookup. Runs before the welcome message on a phone call.
+
+    Bolna GETs this with contact_number, agent_id and execution_id, then injects
+    the JSON into the prompt. Every caller gets a row, including new patients.
+    The body never includes a name.
+    """
+    if not tool_authorized(request):
+        return JSONResponse({"detail": "unauthorized"}, status_code=401)
+    if not source_allowed(request.client.host if request.client else "", BOLNA_ENFORCE_SOURCE_IP):
+        return JSONResponse({"detail": "forbidden"}, status_code=403)
+    raw_number = request.query_params.get("contact_number") or ""
+    phone = indian_mobile(raw_number)
+    if phone is None:
+        return JSONResponse({"detail": "contact_number is not an Indian mobile"}, status_code=400)
+    execution_id = (request.query_params.get("execution_id") or "").strip() or None
+    async with db.connection() as conn:
+        async with conn.transaction():
+            existing = None
+            if execution_id:
+                existing = await one(conn, "SELECT id, from_number FROM calls WHERE bolna_execution_id = %s", (execution_id,))
+            if existing:
+                call_id = int(existing["id"])
+                phone = existing["from_number"] or phone
+            else:
+                persona = await one(conn, "SELECT key FROM caller_personas WHERE phone = %s", (phone,))
+                row = await one(
+                    conn,
+                    """INSERT INTO calls (
+                         clinic_id, direction, from_number, started_at, phase, persona_key,
+                         bolna_execution_id, ai_leg_status)
+                       VALUES (1, 'inbound', %s, now(), 'ai_active', %s, %s, 'in-progress')
+                       RETURNING id""",
+                    (phone, persona["key"] if persona else None, execution_id),
+                )
+                call_id = int(row["id"])
+                room = f"clinic-{call_id}"
+                await conn.execute("UPDATE calls SET livekit_room = %s WHERE id = %s", (room, call_id))
+            count = await one(
+                conn,
+                "SELECT count(DISTINCT patient_id)::int AS n FROM patient_phones WHERE phone = %s",
+                (phone,),
+            )
+    if existing is None:
+        open_recording(call_id)
+    if execution_id:
+        await redis_bus.set(f"exec:{execution_id}", str(call_id))
+    await redis_bus.hset(
+        f"call:{call_id}",
+        {"phase": "ai_active", "from_number": phone, "channel": "phone"},
+    )
+    return _inbound_vars(call_id, phone, int(count["n"]), await spoken_clinic_name())
 
 
 @router.post("/v1/internal/{name}")
@@ -187,7 +268,8 @@ async def bolna_session(call_id: int, request: Request):
         "call_id": str(call_id),
         "caller_phone": call["from_number"],
         "patient_count": str(int(count["n"])),
-        "clinic_name": CLINIC_NAME,
+        "clinic_name": await spoken_clinic_name(),
+        "channel": "web",
     }
     payload = {"agent_id": BOLNA_AGENT_ID, "user_data": user_data}
     try:
@@ -309,11 +391,37 @@ async def recording(call_id: int, request: Request):
     _loopback_or_404(request)
     _desk_or_401(request)
     path = recording_path(call_id)
-    if not path.exists():
+    # A new call writes a 44-byte header before any audio. That is not a recording.
+    if path.exists() and path.stat().st_size > 1000:
+        if is_open(call_id) and request.query_params.get("download") != "partial":
+            return JSONResponse({"detail": "recording in progress"}, status_code=409)
+        return FileResponse(path, media_type="audio/wav")
+    async with db.connection() as conn:
+        stored = await one(conn, "SELECT uri FROM recordings WHERE call_id = %s ORDER BY id DESC LIMIT 1", (call_id,))
+        if stored is None:
+            stored = await one(
+                conn,
+                "SELECT recording_url AS uri FROM calls WHERE id = %s AND recording_url IS NOT NULL",
+                (call_id,),
+            )
+    uri = stored["uri"] if stored else ""
+    if not uri or not BOLNA_API_KEY:
         raise HTTPException(status_code=404, detail="no recording")
-    if is_open(call_id) and request.query_params.get("download") != "partial":
-        return JSONResponse({"detail": "recording in progress"}, status_code=409)
-    return FileResponse(path, media_type="audio/wav")
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(
+                uri,
+                headers={"Authorization": f"Bearer {BOLNA_API_KEY}"},
+                follow_redirects=True,
+            )
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="recording unavailable") from None
+    if resp.status_code != 200 or not resp.content:
+        raise HTTPException(status_code=502, detail="recording unavailable")
+    media = (resp.headers.get("content-type") or "audio/mpeg").split(";")[0]
+    if media.startswith("text") or media == "application/json":
+        media = "audio/mpeg"
+    return Response(resp.content, media_type=media)
 
 
 @router.post("/api/calls/{call_id}/recorder-frame")
@@ -338,7 +446,7 @@ async def recorder_frame(call_id: int, request: Request):
 
 @router.post("/api/desk/login")
 async def desk_login(request: Request):
-    _loopback_or_404(request)
+    # Public on purpose: the staff console is hosted separately and proxies here.
     body = await request.json()
     if not pin_ok(str(body.get("pin") or "")):
         raise HTTPException(status_code=401, detail="invalid pin")

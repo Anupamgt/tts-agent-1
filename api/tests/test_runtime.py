@@ -237,7 +237,8 @@ def test_bolna_webhook_and_handoff(client, runtime):
     minted = client.post(f"/api/calls/{call_id}/bolna-session", headers=headers)
     assert minted.status_code == 200, minted.text
     posted = runtime["captured"][-1]
-    assert set(posted["user_data"]) == {"call_id", "caller_phone", "patient_count", "clinic_name"}
+    assert set(posted["user_data"]) == {"call_id", "caller_phone", "patient_count", "clinic_name", "channel"}
+    assert posted["user_data"]["channel"] == "web"
     assert "date_of_birth" not in json.dumps(posted["user_data"])
     client.post(
         "/api/simulate/utterance",
@@ -578,7 +579,7 @@ def test_desk_operations(client):
     assert sql("SELECT status FROM refunds WHERE id = %s", (refund_id,))[0]["status"] == "approved"
     snap = client.get("/api/console/bootstrap")
     assert snap.status_code == 200, snap.text
-    assert snap.json()["doctors"] and snap.json()["clinic"] == "Demo Family Clinic"
+    assert snap.json()["doctors"] and snap.json()["clinic"] == "Deskie"
 
 
 def test_spoken_facts_are_true(client):
@@ -605,8 +606,138 @@ def test_spoken_facts_are_true(client):
     sms = tool(client, call_id, "send_sms", template_key="booking_confirmed", booking_id=booked["data"]["booking_id"])
     assert sms["ok"], sms
     body = sql("SELECT rendered_body FROM messages WHERE id = %s", (sms["data"]["message_id"],))[0]["rendered_body"]
-    assert "Dr Demo Kaur" in body and "Dr Dr" not in body and "HC/2026/0412" in body and "Demo Family Clinic is" not in body
+    assert "Dr Demo Kaur" in body and "Dr Dr" not in body and "HC/2026/0412" in body and "Deskie is" not in body
     pid = tool(client, call_id, "send_sms", template_key="patient_id")
     body = sql("SELECT rendered_body FROM messages WHERE id = %s", (pid["data"]["message_id"],))[0]["rendered_body"]
     assert "HC/2026/0412" in body
     assert tool(client, call_id, "send_sms", template_key="delay_update")["error_code"] == "bad_template"
+
+
+def test_inbound_caller_data_and_phone_fallback(client):
+    denied = client.get("/v1/bolna/inbound", params={"contact_number": "+919822222222", "execution_id": "exec-denied"})
+    assert denied.status_code == 401
+    bad = client.get(
+        "/v1/bolna/inbound",
+        params={"contact_number": "555", "execution_id": "exec-bad"},
+        headers=AUTH,
+    )
+    assert bad.status_code == 400
+
+    first = client.get(
+        "/v1/bolna/inbound",
+        params={"contact_number": "9822222222", "agent_id": "agent-test", "execution_id": "exec-meera"},
+        headers=AUTH,
+    )
+    assert first.status_code == 200, first.text
+    body = first.json()
+    assert body["channel"] == "phone"
+    assert body["contact_number"] == "+919822222222"
+    assert body["patient_count"] == "1"
+    assert body["clinic_name"] == "Deskie"
+    assert "name" not in json.dumps(body).lower() or "clinic_name" in body
+    blob = json.dumps(body).lower()
+    assert "meera" not in blob and "asha" not in blob
+    call_id = int(body["call_id"])
+    row = sql("SELECT phase, persona_key, from_number, bolna_execution_id FROM calls WHERE id = %s", (call_id,))[0]
+    assert row["phase"] == "ai_active"
+    assert row["persona_key"] == "meera"
+    assert row["from_number"] == "+919822222222"
+    assert row["bolna_execution_id"] == "exec-meera"
+
+    again = client.get(
+        "/v1/bolna/inbound",
+        params={"contact_number": "+919822222222", "execution_id": "exec-meera"},
+        headers=AUTH,
+    )
+    assert again.json()["call_id"] == body["call_id"]
+    assert sql("SELECT count(*)::int AS n FROM calls WHERE bolna_execution_id = 'exec-meera'")[0]["n"] == 1
+
+    family = client.get(
+        "/v1/bolna/inbound",
+        params={"contact_number": "+919811111111", "execution_id": "exec-family"},
+        headers=AUTH,
+    )
+    assert family.json()["patient_count"] == "2"
+    assert "asha" not in json.dumps(family.json()).lower()
+    assert "rohan" not in json.dumps(family.json()).lower()
+
+    looked = client.post(
+        "/v1/tools/lookup_caller",
+        json={"from_number": "+919822222222"},
+        headers=AUTH,
+    )
+    assert looked.status_code == 200, looked.text
+    assert looked.json()["ok"] is True
+    assert looked.json()["data"]["patient_count"] == 1
+
+    fresh = client.get(
+        "/v1/bolna/inbound",
+        params={"contact_number": "+919800000099", "execution_id": "exec-new"},
+        headers=AUTH,
+    )
+    assert fresh.json()["patient_count"] == "0"
+    new_id = int(fresh.json()["call_id"])
+    done = client.post(
+        "/v1/bolna/webhook",
+        json={"id": "exec-new", "status": "completed", "summary": "New caller asked the hours.", "conversation_duration": 3},
+        headers={"Authorization": "Bearer dev-webhook-token-change-me"},
+    )
+    assert done.status_code == 200, done.text
+    assert sql("SELECT phase FROM calls WHERE id = %s", (new_id,))[0]["phase"] == "ended"
+
+
+def test_enquiry_and_signed_in_records(client):
+    anon = httpx.Client(base_url=str(client.base_url), timeout=20)
+    refused = anon.post("/api/setup/clinic", json={"name": "Nope"})
+    anon.close()
+    assert refused.status_code == 401
+    bad = client.post("/v1/public/enquiries", json={"name": "A", "phone": "555"})
+    assert bad.status_code == 400
+    sent = client.post(
+        "/v1/public/enquiries",
+        json={"name": "Anika Rao", "phone": "9840011122", "clinic": "North Desk", "note": "Call after 6."},
+    )
+    assert sent.status_code == 200, sent.text
+    login = client.post("/api/desk/login", json={"pin": "2468"})
+    assert login.status_code == 200, login.text
+    doctor = client.post(
+        "/api/setup/doctors",
+        json={"name": "Dr Demo Iyer", "specialty": "Skin", "appointment_fee_inr": 300},
+    )
+    assert doctor.status_code == 200, doctor.text
+    patient = client.post(
+        "/api/setup/patients",
+        json={
+            "full_name": "Anika Rao",
+            "phone": "9840011122",
+            "date_of_birth": "1990-05-12",
+            "history": "First visit note for the demo file.",
+        },
+    )
+    assert patient.status_code == 200, patient.text
+    assert len(patient.json()["patient_code"]) == 7
+
+
+def test_new_caller_registers_without_a_card(client):
+    """A phone with no file is a new patient. A phone that already has a file cannot skip it."""
+    fresh, _, _ = activate(client, "unknown")
+    created = tool(client, fresh, "register_patient", full_name="New Demo", date_of_birth="1990-01-01")
+    assert created["ok"] is True, created
+    assert created["data"]["registered"] is True
+    row = sql("SELECT verification_mode FROM calls WHERE id = %s", (fresh,))[0]
+    assert row["verification_mode"] == "full"
+    known, _, _ = activate(client, "meera")
+    refused = tool(client, known, "register_patient", full_name="Someone Else", date_of_birth="1991-02-02")
+    assert refused["ok"] is False and refused["error_code"] == "verify_first"
+
+
+def test_doctor_title_matches_the_demo_surname():
+    from app.tools_common import doctor_matches
+
+    assert doctor_matches("Doctor Kaur", "Dr Demo Kaur")
+    assert doctor_matches("Dr Kaur", "Dr Demo Kaur")
+    assert doctor_matches("Kaur", "Dr Demo Kaur")
+    assert doctor_matches("Doctor Sharma", "Dr Demo Sharma")
+    assert doctor_matches("Dr Verma", "Dr Demo Verma")
+    assert not doctor_matches("Doctor Sharma", "Dr Demo Kaur")
+    assert not doctor_matches("Doctor", "Dr Demo Kaur")

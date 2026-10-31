@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="phone.css">
+  <style>
+    body { background: #0e1418; color: #fff; }
+    .timer { text-align: center; font-size: 48px; font-weight: 500; opacity: 0.72; margin: 220px 0 12px; font-variant-numeric: tabular-nums; }
+    .tools { margin-top: 160px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px 24px; padding: 0 90px; justify-items: center; }
+    .tool { display: flex; flex-direction: column; align-items: center; }
+    .bubble {
+      width: 168px; height: 168px; border-radius: 84px; background: rgba(255,255,255,0.16);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tool span { margin-top: 16px; font-size: 32px; font-weight: 500; opacity: 0.85; }
+    .endwrap { margin-top: auto; display: flex; flex-direction: column; align-items: center; padding-bottom: 36px; }
+    button.circle { background: #ff453a; }
+    .home { color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <div class="status">
+      <div class="time">6:10</div>
+      <div class="glyphs">
+        <svg width="48" height="32" viewBox="0 0 48 32" fill="currentColor" aria-hidden="true"><rect x="0" y="20" width="8" height="12" rx="1"/><rect x="13" y="14" width="8" height="18" rx="1"/><rect x="26" y="7" width="8" height="25" rx="1"/><rect x="39" y="0" width="8" height="32" rx="1"/></svg>
+        <svg width="46" height="34" viewBox="0 0 46 34" fill="none" stroke="currentColor" stroke-width="4" aria-hidden="true"><path d="M8 16c8-8 22-8 30 0"/><path d="M14 22c5-5 13-5 18 0"/><circle cx="23" cy="28" r="2.5" fill="currentColor" stroke="none"/></svg>
+        <svg width="72" height="34" viewBox="0 0 72 34" aria-hidden="true"><rect x="1" y="1" width="60" height="32" rx="6" fill="none" stroke="currentColor" stroke-width="3"/><rect x="5" y="5" width="52" height="24" rx="3" fill="currentColor"/><rect x="64" y="11" width="6" height="12" rx="2" fill="currentColor"/></svg>
+      </div>
+    </div>
+    <p class="timer">0:12</p>
+    <h1 class="name">Deskie</h1>
+    <p class="sub">Clinic</p>
+    <div class="tools">
+      <div class="tool"><div class="bubble"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></svg></div><span>mute</span></div>
+      <div class="tool"><div class="bubble"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="8" cy="8" r="0.8" fill="#fff"/><circle cx="12" cy="8" r="0.8" fill="#fff"/><circle cx="16" cy="8" r="0.8" fill="#fff"/><circle cx="8" cy="12" r="0.8" fill="#fff"/><circle cx="12" cy="12" r="0.8" fill="#fff"/><circle cx="16" cy="12" r="0.8" fill="#fff"/><circle cx="8" cy="16" r="0.8" fill="#fff"/><circle cx="12" cy="16" r="0.8" fill="#fff"/><circle cx="16" cy="16" r="0.8" fill="#fff"/></svg></div><span>keypad</span></div>
+      <div class="tool"><div class="bubble"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><path d="M5 9v6h3l4 3V6L8 9H5z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 7a7 7 0 0 1 0 10"/></svg></div><span>speaker</span></div>
+    </div>
+    <div class="endwrap">
+      <button class="circle" aria-label="End">
+        <svg width="84" height="84" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.5.6 3.6.1.4 0 .7-.3 1L6.6 10.8z"/></svg>
+      </button>
+      <div class="cap">End</div>
+    </div>
+    <div class="home"><i></i></div>
+  </div>
+</body>
+</html>

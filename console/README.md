@@ -1,6 +1,6 @@
 # Deskie helpdesk console
 
-Staff console for Demo Family Clinic. The sample day at `/` does not call a backend. `/?live=1` reads the clinic API through this server.
+Staff console for Deskie. The desk reads the clinic database. `/?sample=1` shows the fictional sample day and does not call the backend.
 
 ```bash
 node server.js

@@ -21,7 +21,7 @@ Bolna's cloud still has to reach two routes: tool calls and the execution webhoo
 | Clinic model: doctors, windows, bookings, fees, tickets, callbacks, verification rules | A call has a phase, a disposition, and an append-only event stream |
 | Flows 00–11 as the agent's behaviour | Decision traces: ordered, hash-chained, written locally before they are published |
 | `db/schema.sql`, `db/seed.sql`, and the 146 schema tests | Tool servers separated by what they are allowed to read |
-| Demo Family Clinic, Dr Sharma, Dr Verma, Dr Kaur | Redis for the live call, Postgres for the record, Kafka for the fan-out |
+| Deskie, Dr Sharma, Dr Verma, Dr Kaur | Redis for the live call, Postgres for the record, Kafka for the fan-out |
 | | A local LiveKit room as the media path the human joins |
 
 The telephony repository is an internship codebase under NDA. Do not copy it into this repo. Re-implement the behaviour described here. In particular, do not bring over SIP trunks, DID numbers, a public Kafka host, Neo4j, or a second machine's database. Patient data for this product is relational. The check that used to be "is this the customer on the call?" is `require_verified_patient()` in `db/002_runtime.sql`.
@@ -218,7 +218,7 @@ sequenceDiagram
   "call_id": "15",
   "caller_phone": "+919822222222",
   "patient_count": "1",
-  "clinic_name": "Demo Family Clinic"
+  "clinic_name": "Deskie"
 }
 ```
 
@@ -289,7 +289,7 @@ POST https://api.bolna.ai/web-call/session
 Authorization: Bearer $BOLNA_API_KEY
 Content-Type: application/json
 
-{"agent_id": "...", "user_data": {"call_id": "15", "caller_phone": "+919822222222", "patient_count": "1", "clinic_name": "Demo Family Clinic"}}
+{"agent_id": "...", "user_data": {"call_id": "15", "caller_phone": "+919822222222", "patient_count": "1", "clinic_name": "Deskie"}}
 ```
 
 The browser never sees `BOLNA_API_KEY`. `POST /api/calls/{id}/bolna-session` proxies the mint and returns the JSON unchanged. The SDK posts `{user_data}` to that route; forward it. A session expires in about 120 seconds and is single use. `run_id` from the mint is `calls.bolna_execution_id`.

@@ -1,6 +1,7 @@
 """Shape the live database into the console's sample-data fields."""
 
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.db import many, one
@@ -31,6 +32,54 @@ def _pid(code: str) -> str:
     if code and code.isdigit() and len(code) == 7:
         return f"{code[:3]} {code[3:6]} {code[6]}"
     return code
+
+
+_TURN = re.compile(r"^(assistant|agent|user|caller|system):\s*(.*)$", re.S)
+_WHO = {"assistant": "agent", "agent": "agent", "user": "caller", "caller": "caller", "system": "system"}
+
+
+def _transcript_lines(raw) -> list[dict]:
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        lines = []
+        for item in raw:
+            if isinstance(item, dict):
+                who = str(item.get("who") or item.get("speaker") or item.get("role") or "caller").lower()
+                who = _WHO.get(who, "caller" if who not in {"agent", "caller", "system"} else who)
+                text = str(item.get("text") or item.get("content") or "").strip()
+                if text:
+                    lines.append({"who": who, "text": text})
+            elif str(item).strip():
+                lines.append({"who": "caller", "text": str(item).strip()})
+        return lines
+    text = str(raw).strip()
+    if text.startswith("{") or text.startswith("["):
+        return []
+    lines = []
+    for part in re.split(r"\n(?=(?:assistant|agent|user|caller|system):)", text):
+        match = _TURN.match(part.strip())
+        if not match:
+            continue
+        body = match.group(2).strip()
+        if body:
+            lines.append({"who": _WHO[match.group(1)], "text": body})
+    return lines
+
+
+def _duration(seconds) -> str:
+    if not seconds:
+        return ""
+    total = int(seconds)
+    return f"{total // 60} min {total % 60:02d} sec"
+
+
+def _week(today) -> list[dict]:
+    days = []
+    for offset in range(7):
+        day = today + timedelta(days=offset)
+        days.append({"key": day.isoformat(), "label": day.strftime("%a %d")})
+    return days
 
 
 def _age(dob) -> int:
@@ -133,7 +182,7 @@ async def bootstrap(conn) -> dict:
         conn,
         """SELECT b.id, b.patient_id, b.doctor_id, b.window_id, b.status, b.source, b.priority,
                   b.appointment_fee_inr, b.priority_fee_inr, b.payment_status, b.reason_category,
-                  b.requested_by_relative, b.delay_sms_count, w.starts_at
+                  b.requested_by_relative, b.delay_sms_count, b.created_by_call_id, w.starts_at
              FROM bookings b JOIN windows w ON w.id = b.window_id
             WHERE w.ends_at > now() - interval '2 days'
             ORDER BY w.starts_at, b.id""",
@@ -155,7 +204,7 @@ async def bootstrap(conn) -> dict:
             "status": booking["status"],
             "statusNote": "",
             "source": booking["source"],
-            "callId": "",
+            "callId": str(booking["created_by_call_id"]) if booking["created_by_call_id"] else "",
             "reason": booking["reason_category"] or "general check-up",
             "priority": booking["priority"] == "priority",
             "anyDoctor": False,
@@ -175,9 +224,40 @@ async def bootstrap(conn) -> dict:
     )
     calls = await many(
         conn,
-        """SELECT id, phase, from_number, disposition, summary, started_at, verified, persona_key
-             FROM calls ORDER BY id DESC LIMIT 30""",
+        """SELECT c.id, c.phase, c.from_number, c.disposition, c.summary, c.started_at, c.verified,
+                  c.transcript, c.recording_url, c.duration_seconds, c.patient_id, c.language,
+                  c.intent, c.outcome, p.full_name
+             FROM calls c
+             LEFT JOIN patients p ON p.id = c.patient_id
+            ORDER BY c.id DESC LIMIT 30""",
     )
+    call_ids = [row["id"] for row in calls]
+    produced: dict[int, list] = {row["id"]: [] for row in calls}
+    if call_ids:
+        linked_bookings = await many(
+            conn,
+            """SELECT b.created_by_call_id AS call_id, b.status, d.name, w.starts_at
+                 FROM bookings b
+                 JOIN doctors d ON d.id = b.doctor_id
+                 JOIN windows w ON w.id = b.window_id
+                WHERE b.created_by_call_id = ANY(%s)""",
+            (call_ids,),
+        )
+        for row in linked_bookings:
+            produced[row["call_id"]].append({
+                "type": "Booking",
+                "label": f"{row['name'].replace('Demo ', '')} · {row['status']} · {_hm(row['starts_at'])}",
+            })
+        linked_callbacks = await many(
+            conn,
+            "SELECT call_id, priority, reason FROM callbacks WHERE call_id = ANY(%s)",
+            (call_ids,),
+        )
+        for row in linked_callbacks:
+            produced[row["call_id"]].append({
+                "type": "Callback",
+                "label": f"{row['priority']} · {row['reason']}",
+            })
     payments = await many(
         conn,
         """SELECT p.id, p.amount_inr, p.status, p.method, p.link_url, b.patient_id, b.doctor_id, w.starts_at
@@ -222,7 +302,7 @@ async def bootstrap(conn) -> dict:
                 "name": person["name"].replace("Demo ", ""),
                 "role": person["role"],
                 "pin": person["pin"] or "",
-                "otp": "",
+                "otp": "190026" if person["role"] == "admin" else "",
                 "doctorId": str(person["doctor_id"]) if person["doctor_id"] else "",
             }
             for person in staff
@@ -259,28 +339,30 @@ async def bootstrap(conn) -> dict:
             }
             for row in callbacks
         ],
+        "week": _week(now.date()),
         "calls": [
             {
                 "id": str(row["id"]),
                 "time": _hm(row["started_at"]) if row["started_at"] else "",
-                "mins": 0,
+                "mins": int(row["started_at"].timestamp() // 60) if row["started_at"] else 0,
                 "direction": "in",
-                "patientId": "",
-                "caller": row["persona_key"] or "Caller",
+                "patientId": str(row["patient_id"]) if row["patient_id"] else "",
+                "caller": row["full_name"] or "Caller",
                 "number": row["from_number"] or "",
-                "language": "EN",
-                "intent": "info",
-                "outcome": row["disposition"] or row["phase"],
-                "duration": "",
+                "language": (row["language"] or "EN").upper(),
+                "intent": row["intent"] or "info",
+                "outcome": row["outcome"] or row["disposition"] or row["phase"] or "",
+                "duration": _duration(row["duration_seconds"]),
                 "cost": "",
                 "tags": [],
                 "outbound": False,
                 "verified": "Verified" if row["verified"] else "Not verified",
                 "relative": "",
                 "summary": row["summary"] or "",
-                "recording": False,
-                "produced": [],
-                "transcript": [],
+                "recording": bool(row["recording_url"]),
+                "recordingPath": f"/api/calls/{row['id']}/recording" if row["recording_url"] else "",
+                "produced": produced.get(row["id"]) or [],
+                "transcript": _transcript_lines(row["transcript"]),
             }
             for row in calls
         ],

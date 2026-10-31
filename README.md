@@ -12,7 +12,7 @@ Voice AI phone help desk for a local clinic (Bolna + admin console + Google Cale
 - `docs/decision-log.md` - audit trail of the 29 Oct 2026 scope and compliance decisions (D-01 to D-40) and the pilot gate checklist (full doc: https://claude.ai/artifact/QuWJEoAzZ5Xv3dvh1NiQAM)
 - `docs/privacy-notice.md` - draft call opening line and privacy notice for the clinic and its lawyer
 - `docs/design/claude-design-handoff.md` - console UI brief for Claude Design (users, screens, states, sample data, kickoff prompt)
-- `design-system/` - snapshot of the "Bolnai Helpdesk" design system (live copy: https://claude.ai/artifact/Tjkq5Qy2Ac4VLZWS7eWuRk): `tokens.json` (source), generated `tokens.css`, React components (`components/bundle.js` as `window.Bolnai`, `bundle.css`, `index.d.ts`), per-component guidelines and previews, Anek fonts (SIL OFL 1.1). Regenerate CSS with `node design-system/build-tokens-css.mjs`
+- `design-system/` - snapshot of the "Deskie Helpdesk" design system (live copy: https://claude.ai/artifact/Tjkq5Qy2Ac4VLZWS7eWuRk): `tokens.json` (source), generated `tokens.css`, React components (`components/bundle.js` as `window.Deskie`, `bundle.css`, `index.d.ts`), per-component guidelines and previews, Anek fonts (SIL OFL 1.1). Regenerate CSS with `node design-system/build-tokens-css.mjs`
 - `docs/security/threat-model.md` - security and abuse review: findings, fixes, status, and what is not yet covered
 - `db/` - demo Postgres schema, seed data, tests and notes
 - `docs/research/` - hospital help desk research (final report + four source notes)

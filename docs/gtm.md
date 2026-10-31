@@ -1,12 +1,12 @@
 # Go-to-market (summary)
 
-The full plan, with sources, the pricing model and the roadmap drawing, is the doc "Bolnai go-to-market plan": https://claude.ai/artifact/BjosXcjEXwY6SnBRMTF6Ud (22 Oct 2026). This file keeps the decisions the product depends on.
+The full plan, with sources, the pricing model and the roadmap drawing, is the doc "Deskie go-to-market plan": https://claude.ai/artifact/BjosXcjEXwY6SnBRMTF6Ud (22 Oct 2026). This file keeps the decisions the product depends on.
 
 ## Proposed (not yet confirmed)
 
 - **First buyer:** small specialist clinics, 2 to 5 doctors, one receptionist, evening OPD sessions, in Hindi-speaking cities. Start in the Chandigarh tricity and Delhi NCR. Institutional health centres are pilot partners and references, not revenue.
 - **Promise:** "Never miss a patient call." Sold as overflow and after-hours answering, not as a receptionist replacement.
-- **Onboarding:** the clinic keeps its number and forwards busy or unanswered calls to Bolnai. 14-day trial.
+- **Onboarding:** the clinic keeps its number and forwards busy or unanswered calls to Deskie. 14-day trial.
 - **What we charge by:** a monthly plan sized by the number of doctors, with an allowance of answered calls. A call counts per 4-minute block, so long calls count double. Not per minute (bill shock) and not per booking (yet).
 - **Tiers (GST extra, margins at 2.5 minutes a call, at Bolna list / at a ₹4-a-minute target):**
 

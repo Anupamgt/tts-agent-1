@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deskie — Never miss a patient call</title>
+  <meta name="description" content="Deskie is the phone desk for a small clinic. It answers in English and Hindi, books the visit, and puts a person on the line.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="dots" aria-hidden="true"></div>
+  <header class="wrap nav">
+    <a class="word" href="#top">Deskie</a>
+    <nav class="nav-links" aria-label="Page">
+      <a href="#guide">Guide</a>
+      <a href="#demo">Demo</a>
+      <a href="#questions">Questions</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="btn" id="sign-in" href="http://127.0.0.1:8001/?live=1">Sign in</a>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero">
+      <div>
+        <p class="kicker">Phone desk for a small clinic</p>
+        <h1>Never miss a patient call.</h1>
+        <p class="lede">Deskie picks up when the doctor is with someone. It answers in English or Hindi, books the visit from the clinic’s own records, and brings a person on the line when the caller asks.</p>
+        <div class="hero-actions">
+          <a class="btn" id="call-btn" href="tel:+918065356716">Call the desk</a>
+          <a class="btn ghost" href="#guide">How to try it</a>
+        </div>
+      </div>
+      <aside class="call-card">
+        <p class="kicker">Call this number</p>
+        <a class="number" id="call-number" href="tel:+918065356716">080 6535 6716</a>
+        <p>Ask the hours, book a visit, switch to Hindi, then ask for the desk. A person answers the last step.</p>
+      </aside>
+    </section>
+
+    <section class="wrap facts" aria-label="What a call can do">
+      <div><strong>English and Hindi</strong><span>The caller can switch in one sentence.</span></div>
+      <div><strong>Fee from the clinic</strong><span>Dr Kaur’s visit is 200 rupees, said by the tool.</span></div>
+      <div><strong>A person at the end</strong><span>Ask for the desk and the phone rings through.</span></div>
+      <div><strong>The visit on screen</strong><span>Staff sign in and see the booking.</span></div>
+    </section>
+
+    <section class="wrap section" id="guide">
+      <h2>Try it in <em>one call.</em></h2>
+      <p class="sub">You do not need an account to hear Deskie. The sign-in is for the clinic desk.</p>
+      <div class="cards">
+        <article class="card"><div class="n">01</div><h3>Call the number</h3><p>Dial 080 6535 6716. The first voice says it is the clinic’s automated assistant, and that the call is recorded.</p></article>
+        <article class="card"><div class="n">02</div><h3>Ask the hours</h3><p>No name is required. Monday to Friday, 5 to 8 pm. Saturday, 10 am to 1 pm. Sunday is closed.</p></article>
+        <article class="card"><div class="n">03</div><h3>Book as a new patient</h3><p>Give your name and date of birth, ask for Dr Kaur, and agree to the 200 rupee fee, cash at the desk.</p></article>
+        <article class="card"><div class="n">04</div><h3>Hindi, then the desk</h3><p>Ask for the hours in Hindi. Then say you want someone from the desk. Sign in to see the visit.</p></article>
+      </div>
+    </section>
+
+    <section class="wrap section" id="demo">
+      <h2>A two-minute <em>call.</em></h2>
+      <p class="sub">The film is one patient, one booking, and the handoff to the desk. It is a produced cut of that path.</p>
+      <div class="video-frame">
+        <video controls preload="metadata" poster="">
+          <source src="/demo.mp4" type="video/mp4">
+        </video>
+      </div>
+    </section>
+
+    <section class="wrap section faq" id="questions">
+      <h2>Questions</h2>
+      <details open>
+        <summary>Who is Deskie for?</summary>
+        <p>A clinic with a few doctors and one receptionist. Deskie covers the calls that arrive while someone is already with a patient.</p>
+      </details>
+      <details>
+        <summary>Is the voice a person?</summary>
+        <p>No. The opening line says it is the clinic’s automated assistant. A person joins only when the caller asks for the desk.</p>
+      </details>
+      <details>
+        <summary>Where do the hours and the fee come from?</summary>
+        <p>From the clinic’s records, not from the model’s memory. Staff can add a clinic, a doctor, a patient history note, and a desk user after they sign in, under Records.</p>
+      </details>
+      <details>
+        <summary>What should I not try on this demo call?</summary>
+        <p>Do not read out a real patient’s details. The clinic on this number is a demo, with fictional files already loaded.</p>
+      </details>
+    </section>
+
+    <section class="wrap section" id="contact">
+      <div class="contact">
+        <div>
+          <p class="kicker">Contact</p>
+          <h2>Tell us the clinic. <em>We’ll reach out.</em></h2>
+          <p class="sub">Leave a name and a mobile. We call you back about putting Deskie on your desk number.</p>
+        </div>
+        <form id="enquiry">
+          <div class="row">
+            <label>Name <input name="name" required autocomplete="name"></label>
+            <label>Mobile <input name="phone" required inputmode="tel" autocomplete="tel" placeholder="98xxxxxxxx"></label>
+          </div>
+          <div class="row">
+            <label>Email <input name="email" type="email" autocomplete="email"></label>
+            <label>Clinic <input name="clinic" autocomplete="organization"></label>
+          </div>
+          <label>What should we know? <textarea name="note" maxlength="500"></textarea></label>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn" type="submit">Send</button>
+          <p class="form-note" id="form-note" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <span>Deskie</span>
+    <span>Deskie · call 080 6535 6716</span>
+  </footer>
+  <script src="/config.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+/* Shared iPhone frames for the Deskie film. 1170×2532, status time 6:10. */
+html, body { margin: 0; width: 1170px; height: 2532px; overflow: hidden; }
+body {
+  font-family: "Anek Latin", "Anek Devanagari", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.status {
+  height: 132px; display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0 78px 18px; box-sizing: border-box;
+}
+.time { font-size: 48px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.glyphs { display: flex; align-items: center; gap: 16px; }
+.screen { height: 2532px; display: flex; flex-direction: column; }
+.home {
+  margin-top: auto; display: flex; justify-content: center; padding-bottom: 28px;
+}
+.home i {
+  display: block; width: 402px; height: 15px; border-radius: 99px; background: currentColor;
+}
+button.circle {
+  width: 198px; height: 198px; border-radius: 99px; border: 0; display: flex;
+  align-items: center; justify-content: center;
+}
+.cap { margin-top: 18px; font-size: 36px; font-weight: 500; letter-spacing: 0.01em; }
+.name {
+  font-size: 84px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; text-align: center;
+  margin: 0; padding: 0 80px;
+}
+.sub { font-size: 42px; font-weight: 500; opacity: 0.72; text-align: center; margin-top: 18px; }

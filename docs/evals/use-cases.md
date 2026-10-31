@@ -200,7 +200,7 @@ Fictional clinic. Not a clinical study.
 - **User goal:** The patient's own doctor decides, or everyone else is kept out.
 - **Flow:** 11 part B. Schema `enforce_refill_rules`. PRD `POST /api/tickets/{id}/refill-decision`.
 - **Console:** Messages/refills and Doctor view. PIN, three checks, how the prescription was issued. The desk can mark seen and remind.
-- **Happy path:** Wrong doctor, receptionist, missing PIN, missing checks, and missing in-person visit all fail closed. A real approval is out of band: the doctor issues the prescription, Bolnai only SMSes that the doctor has responded, with no medicine name.
+- **Happy path:** Wrong doctor, receptionist, missing PIN, missing checks, and missing in-person visit all fail closed. A real approval is out of band: the doctor issues the prescription, Deskie only SMSes that the doctor has responded, with no medicine name.
 - **Failure modes:** Any of the S-CO refusals succeeding. Treating `patient_interactions` as the 180-day visit. Medicine name visible to reception.
 - **Gold voice:** `G-RF-012` for the SMS content. **Console evidence:** `S-CO-10`–`S-CO-13`.
 - **Metric:** Zero refill rule breaks.
@@ -232,7 +232,7 @@ Fictional clinic. Not a clinical study.
 - **User goal:** Something other than a patient request, or a language the agent does not support.
 - **Flow:** 05 out of scope, 00 and 08 for language. Supported languages are English, Hindi, and Hinglish (alignment decision 19).
 - **Console:** Call detail tagged sales, non-patient, or out of scope. Callbacks P3 for a job or vendor enquiry.
-- **Happy path:** Wrong number: this is Demo Family Clinic, one chance to say they need the clinic. Sales: decline. Tamil, Punjabi, or Bengali: one line in English and Hindi, then a callback, no booking. Another person's visit: no confirm, offer verification instead.
+- **Happy path:** Wrong number: this is Deskie, one chance to say they need the clinic. Sales: decline. Tamil, Punjabi, or Bengali: one line in English and Hindi, then a callback, no booking. Another person's visit: no confirm, offer verification instead.
 - **Failure modes:** Booking from a sales call. Continuing a Tamil clinical conversation as if verification had happened. Confirming Rohan's visit to an unverified caller.
 - **Gold:** `G-OS-001`–`G-OS-008`.
 - **Metric:** Quality, except `G-OS-007` (unverified details, blocker).

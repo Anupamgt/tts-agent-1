@@ -43,7 +43,8 @@ for f in functions:
     read = module_args.get(f["name"], set())
     check(f"{f['name']}: parameters are read by the backend", params <= read, sorted(params - read))
     check(f"{f['name']}: call_id required", "call_id" in f["parameters"]["required"])
-    check(f"{f['name']}: param map covers every parameter", set(f["value"]["param"]) == params)
+    extra = set(f["value"]["param"]) - params
+    check(f"{f['name']}: param map covers every parameter", params <= set(f["value"]["param"]) and extra <= {"from_number"}, sorted(extra - {"from_number"}))
 
 # 3. every tool the prompt names exists
 named = set(re.findall(r"\b([a-z]+(?:_[a-z]+)+)\b", prompt))
@@ -52,7 +53,10 @@ for f in functions:
     for key, prop in f["parameters"]["properties"].items():
         known_values.add(key)
         known_values.update(prop.get("enum", []))
-known_values.update({"clinic_name", "call_id", "patient_count", "booking_id", "window_id", "pool_name"})
+known_values.update({
+    "clinic_name", "call_id", "patient_count", "channel", "booking_id", "window_id", "pool_name",
+    "transfer_call", "from_number",
+})
 unknown = sorted(n for n in named if n not in tools and n not in known_values)
 check("prompt names only real tools, parameters and values", not unknown, unknown)
 

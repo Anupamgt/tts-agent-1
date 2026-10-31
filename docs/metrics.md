@@ -1,6 +1,6 @@
 # Success metrics (summary)
 
-The full model, with the metric tree drawing, the clinic value model, targets by stage and sources, is the doc "Bolnai success metrics model": https://claude.ai/artifact/FSXF4LNjKg5znEgeg6adgx (22 Oct 2026). All targets are proposals until the pilot measures the baseline.
+The full model, with the metric tree drawing, the clinic value model, targets by stage and sources, is the doc "Deskie success metrics model": https://claude.ai/artifact/FSXF4LNjKg5znEgeg6adgx (22 Oct 2026). All targets are proposals until the pilot measures the baseline.
 
 ## North star
 
@@ -22,7 +22,7 @@ Emergency routing 100%; zero medical advice; zero refill rule breaks; zero detai
 
 | Need | Where it lands |
 |---|---|
-| Why the call reached Bolnai (busy, no answer, after hours, all calls, web) on every call | `calls` table; telephony forward reason |
+| Why the call reached Deskie (busy, no answer, after hours, all calls, web) on every call | `calls` table; telephony forward reason |
 | Call reviews table for the weekly 50-call audit | Database |
 | "Agent error" reason on booking changes | `booking_changes` |
 | Clinic trial and go-live dates; usage per 4-minute block, emergencies excluded | Database, billing |

@@ -8,7 +8,7 @@ from app.canonical import canonical_json, json_safe, redact_args, sha256_text
 from app.db import db, one
 from app.metrics import metrics
 from app.tools import TOOLS
-from app.tools_common import load_call, parse_call_id, phase_ok, result
+from app.tools_common import indian_mobile, load_call, parse_call_id, phase_ok, result
 from app.traces import write_trace
 
 log = logging.getLogger("clinic")
@@ -35,14 +35,45 @@ def normalize_args(raw: dict) -> dict:
     return cleaned
 
 
+async def _open_call(conn, execution_id: str | None, phone):
+    """Bind a tool to the live call when the model did not pass call_id.
+
+    The execution id is the one Bolna sends. The phone is only the number Bolna
+    already substituted from the line, and only when a single recent call matches.
+    """
+    if execution_id:
+        row = await one(conn, "SELECT * FROM calls WHERE bolna_execution_id = %s", (execution_id,))
+        if row:
+            return row
+    mobile = indian_mobile(phone)
+    if not mobile:
+        return None
+    return await one(
+        conn,
+        """SELECT * FROM calls
+            WHERE from_number = %s
+              AND phase IN ('ai_active', 'handoff_queued')
+              AND started_at > now() - interval '2 hours'
+            ORDER BY id DESC
+            LIMIT 1""",
+        (mobile,),
+    )
+
+
 async def run_tool(name: str, args: dict, *, execution_id: str | None = None) -> tuple[int, dict]:
     started = time.perf_counter()
     if name not in TOOLS:
         return 404, {"ok": False, "error_code": "unknown_tool", "say": "I cannot do that.", "next": "stop"}
     call_id = parse_call_id(args.get("call_id"))
-    args_hash = sha256_text(canonical_json(args))
     async with db.connection() as conn:
         call = await load_call(conn, call_id) if call_id else None
+        if call is None:
+            call = await _open_call(conn, execution_id, args.get("from_number"))
+            if call:
+                call_id = int(call["id"])
+                args = dict(args)
+                args["call_id"] = str(call_id)
+        args_hash = sha256_text(canonical_json(args))
         if call_id and call:
             prior = await one(
                 conn,
@@ -66,6 +97,7 @@ async def run_tool(name: str, args: dict, *, execution_id: str | None = None) ->
             await _finish(call, name, args, args_hash, body, started, severity="warning")
             return 200, body
     forwarded = dict(args)
+    forwarded.pop("from_number", None)
     supplied = forwarded.get("patient_id")
     if supplied is not None:
         try:
@@ -102,6 +134,13 @@ async def run_tool(name: str, args: dict, *, execution_id: str | None = None) ->
         body = result(False, "I could not complete that. I can ask the desk to call you back.", error_code="db_error")
     body = json_safe(body)
     await _finish(call, name, args, args_hash, body, started)
+    if body.get("ok"):
+        try:
+            from app.sms import flush_sms
+
+            await flush_sms()
+        except Exception:
+            log.exception("sms flush")
     return 200, body
 
 

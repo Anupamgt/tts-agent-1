@@ -18,7 +18,7 @@ If the caller objects to the recording, the agent says it cannot turn recording 
 
 ## 3. Full notice (web page at the link)
 
-**Who is responsible.** [Clinic name, address] decides how your details are used (the "data fiduciary"). Bolnai runs the phone assistant and console for the clinic and uses your details only on the clinic's instructions, under a written contract (a "data processor"). Bolnai does not use your calls for any purpose of its own, including training AI models.
+**Who is responsible.** [Clinic name, address] decides how your details are used (the "data fiduciary"). Deskie runs the phone assistant and console for the clinic and uses your details only on the clinic's instructions, under a written contract (a "data processor"). Deskie does not use your calls for any purpose of its own, including training AI models.
 
 **What we collect.**
 - Your phone number, name, age or date of birth, and patient ID.

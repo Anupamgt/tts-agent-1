@@ -58,7 +58,7 @@ Backend jobs (not called by the agent): delay check and window shifting, pool re
 | Relatives | Limited mode (02) |
 | Delay messages | At most 2; after that the agent asks the patient: keep the place, move to the next free slot, or cancel (09) |
 | "Next patient" | Hybrid: schedule-based by default, corrected by the doctor's or assistant's "Call next" taps (09) |
-| Prescription refills | Only the patient's own doctor decides, after an in-person visit with them in the last 6 months; never Schedule X / NDPS drugs; the agent only takes the request and Bolnai never issues prescriptions (11) |
+| Prescription refills | Only the patient's own doctor decides, after an in-person visit with them in the last 6 months; never Schedule X / NDPS drugs; the agent only takes the request and Deskie never issues prescriptions (11) |
 
 ## Settings (editable per clinic or doctor)
 

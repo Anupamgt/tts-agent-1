@@ -2,7 +2,7 @@
 
 Hand-authored cases for the Bolna buildathon submission (31 Oct 2026). This is the only conversational set that counts as release evidence. How to read a case, and how a case maps to a release limit, is `README.md`. How to run one is `harness.md`.
 
-Demo Family Clinic, every patient, and every phone number here are fictional. This is not a clinical study. Expected agent lines are operational: 112 or 108, verify first, a fee amount, ready to collect, no report. No case expects a diagnosis.
+Deskie, every patient, and every phone number here are fictional. This is not a clinical study. Expected agent lines are operational: 112 or 108, verify first, a fee amount, ready to collect, no report. No case expects a diagnosis.
 
 `lookup_caller` may run at the start of any inbound call and is listed only when the count is the test. Tool names are PRD §7, plus `request_refund` from the flows. The route computes the clinic's policy amount and ignores a model amount or a refund destination. `request_human` stands in for `transfer_call`.
 
@@ -2557,7 +2557,7 @@ Flow `05` and flow `08`. English, Hindi, and Hinglish are the supported language
 - **utterance:** Is this the railway enquiry?
 - **setup:** unverified.
 - **tools:** no booking tool
-- **must_say:** Demo Family Clinic, and one question whether they need the clinic
+- **must_say:** Deskie, and one question whether they need the clinic
 - **must_not_say:** a booking, a report
 - **disposition:** out_of_scope
 - **pass:** Wrong number path (flow 05). If they say no, the call ends. No patient data.

@@ -26,6 +26,20 @@ def parse_call_id(value):
         return None
 
 
+def indian_mobile(value) -> str | None:
+    """Normalize a spoken or dialed Indian mobile to +91 and 10 digits. Anything else is refused."""
+    if value is None:
+        return None
+    digits = re.sub(r"\D", "", str(value))
+    if len(digits) == 12 and digits.startswith("91"):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
+    if len(digits) == 10 and digits[0] in "6789":
+        return "+91" + digits
+    return None
+
+
 def as_bool(value, default=None):
     if isinstance(value, bool):
         return value
@@ -70,13 +84,23 @@ def name_matches(spoken: str, stored: str) -> bool:
     return levenshtein(left, right) <= 2
 
 
+_DOCTOR_SKIP = {"dr", "doctor", "prof", "professor", "demo"}
+
+
+def _doctor_tokens(text: str) -> list[str]:
+    return [word for word in norm_name(text).split() if word not in _DOCTOR_SKIP]
+
+
 def doctor_matches(spoken: str, stored: str) -> bool:
-    left, right = norm_name(spoken), norm_name(stored)
+    left, right = _doctor_tokens(spoken), _doctor_tokens(stored)
     if not left or not right:
         return False
-    if left == right or (len(left) >= 4 and left in right):
+    if left == right:
         return True
-    return levenshtein(left, right) <= 2
+    stored_name = " ".join(right)
+    if all(len(token) >= 4 and token in stored_name for token in left):
+        return True
+    return levenshtein(" ".join(left), stored_name) <= 2
 
 
 def parse_dob(value):

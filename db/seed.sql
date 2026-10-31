@@ -5,7 +5,7 @@
 --   Patients: two sharing a family phone; a card holder and a dependant sharing an institute ID.
 
 INSERT INTO clinics (name, phone, address)
-VALUES ('Demo Family Clinic', '+911100000000', '12 Example Road, Chandigarh');
+VALUES ('Deskie', '+911100000000', '12 Example Road, Chandigarh');
 
 INSERT INTO clinic_settings (clinic_id, staff_on_desk, staff_transfer_number)
 VALUES (1, true, '+919800000000');

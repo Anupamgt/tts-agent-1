@@ -142,10 +142,67 @@ async def note_call_next(conn, session_id: int):
     )
 
 
+async def ensure_upcoming_sessions(conn) -> int:
+    """Open the next week of windows from the weekly templates. Past sessions stay as they are."""
+    now = datetime.now(IST)
+    templates = await many(
+        conn,
+        """SELECT d.id AS doctor_id, d.priority_fee_inr, t.weekday, t.start_time, t.end_time
+             FROM doctors d
+             JOIN schedule_templates t ON t.doctor_id = d.id
+            WHERE d.active AND d.clinic_id = 1""",
+    )
+    opened = 0
+    for offset in range(8):
+        day = (now + timedelta(days=offset)).date()
+        schema_dow = (day.weekday() + 1) % 7
+        for template in templates:
+            if int(template["weekday"]) != schema_dow:
+                continue
+            start = datetime.combine(day, template["start_time"], tzinfo=IST)
+            end = datetime.combine(day, template["end_time"], tzinfo=IST)
+            if end <= now + timedelta(minutes=30):
+                continue
+            session = await one(
+                conn,
+                """INSERT INTO doctor_sessions (doctor_id, session_date, planned_start, planned_end)
+                   VALUES (%s, %s, %s, %s)
+                   ON CONFLICT (doctor_id, planned_start) DO UPDATE SET doctor_id = EXCLUDED.doctor_id
+                   RETURNING id""",
+                (template["doctor_id"], day, start, end),
+            )
+            places = 1 if template["priority_fee_inr"] else 0
+            cursor = start
+            while cursor + timedelta(minutes=30) <= end:
+                slot_end = cursor + timedelta(minutes=30)
+                if cursor > now + timedelta(minutes=30):
+                    cur = await conn.execute(
+                        """INSERT INTO windows (session_id, starts_at, ends_at, capacity, priority_places)
+                           SELECT %s, %s, %s, 4, %s
+                            WHERE NOT EXISTS (
+                              SELECT 1 FROM windows WHERE session_id = %s AND starts_at = %s
+                            )""",
+                        (session["id"], cursor, slot_end, places, session["id"], cursor),
+                    )
+                    opened += cur.rowcount or 0
+                cursor = slot_end
+    return opened
+
+
 async def run_jobs() -> dict:
     async with db.connection() as conn:
         async with conn.transaction():
             holds = await expire_holds(conn)
             absent = await sweep_cancelled_sessions(conn)
             delays = await queue_delay_choices(conn)
-    return {"holds_expired": holds, "absent_outreach": absent, "delay_choices": delays}
+            opened = await ensure_upcoming_sessions(conn)
+    from app.sms import flush_sms
+
+    sent = await flush_sms()
+    return {
+        "holds_expired": holds,
+        "absent_outreach": absent,
+        "delay_choices": delays,
+        "windows_opened": opened,
+        "sms_sent": sent,
+    }

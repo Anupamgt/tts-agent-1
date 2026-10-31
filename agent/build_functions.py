@@ -176,6 +176,8 @@ def build():
                 "param": {key: f"%({key})s" for key in properties},
             },
         }
+        # Bolna fills this from the line. It is not a parameter the model collects.
+        fn["value"]["param"]["from_number"] = "{from_number}"
         if pre_call:
             fn["pre_call_message"] = pre_call
         if name == "request_human":

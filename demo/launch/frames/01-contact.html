@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="phone.css">
+  <style>
+    body { background: #f2f2f7; color: #13232b; }
+    .status { color: #13232b; }
+    h1 { font-size: 96px; font-weight: 700; margin: 36px 64px 12px; letter-spacing: -0.03em; }
+    .list { margin: 24px 36px; background: #fff; border-radius: 36px; overflow: hidden; }
+    .row {
+      display: flex; align-items: center; gap: 36px;
+      padding: 42px 42px; background: #d8eaf0;
+    }
+    .avatar {
+      width: 132px; height: 132px; border-radius: 66px; background: #0a5c70; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 600; flex: none;
+    }
+    .who { display: flex; flex-direction: column; gap: 6px; }
+    .who strong { font-size: 48px; font-weight: 600; letter-spacing: -0.02em; }
+    .who span { font-size: 36px; color: #4a5c66; font-weight: 500; }
+    .info { margin-left: auto; width: 66px; height: 66px; border-radius: 33px; border: 3px solid #0a5c70; color: #0a5c70;
+      display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; font-style: italic; }
+    .hint { margin: 28px 72px; font-size: 36px; color: #4a5c66; }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <div class="status">
+      <div class="time">6:10</div>
+      <div class="glyphs">
+        <svg width="48" height="32" viewBox="0 0 48 32" fill="currentColor" aria-hidden="true"><rect x="0" y="20" width="8" height="12" rx="1"/><rect x="13" y="14" width="8" height="18" rx="1"/><rect x="26" y="7" width="8" height="25" rx="1"/><rect x="39" y="0" width="8" height="32" rx="1"/></svg>
+        <svg width="46" height="34" viewBox="0 0 46 34" fill="none" stroke="currentColor" stroke-width="4" aria-hidden="true"><path d="M8 16c8-8 22-8 30 0"/><path d="M14 22c5-5 13-5 18 0"/><circle cx="23" cy="28" r="2.5" fill="currentColor" stroke="none"/></svg>
+        <svg width="72" height="34" viewBox="0 0 72 34" aria-hidden="true"><rect x="1" y="1" width="60" height="32" rx="6" fill="none" stroke="currentColor" stroke-width="3"/><rect x="5" y="5" width="52" height="24" rx="3" fill="currentColor"/><rect x="64" y="11" width="6" height="12" rx="2" fill="currentColor"/></svg>
+      </div>
+    </div>
+    <h1>Recents</h1>
+    <p class="hint">Today</p>
+    <div class="list">
+      <div class="row">
+        <div class="avatar">DF</div>
+        <div class="who">
+          <strong>Deskie</strong>
+          <span>Clinic</span>
+        </div>
+        <div class="info">i</div>
+      </div>
+    </div>
+    <div class="home"><i></i></div>
+  </div>
+</body>
+</html>

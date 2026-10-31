@@ -1,6 +1,6 @@
 # Evaluation suite
 
-Status: submission set for the Bolna buildathon (submit by 31 Oct 2026). The clinic, patients, phones, and reports in this suite are fictional. Demo Family Clinic is not a real clinic, and these cases are not a clinical study. They do not measure diagnostic accuracy. The agent is required to refuse diagnosis.
+Status: submission set for the Bolna buildathon (submit by 31 Oct 2026). The clinic, patients, phones, and reports in this suite are fictional. Deskie is not a real clinic, and these cases are not a clinical study. They do not measure diagnostic accuracy. The agent is required to refuse diagnosis.
 
 Product rules stay in `docs/flows/` and `docs/alignment.md`. The prototype runtime is `docs/prd/TECHNICAL_PRD.md`. Safety limits that block a release are the paragraph "Safety limits" in `docs/metrics.md`. Abuse cases follow `docs/security/threat-model.md`, especially S-01, S-04, S-05, S-08, S-09, and S-20.
 

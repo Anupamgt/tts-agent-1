@@ -13,8 +13,8 @@ MOBILE = re.compile(r"^\+91[6-9][0-9]{9}$")
 
 
 def _guard(request: Request):
-    if not is_loopback(request):
-        raise HTTPException(status_code=404, detail="not found")
+    if is_loopback(request):
+        return
     if desk_token_from(request) is None:
         raise HTTPException(status_code=401, detail="desk login required")
 

@@ -219,19 +219,27 @@ async def register_patient(db, args):
     name = (args.get("full_name") or "").strip()
     dob = parse_dob(args.get("date_of_birth"))
     age = args.get("age_years")
+    message_id = None
     async with db.connection() as conn:
         async with conn.transaction():
             call = await load_call(conn, call_id) if call_id else None
             if not phase_ok(call):
                 return result(False, "This call is not active.", error_code="bad_phase", next_="stop")
             settings = await settings_for(conn, call["clinic_id"])
+            on_line = await one(
+                conn,
+                "SELECT count(DISTINCT patient_id)::int AS n FROM patient_phones WHERE phone = %s",
+                (call["from_number"],),
+            )
             prior = await one(
                 conn,
                 """SELECT count(*)::int AS n FROM verification_attempts
                     WHERE call_id = %s AND result <> 'matched'""",
                 (call["id"],),
             )
-            if int(prior["n"]) < int(settings["verification_attempts"]):
+            # A number with no file is a new caller (booking flow). A number that already
+            # has a file must fail verification first, so a new file cannot skip that file.
+            if int(on_line["n"]) > 0 and int(prior["n"]) < int(settings["verification_attempts"]):
                 return result(
                     False,
                     "I still need to try the name and the id on the card before I create a file.",
@@ -275,15 +283,22 @@ async def register_patient(db, args):
                     template["body"],
                     [clinic["name"], row["patient_code"], clinic["name"]],
                 )
-                await conn.execute(
+                saved = await one(
+                    conn,
                     """INSERT INTO messages
                          (clinic_id, channel, patient_id, template_key, language, to_number, rendered_body, status)
-                       VALUES (%s, 'sms', %s, 'patient_id', 'en', %s, %s, 'queued')""",
+                       VALUES (%s, 'sms', %s, 'patient_id', 'en', %s, %s, 'queued')
+                       RETURNING id""",
                     (call["clinic_id"], row["id"], call["from_number"], rendered),
                 )
+                message_id = int(saved["id"])
             await audit(conn, call, "patient.register", "patient", row["id"], {"provisional": True})
-            return result(
-                True,
-                "I have created the file and I will send the patient id by SMS.",
-                data={"registered": True},
-            )
+    from app.sms import dispatch_one
+
+    sent = message_id is not None and await dispatch_one(message_id) == "sent"
+    say = (
+        "I have created the file and sent the patient id by SMS."
+        if sent
+        else "I have created the file and I will send the patient id by SMS."
+    )
+    return result(True, say, data={"registered": True})

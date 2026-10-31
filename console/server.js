@@ -93,5 +93,5 @@ server.on('error', (err) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log('Bolnai console at http://localhost:' + PORT);
+  console.log('Deskie console at http://localhost:' + PORT);
 });

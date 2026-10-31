@@ -112,6 +112,6 @@ Saved-call maths from `docs/metrics.md` is not computed on this suite. Emergenci
    - One `G-EM` trace showing `flag_emergency` and no booking tool.
    - `G-RF-001` refill ticket stored, and the queued `refill_received` body without the medicine word.
 4. The judge sheet totals for Phase C, or an explicit "voice not run".
-5. This sentence, in the submission text: Demo Family Clinic and every patient in the suite are fictional. This is a product test of a help-desk agent. It is not a clinical study.
+5. This sentence, in the submission text: Deskie and every patient in the suite are fictional. This is a product test of a help-desk agent. It is not a clinical study.
 
 Do not publish paraphrase-set accuracy as a model score. Those rows are not gold until the acceptance rule in `synthetic-sets.md` is followed.

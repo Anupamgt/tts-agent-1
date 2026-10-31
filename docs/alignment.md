@@ -1,8 +1,8 @@
 # Alignment checklist
 
-Purpose: make sure everyone means the same thing before building. A single sign-off table of every open proposal (37 rows, with an Agree / Change / Defer pick per row) is in the review doc "Bolnai: audit fixes, sign-offs and GTM readiness" (https://claude.ai/artifact/CSNg5JdQzoGJrws7Kru3i6, 22 Oct 2026); this file stays the source the flows point to.
+Purpose: make sure everyone means the same thing before building. A single sign-off table of every open proposal (37 rows, with an Agree / Change / Defer pick per row) is in the review doc "Deskie: audit fixes, sign-offs and GTM readiness" (https://claude.ai/artifact/CSNg5JdQzoGJrws7Kru3i6, 22 Oct 2026); this file stays the source the flows point to.
 
-**29 Oct 2026:** every Open and Proposed row below was decided on your instruction ("complete the scope with respect to the compliance of Indian regulators and what makes the most sense according to the build"). The reasons, the rules behind them and the sign-offs still needed are in `docs/decision-log.md` (D-01 to D-36) and the doc "Bolnai scope decisions and audit trail" (https://claude.ai/artifact/QuWJEoAzZ5Xv3dvh1NiQAM). Each row points to the exact place in the flows where the decision lives, so you can read the diagram, say "yes" or "change it", and move on. Node IDs (like `B10`) are the box names inside the Mermaid diagrams.
+**29 Oct 2026:** every Open and Proposed row below was decided on your instruction ("complete the scope with respect to the compliance of Indian regulators and what makes the most sense according to the build"). The reasons, the rules behind them and the sign-offs still needed are in `docs/decision-log.md` (D-01 to D-36) and the doc "Deskie scope decisions and audit trail" (https://claude.ai/artifact/QuWJEoAzZ5Xv3dvh1NiQAM). Each row points to the exact place in the flows where the decision lives, so you can read the diagram, say "yes" or "change it", and move on. Node IDs (like `B10`) are the box names inside the Mermaid diagrams.
 
 ## How to review in about 30 minutes
 
@@ -28,7 +28,7 @@ Status: **Decided** (you confirmed it), **Decided (D-xx)** (decided on 29 Oct 20
 | 7 | Relatives calling for a patient | **Decided** | Limited mode: book, change, cancel, leave a message | `02` V13, V14 | None |
 | 8 | Staff-on-desk switch and transfer | **Decided (D-26)** | Console switch decides transfer vs callback | `06` H2 | None |
 | 9 | Callback priorities and targets | **Decided (D-26)** | P1 15 min (emergency, self-harm); P2 2 h or before the session ends (same-day requests); P3 next session | `06` table | None |
-| 10 | Prescription refills | **Decided** (doctor only; Oct 2026) | The agent only takes the request (medicine as read from the strip, doctor, days left) and asks nothing clinical. Only the patient's own doctor decides, after an in-person visit with them in the last 6 months, never for Schedule X / NDPS drugs. The doctor issues the prescription; Bolnai only sends "the doctor has responded" to the registered number. Enforced in the schema | `11` parts A and B; `security/threat-model.md` S-20 | 10a decided (D-04); records kept 3 years (D-05). 10b: doctors at the partner clinic sign off on the flow |
+| 10 | Prescription refills | **Decided** (doctor only; Oct 2026) | The agent only takes the request (medicine as read from the strip, doctor, days left) and asks nothing clinical. Only the patient's own doctor decides, after an in-person visit with them in the last 6 months, never for Schedule X / NDPS drugs. The doctor issues the prescription; Deskie only sends "the doctor has responded" to the registered number. Enforced in the schema | `11` parts A and B; `security/threat-model.md` S-20 | 10a decided (D-04); records kept 3 years (D-05). 10b: doctors at the partner clinic sign off on the flow |
 | 11 | Reports and lab results | **Decided (D-03)** | Status only after full verification; values never read aloud; never to a relative | `05` P0-P7 | None |
 | 12 | Delay messages | **Decided** | At most 2 SMS. After that the agent calls and asks what the patient wants: keep the place, move to the next free slot (later today or next session), or cancel with a refund if they paid. Arrived patients are never moved | `09` D8-D17; `04` T4-T8 | Fallback decided (D-27). In the pilot, staff place the "ask" call (D-15) |
 | 13 | "Next patient" signal | **Decided** | Hybrid: planned schedule by default; the doctor (phone or tablet in the cabin) or an assistant outside the cabin taps "Call next" to correct it | `09` N1-N7 | 13a decided: shared windows of 4; a specialist can be set to 1 per window (D-23) |
@@ -91,7 +91,7 @@ Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-u
 
 ### Safety and legal (not legal advice; the clinic should have a lawyer review)
 - No agent catches every emergency. The 112/108 line, the over-triggering design, and a large test set reduce the risk; they do not remove it. The clinic must sign off on the script.
-- Patient data is personal data under India's DPDP Act (notice, purpose limits, security, breach reporting to the Board within 72 hours; most duties from 13 May 2027). Until then the SPDI Rules treat health information as sensitive. Retention periods are now set (D-09), the clinic is the data fiduciary and Bolnai its processor (D-06), and CERT-In's 6-hour incident reporting applies to Bolnai today (D-13).
+- Patient data is personal data under India's DPDP Act (notice, purpose limits, security, breach reporting to the Board within 72 hours; most duties from 13 May 2027). Until then the SPDI Rules treat health information as sensitive. Retention periods are now set (D-09), the clinic is the data fiduciary and Deskie its processor (D-06), and CERT-In's 6-hour incident reporting applies to Deskie today (D-13).
 - Outbound calls and SMS: under TRAI's 2025 amendment, service calls and messages are commercial communication on registered headers and number series, and robo calls need advance notice to the operator. The pilot therefore sends reminders by SMS and makes no automated outbound calls until the number is registered (D-15). The demo calls only team numbers.
 - Recording: disclose it on every call and decide how long recordings are kept.
 - Medical-device rules are not triggered because the agent gives no clinical advice. That stops being true if scope drifts toward symptom triage. Dropping the doctor's "urgent criteria" list in favour of paid priority moves the design further from triage.
@@ -153,7 +153,7 @@ Either way, a caller who names Dr Kaur always stays with Dr Kaur, and a follow-u
 - Patients who have arrived are never moved.
 - Follow-ups: the agent asks "same doctor as last time, or any doctor?"
 - A patient ID is never read aloud after date-of-birth verification; it is sent by SMS to the registered number.
-- Pharmacy field dropped from refills; Bolnai never sends prescriptions to pharmacies in v1 (that would need the patient's explicit consent).
+- Pharmacy field dropped from refills; Deskie never sends prescriptions to pharmacies in v1 (that would need the patient's explicit consent).
 - Refill outcomes go out as SMS only, with no medicine name, and the received SMS says it is not a prescription.
 - Same-day routine bookings stop 30 minutes before the window.
 - Expired holds are released automatically after 90 seconds.

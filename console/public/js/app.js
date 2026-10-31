@@ -870,10 +870,10 @@
   }
 
   function bookingsScreen() {
-    var sync = state.syncOk
+    var sync = state.live ? '' : (state.syncOk
       ? '<div class="banner banner-sync"><p>Calendar mirror is up to date.</p></div>'
-      : '<div class="banner banner-sync"><p><strong>4 bookings not synced, retrying.</strong> The Google Calendar mirror is behind the console.</p><button type="button" class="bn-btn bn-btn-primary" data-act="retry-sync">' + e('Retry') + '</button></div>';
-    var limit = state.dismissed.limit ? '' : '<div class="banner banner-quiet"><p>+91 97999 88821 is at the daily booking limit (3). The agent did not add another booking. <button type="button" class="bn-btn bn-btn-quiet" data-act="open-call" data-id="call-unknown">' + e('Open call') + '</button></p><button type="button" class="bn-btn" data-act="dismiss" data-id="limit">' + e('Close') + '</button></div>';
+      : '<div class="banner banner-sync"><p><strong>4 bookings not synced, retrying.</strong> The Google Calendar mirror is behind the console.</p><button type="button" class="bn-btn bn-btn-primary" data-act="retry-sync">' + e('Retry') + '</button></div>');
+    var limit = state.live || state.dismissed.limit ? '' : '<div class="banner banner-quiet"><p>+91 97999 88821 is at the daily booking limit (3). The agent did not add another booking. <button type="button" class="bn-btn bn-btn-quiet" data-act="open-call" data-id="call-unknown">' + e('Open call') + '</button></p><button type="button" class="bn-btn" data-act="dismiss" data-id="limit">' + e('Close') + '</button></div>';
     var docs = state.doctors.filter(function (d) {
       if (state.calDoctor !== 'all' && d.id !== state.calDoctor) return false;
       if (state.calPool === 'general' && d.tier !== 'general') return false;
@@ -1034,7 +1034,10 @@
         return '<tr data-act="pick-call" data-id="' + c.id + '" class="' + (c.id === state.callId ? 'is-selected' : '') + '"><td class="bn-num">' + esc(c.time) + '</td><td>' + (c.direction === 'out' ? 'Out' : 'In') + (c.outbound ? '<div class="caption">Via outbound job</div>' : '') + '</td><td>' + esc(c.caller) + '<div class="caption bn-num">' + esc(maskPhone(c.number)) + '</div>' + tags + '</td><td>' + esc(c.language) + '</td><td>' + esc(c.intent) + '</td><td>' + esc(c.outcome) + '</td><td class="bn-num">' + esc(c.duration) + '</td></tr>';
       }).join('') + '</tbody></table></div>' : '<div class="empty"><p class="heading">No calls match those filters</p></div>';
     var selected = callBy(state.callId);
-    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Calls') + '</h1><p class="caption bn-muted bn-num">31 handled by the agent · 4 transferred · 3 callbacks created · 1 emergency flagged. Latest calls are listed below.</p></div></div>' +
+    var callsCaption = state.live
+      ? (state.calls.length + ' calls from the clinic line. Open one to read the transcript and play the recording.')
+      : '31 handled by the agent · 4 transferred · 3 callbacks created · 1 emergency flagged. Latest calls are listed below.';
+    return '<div class="page-head"><div><h1 class="heading-lg">' + e('Calls') + '</h1><p class="caption bn-muted bn-num">' + esc(callsCaption) + '</p></div></div>' +
       filters + '<div class="split"><div>' + table + '</div>' + (selected ? callDetail(selected) : '') + '</div>';
   }
   function callDetail(c) {
@@ -1045,7 +1048,9 @@
       var who = line.who === 'agent' ? 'Agent' : 'Caller said';
       return '<div class="' + cls + '"><div class="caption bn-muted">' + who + '</div><p>' + esc(line.text) + '</p></div>';
     }).join('');
-    var rec = c.recording ? '<div class="rec' + (state.playing ? ' is-playing' : '') + '"><button type="button" class="bn-btn" data-act="play">' + (state.playing ? 'Pause' : 'Play') + '</button><div class="rec-bar" aria-hidden="true"><span></span></div><span class="caption bn-num">' + esc(c.duration) + '</span></div><p class="caption bn-muted">Recording plays inside the console. There is no link to copy.</p>' : '<p class="caption bn-muted">No recording for this call.</p>';
+    var rec = c.recordingPath
+      ? '<audio controls preload="none" src="' + esc(c.recordingPath) + '"></audio><p class="caption bn-muted">Recording plays inside the console.</p>'
+      : (c.recording ? '<div class="rec' + (state.playing ? ' is-playing' : '') + '"><button type="button" class="bn-btn" data-act="play">' + (state.playing ? 'Pause' : 'Play') + '</button><div class="rec-bar" aria-hidden="true"><span></span></div><span class="caption bn-num">' + esc(c.duration) + '</span></div><p class="caption bn-muted">Recording plays inside the console. There is no link to copy.</p>' : '<p class="caption bn-muted">No recording for this call.</p>');
     return '<section class="panel"><header class="panel-hd"><div><h2 class="heading">' + esc(c.caller) + '</h2><p class="caption bn-num">' + esc(c.number) + '</p></div></header><div class="panel-bd">' +
       '<p class="caption">' + esc(c.verified) + (c.relative ? ' · ' + esc(c.relative) : '') + ' · ' + esc(c.language) + ' · ' + esc(c.duration) + ' · ' + esc(c.cost) + '</p>' +
       '<div><div class="label">AI summary</div><p>' + esc(c.summary) + '</p></div>' +
@@ -2655,6 +2660,7 @@
     return !first;
   }
   function runDemoBeats() {
+    if (state.live) return false;
     if (state.live || !deskOpen() || !state.deskOpenedAt) return false;
     var s = Math.floor((Date.now() - state.deskOpenedAt) / 1000);
     var changed = false;
@@ -2795,6 +2801,7 @@
     state.dateKey = snap.dateKey || state.dateKey;
     state.timeLabel = snap.timeLabel || state.timeLabel;
     state.staffOnDesk = !!snap.staffOnDesk;
+    if (snap.week && snap.week.length) state.week = snap.week;
     state.live = true;
     state.syncOk = true;
     if (!state._liveUser && snap.users && snap.users.length) {
@@ -2803,15 +2810,26 @@
     }
     if (!state.drawer && !state.modal) render();
   }
-  if (/[?&]live=1(?:&|$)/.test(location.search)) {
+  if (!/[?&]sample=1(?:&|$)/.test(location.search)) {
     function pull() {
-      fetch('/api/console/bootstrap', { credentials: 'same-origin' }).then(function (r) {
+      var login = state._desk ? Promise.resolve() : fetch('/api/desk/login', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: '2468' })
+      }).then(function () { state._desk = true; });
+      login.then(function () {
+        return fetch('/api/console/bootstrap', { credentials: 'same-origin' });
+      }).then(function (r) {
         if (r.status === 401) {
+          state._desk = false;
           return fetch('/api/desk/login', {
             method: 'POST', credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pin: '2468' })
-          }).then(function () { return fetch('/api/console/bootstrap', { credentials: 'same-origin' }); });
+          }).then(function () {
+            state._desk = true;
+            return fetch('/api/console/bootstrap', { credentials: 'same-origin' });
+          });
         }
         return r;
       }).then(function (r) { return r.json(); }).then(applyLive).catch(function () { state.syncOk = false; });

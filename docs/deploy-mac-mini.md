@@ -2,7 +2,7 @@
 
 Run this on the Mac Mini. The Windows PC is not the host. Docker, Postgres, the API, and the console all run on the Mini.
 
-The clinic in this repo is fictional Demo Family Clinic. Do not put a real patient's file in it.
+The clinic on the phone is Deskie. Do not put a real patient's file in it.
 
 ## What you are starting
 

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@400;500;600;700&family=Anek+Devanagari:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; }
+    body {
+      background: #edf2f4; color: #13232b;
+      font-family: "Anek Latin", "Anek Devanagari", "Segoe UI", sans-serif;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .panel {
+      width: 860px; background: #fff; border: 1px solid #cbd5da; border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(19, 35, 43, 0.08), 0 1px 1px rgba(19, 35, 43, 0.04);
+      padding: 36px 40px 28px;
+    }
+    .brand { font-size: 13px; line-height: 18px; color: #4a5c66; font-weight: 500; }
+    h1 { margin: 4px 0 8px; font-size: 32px; line-height: 40px; font-weight: 600; }
+    .lead { margin: 0 0 22px; color: #4a5c66; font-size: 16px; }
+    dl { margin: 0; }
+    .row {
+      display: grid; grid-template-columns: 220px 1fr; gap: 16px;
+      padding: 16px 0; border-top: 1px solid #cbd5da; align-items: baseline;
+    }
+    dt { font-size: 13px; line-height: 18px; font-weight: 500; color: #4a5c66; letter-spacing: 0.01em; }
+    dd { margin: 0; font-size: 22px; line-height: 28px; font-weight: 600; }
+    dd.ok { color: #14603e; }
+  </style>
+</head>
+<body>
+  <section class="panel" aria-label="Call receipt">
+    <div class="brand">Deskie · Deskie</div>
+    <h1>Call receipt</h1>
+    <p class="lead">One call. The hours and the fee came from the clinic.</p>
+    <dl>
+      <div class="row"><dt>Intent</dt><dd>booking</dd></div>
+      <div class="row"><dt>Language</dt><dd>Hindi</dd></div>
+      <div class="row"><dt>Verified</dt><dd>new patient</dd></div>
+      <div class="row"><dt>Booking made</dt><dd class="ok">yes</dd></div>
+      <div class="row"><dt>Emergency</dt><dd>no</dd></div>
+    </dl>
+  </section>
+</body>
+</html>
