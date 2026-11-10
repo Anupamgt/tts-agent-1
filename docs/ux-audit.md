@@ -77,3 +77,25 @@ Main flows: emergency -> acknowledge -> callback · arrival -> send in -> consul
 3. #9 and #17/#18: may I touch hosting config and vendor/self-host files, or are those off limits?
 4. Do you want the public site fixed too, or the console only?
 5. OK to treat #1-#9 as the first batch of small commits?
+
+## Status after Phase 3 (first batch)
+
+Checked in a browser at 1366px, 375px and 360px with the console in sample mode, and the site at 375px. Contrast was recomputed earlier; no colour, font, radius, spacing or icon was changed and no token was added. An independent review found four defects in the first pass; all four are fixed.
+
+| # | Status | What changed |
+|---|---|---|
+| 1 | Fixed | Mark paid and Collect cash confirm first, call the API in live mode, report success or failure. Limitation: the API stores no payment method, so a cash collection on a UPI-link payment is recorded only as paid. |
+| 3 | Fixed | After two failed polls the pill and a banner say the connection is lost, with the last good time and Retry. |
+| 4 | Fixed | The poll waits while a field or dialog is in use and keeps focus on buttons. |
+| 5 | Fixed | Dialogs take focus, trap Tab (emergency banner stays reachable), are labelled, and return focus. |
+| 6, 20 | Fixed | Patient and caller names are real buttons; callback rows are plain containers. |
+| 7, 22 | Fixed | 48px controls and 44px rows at 560px and below, 12px nav labels. |
+| 8 | Fixed | Four tabs plus a More sheet on phones. |
+| 10 | Fixed | Clearing a lockout asks first and records who did it. |
+| 11 | Fixed | Names wrap instead of truncating. |
+| 12, 25 | Fixed | Live-dot, slide-in and smooth scroll respect reduced motion. |
+| 13 | Fixed | Enquiry button is disabled while sending. |
+| 14 | Fixed | Demo-call status and transcript are announced. |
+| 16 | Fixed | Site section links wrap to a second row on phones. |
+
+Not done, waiting on a decision: **#2** hard-coded desk PIN, **#9** temporary tunnel host, **#17** self-hosting fonts, **#18** script integrity, **#15** captions file, **#21** copy, **#19, #23, #24** (Low). Known gap: the assistant role can still collect and mark fees paid, as before.
