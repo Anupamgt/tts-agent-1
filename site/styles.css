@@ -11,7 +11,9 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -64,6 +66,11 @@ img, video { max-width: 100%; }
   border: 1px solid var(--line);
 }
 .btn:hover { filter: brightness(1.05); }
+a:focus-visible, .btn:focus-visible, summary:focus-visible, input:focus-visible, textarea:focus-visible, video:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 3px;
+}
+.nav-links a { display: inline-flex; align-items: center; min-height: 44px; }
 
 .hero {
   display: grid;
@@ -191,6 +198,8 @@ footer {
 
 @media (max-width: 900px) {
   .hero, .cards, .facts, .contact, .row { grid-template-columns: 1fr; }
-  .nav-links { display: none; }
+  .nav { flex-wrap: wrap; gap: 4px 20px; padding-bottom: 8px; }
+  .nav .btn { margin-left: auto; }
+  .nav-links { order: 3; flex: 1 1 100%; margin-left: 0; gap: 20px; overflow-x: auto; }
   .dots { mask-image: none; opacity: 0.35; }
 }

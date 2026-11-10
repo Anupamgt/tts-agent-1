@@ -14,7 +14,11 @@
   var note = document.getElementById("form-note");
   form.addEventListener("submit", function (event) {
     event.preventDefault();
+    var send = form.querySelector('button[type="submit"]');
+    if (send.disabled) return;
     var data = Object.fromEntries(new FormData(form).entries());
+    send.disabled = true;
+    form.setAttribute("aria-busy", "true");
     note.textContent = "Sending…";
     fetch(cfg.enquiryUrl || "/api/enquiries", {
       method: "POST",
@@ -28,6 +32,9 @@
       });
     }).catch(function (err) {
       note.textContent = err.message || "Could not send. Call the desk number instead.";
+    }).then(function () {
+      send.disabled = false;
+      form.removeAttribute("aria-busy");
     });
   });
 })();
