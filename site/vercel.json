@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/api/:path*" },
+    { "source": "/healthz", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/healthz" },
+    { "source": "/phone", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/phone.html" },
+    { "source": "/console.css", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/console.css" },
+    { "source": "/brand/:path*", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/brand/:path*" }
+  ],
+  "headers": [
+    { "source": "/phone", "headers": [{ "key": "Permissions-Policy", "value": "microphone=(self)" }] }
+  ]
+}

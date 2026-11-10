@@ -46,7 +46,28 @@ def source_allowed(ip: str, enforce: bool) -> bool:
     return ip in BOLNA_SOURCE_IPS
 
 
+# A tunnel (cloudflared), the console proxy or a Vercel rewrite delivers internet
+# traffic from 127.0.0.1. Those hops add one of these headers, so a request that
+# carries one is not local, whatever its socket address.
+PROXY_HEADERS = ("cf-connecting-ip", "x-forwarded-for", "x-real-ip", "forwarded", "cf-ray", "x-vercel-id")
+
+
+def client_ip(request: Request) -> str:
+    """Best guess at the caller's IP, for rate limits only. Behind Vercel ->
+    Cloudflare, cf-connecting-ip is Vercel's egress, so the first X-Forwarded-For
+    hop comes first. That hop can be spoofed; the overall caps still hold."""
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd and fwd.split(",")[0].strip():
+        return fwd.split(",")[0].strip()
+    cf = request.headers.get("cf-connecting-ip")
+    if cf:
+        return cf.strip()
+    return request.client.host if request.client else "unknown"
+
+
 def is_loopback(request: Request) -> bool:
+    if any(request.headers.get(h) for h in PROXY_HEADERS):
+        return False
     host = request.client.host if request.client else ""
     return host in {"127.0.0.1", "::1", "localhost"}
 

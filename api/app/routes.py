@@ -1,10 +1,12 @@
 import logging
+import time
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 
 from app.auth import (
+    client_ip,
     caller_call_id,
     desk_sessions,
     desk_token_from,
@@ -20,6 +22,9 @@ from app.auth import (
 from app.bus import kafka_bus, redis_bus
 from app.canonical import json_safe, verify_chain
 from app.config import (
+    PUBLIC_DEMO,
+    PUBLIC_DEMO_CALLS_PER_HOUR,
+    PUBLIC_DEMO_CALLS_PER_IP_HOUR,
     BOLNA_AGENT_ID,
     BOLNA_API_BASE,
     BOLNA_API_KEY,
@@ -27,6 +32,7 @@ from app.config import (
     CLINIC_NAME,
     LIVEKIT_URL,
     SIMULATOR_ENABLED,
+    VOICE_AGENT_NAME,
 )
 from app.db import db, many, one
 from app.gateway import normalize_args, run_tool
@@ -49,6 +55,26 @@ def _loopback_or_404(request: Request):
     if is_loopback(request) or desk_token_from(request):
         return
     raise HTTPException(status_code=404, detail="not found")
+
+
+_demo_calls: list[tuple[float, str]] = []
+
+
+def _demo_or_404(request: Request, *, starts_call: bool = False):
+    """The demo phone's two endpoints. Local or signed-in as before; with
+    PUBLIC_DEMO on, anyone, within an hourly per-IP and overall call cap."""
+    if is_loopback(request) or desk_token_from(request):
+        return
+    if not PUBLIC_DEMO:
+        raise HTTPException(status_code=404, detail="not found")
+    if not starts_call:
+        return
+    now = time.time()
+    _demo_calls[:] = [(t, ip) for t, ip in _demo_calls if now - t < 3600]
+    ip = client_ip(request)
+    if len(_demo_calls) >= PUBLIC_DEMO_CALLS_PER_HOUR or sum(1 for _, i in _demo_calls if i == ip) >= PUBLIC_DEMO_CALLS_PER_IP_HOUR:
+        raise HTTPException(status_code=429, detail="The demo line is busy. Try again in a while.")
+    _demo_calls.append((now, ip))
 
 
 def _desk_or_401(request: Request):
@@ -136,12 +162,32 @@ async def inbound_caller(request: Request):
     if phone is None:
         return JSONResponse({"detail": "contact_number is not an Indian mobile"}, status_code=400)
     execution_id = (request.query_params.get("execution_id") or "").strip() or None
+    # The LiveKit worker passes the room the SIP caller is already in, so desk
+    # staff join that room on handoff instead of a fresh clinic-{id} room.
+    given_room = (request.query_params.get("room") or "").strip()[:128] or None
     async with db.connection() as conn:
         async with conn.transaction():
             existing = None
             if execution_id:
                 existing = await one(conn, "SELECT id, from_number FROM calls WHERE bolna_execution_id = %s", (execution_id,))
-            if existing:
+            if existing is None and given_room:
+                # A browser call made its row in /api/calls and put its room in
+                # the LiveKit token; the agent joining that room adopts the row.
+                adopted = await one(
+                    conn,
+                    """UPDATE calls SET bolna_execution_id = %s, phase = 'ai_active', ai_leg_status = 'in-progress'
+                        WHERE livekit_room = %s AND bolna_execution_id IS NULL
+                        RETURNING id, from_number""",
+                    (execution_id, given_room),
+                )
+                if adopted:
+                    call_id = int(adopted["id"])
+                    phone = adopted["from_number"] or phone
+                    await redis_bus.hset(f"call:{call_id}", {"phase": "ai_active"})
+            else:
+                adopted = None
+            if existing or adopted:
+                existing = existing or adopted
                 call_id = int(existing["id"])
                 phone = existing["from_number"] or phone
             else:
@@ -156,7 +202,7 @@ async def inbound_caller(request: Request):
                     (phone, persona["key"] if persona else None, execution_id),
                 )
                 call_id = int(row["id"])
-                room = f"clinic-{call_id}"
+                room = given_room or f"clinic-{call_id}"
                 await conn.execute("UPDATE calls SET livekit_room = %s WHERE id = %s", (room, call_id))
             count = await one(
                 conn,
@@ -187,7 +233,7 @@ async def internal_route(name: str, request: Request):
 
 @router.get("/api/personas")
 async def personas(request: Request):
-    _loopback_or_404(request)
+    _demo_or_404(request)
     async with db.connection() as conn:
         rows = await many(conn, "SELECT key, display_name, phone, note FROM caller_personas ORDER BY key")
     return [_public_row(row) for row in rows]
@@ -195,7 +241,7 @@ async def personas(request: Request):
 
 @router.post("/api/calls")
 async def create_call(request: Request):
-    _loopback_or_404(request)
+    _demo_or_404(request, starts_call=True)
     body = await request.json()
     persona_key = body.get("persona_key")
     async with db.connection() as conn:
@@ -227,7 +273,14 @@ async def create_call(request: Request):
     return {
         "call_id": str(call_id),
         "livekit_url": LIVEKIT_URL,
-        "livekit_token": livekit_token(f"caller-{call_id}", room, publish=True, subscribe=True),
+        "livekit_token": livekit_token(
+            f"caller-{call_id}",
+            room,
+            publish=True,
+            subscribe=True,
+            attributes={"phone": persona["phone"], "call_id": str(call_id)},
+            agent=VOICE_AGENT_NAME,
+        ),
         "patient_count": str(int(count["n"])),
         "caller_token": token,
     }
@@ -514,7 +567,8 @@ async def accept_handoff(handoff_id: int, request: Request):
                 "UPDATE calls SET transfer_connected = true WHERE id = %s",
                 (row["call_id"],),
             )
-    room = f"clinic-{row['call_id']}"
+            call_room = await one(conn, "SELECT livekit_room FROM calls WHERE id = %s", (row["call_id"],))
+    room = (call_room or {}).get("livekit_room") or f"clinic-{row['call_id']}"
     notified = notify(int(row["call_id"]), {"status": "accepted", "staff_name": "Desk", "handoff_id": handoff_id})
     payload = {
         "call_id": str(row["call_id"]),

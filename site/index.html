@@ -31,6 +31,7 @@
         <p class="lede">Deskie picks up when the doctor is with someone. It answers in English or Hindi, books the visit from the clinic’s own records, and brings a person on the line when the caller asks.</p>
         <div class="hero-actions">
           <a class="btn" id="call-btn" href="tel:+918065356716">Call the desk</a>
+          <a class="btn ghost" id="browser-call" href="/phone">Talk to it in your browser</a>
           <a class="btn ghost" href="#guide">How to try it</a>
         </div>
       </div>
@@ -42,7 +43,7 @@
     </section>
 
     <section class="wrap facts" aria-label="What a call can do">
-      <div><strong>English and Hindi</strong><span>The caller can switch in one sentence.</span></div>
+      <div><strong>English and Hindi</strong><span>Hinglish too. The caller can switch in a sentence.</span></div>
       <div><strong>Fee from the clinic</strong><span>Dr Kaur’s visit is 200 rupees, said by the tool.</span></div>
       <div><strong>A person at the end</strong><span>Ask for the desk and the phone rings through.</span></div>
       <div><strong>The visit on screen</strong><span>Staff sign in and see the booking.</span></div>
@@ -86,6 +87,14 @@
       <details>
         <summary>What should I not try on this demo call?</summary>
         <p>Do not read out a real patient’s details. The clinic on this number is a demo, with fictional files already loaded.</p>
+      </details>
+      <details>
+        <summary>What runs the call?</summary>
+        <p>The agent runs on LiveKit Agents on LiveKit Cloud. Gnani Prisma hears English, Hindi and Hinglish, Gnani Timbre v2.5 speaks in the Hinglish voice Poorvi, and an OpenAI-compatible model with tool calling (gpt-4o-mini today) decides the reply and reads the clinic’s records. Gnani’s open-weight Evon v3.3 can be plugged in through vLLM.</p>
+      </details>
+      <details>
+        <summary>How does a call reach Deskie?</summary>
+        <p>Browser calls go through LiveKit over WebRTC, and any SIP trunk, such as Vobiz, plugs into LiveKit SIP. The desk number is also available on Bolna + Vobiz telephony.</p>
       </details>
     </section>
 

@@ -1,0 +1,5 @@
+livekit-agents[openai,silero,turn-detector]~=1.8.11
+livekit-plugins-gnani~=1.8.11
+livekit-api>=1.0
+httpx>=0.27
+python-dotenv>=1.0

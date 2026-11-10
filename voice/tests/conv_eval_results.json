@@ -1,0 +1,46 @@
+[
+  {
+    "name": "booking_hinglish",
+    "pass": true,
+    "problems": [],
+    "tools": [
+      "lookup_caller",
+      "match_patient",
+      "register_patient",
+      "get_available_windows",
+      "hold_window",
+      "create_booking"
+    ],
+    "seconds": 49.6,
+    "log": [
+      "  caller: Hello, mujhe kal subah general check-up ke liye appointment chahiye.",
+      "  tools : lookup_caller",
+      "  deskie: Aap naye patient hain ya mujhe aapka verification karna hoga. Kya aap mujhe apna poora naam aur date of birth bata sakte hain?",
+      "  (9.6s)",
+      "  caller: Haan, mera naam Arjun Test hai aur meri date of birth 12 March 1996 hai.",
+      "  tools : match_patient",
+      "  deskie: Mujhe aapke file par registered mobile number ke aakhri chaar digits chahiye. Kya aap mujhe woh bata sakte hain?",
+      "  (11.7s)",
+      "  caller: Mere paas koi file nahi hai, main naye patient hoon. Kya aap mujhe appointment de sakte hain?",
+      "  deskie: Mujhe naye patient ke liye appointment book karne ke liye aapka naam aur date of birth chahiye. Kya aap mujhe apna poora naam aur date of birth dobara bata sakte hain?",
+      "  (5.0s)",
+      "  caller: Haan, mera naam Arjun Test hai aur meri date of birth 12 March 1996 hai.",
+      "  tools : register_patient",
+      "  deskie: Maine aapka file bana diya hai aur aapka patient ID SMS ke through bhej diya jayega. Ab aap mujhe bataiye, aap kis doctor ke saath appointment chahte hain, ya kya aap kisi bhi doctor ke saath theek hain?",
+      "  (7.4s)",
+      "  caller: Main kisi bhi doctor ke saath theek hoon, bas mujhe kal subah ka slot chahiye.",
+      "  tools : get_available_windows",
+      "  deskie: Mujhe kal subah ka slot nahi mil raha hai. Aakhri available window aaj ke liye hai, jo hai \"5:00–5:30 pm\" Dr. Demo Sharma ke saath. Kya aap is slot ko book karna chahenge?",
+      "  (2.9s)",
+      "  caller: Haan, mujhe yeh slot book karna hai. 5:00–5:30 pm Dr. Demo Sharma ke saath theek hai.",
+      "  tools : hold_window",
+      "  deskie: Maine aapke liye aaj \"5:00–5:30 pm\" ka slot Dr. Demo Sharma ke saath hold kar diya hai. Kya aap is appointment ko book karna chahenge?",
+      "  (3.1s)",
+      "  caller: Haan, main is appointment ko book karna chahunga.",
+      "  tools : create_booking",
+      "  deskie: Aapka appointment Dr. Demo Sharma ke saath aaj \"5:00–5:30 pm\" ke liye book ho gaya hai. कृपया उस समय पर आ जाएं। \n\nKya aapko aur kisi cheez ki zaroorat hai?",
+      "  (3.2s)"
+    ],
+    "call_id": "11"
+  }
+]

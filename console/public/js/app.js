@@ -237,7 +237,7 @@
   /* ---- prescription refills (docs/flows/11-prescription-refills.md, security review S-20) ----
      Only the patient's own doctor sees the medicine and decides. Approval needs an in-person visit
      with that doctor within refillFollowupDays, the doctor's three checks, how the prescription was
-     issued, and the doctor's PIN. Bolnai never creates a prescription. */
+     issued, and the doctor's PIN. Deskie never creates a prescription. */
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var REFILL_STATUS = {

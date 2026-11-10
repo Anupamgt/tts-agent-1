@@ -1,9 +1,9 @@
-Bolnai Helpdesk is the staff console beside a clinic's AI phone agent: the receptionist's Today board, the doctor's Call next screen, callbacks, emergency alerts, payments and settings. It is used at a bright, busy front desk by people who are interrupted every 30 seconds, so everything here is calm, plain and fast to scan. Build every screen from these tokens and components; when something is missing, compose it from them rather than inventing new colours or sizes.
+Deskie is the staff console beside a clinic's AI phone agent: the receptionist's Today board, the doctor's Call next screen, callbacks, emergency alerts, payments and settings. It is used at a bright, busy front desk by people who are interrupted every 30 seconds, so everything here is calm, plain and fast to scan. Build every screen from these tokens and components; when something is missing, compose it from them rather than inventing new colours or sizes.
 
 ## Name and logo
 
-- There is no logo yet. Set the product name "Bolnai" in plain type (`body-strong`, `ink`), never drawn as a mark.
-- The clinic's own name leads: in the top bar show the clinic name in `heading` and "Bolnai" after it in `caption`, `ink-muted` ("Demo Family Clinic · Bolnai"). Patients never see "Bolnai"; the agent speaks for the clinic.
+- The product name is "Deskie". Where the logo files are not used, set it in plain type (`body-strong`, `ink`), never redrawn as a mark.
+- The clinic's own name leads: in the top bar show the clinic name in `heading` and "Deskie" after it in `caption`, `ink-muted` ("Demo Family Clinic · Deskie"). Patients never see "Deskie"; the agent speaks for the clinic.
 
 ## Content fundamentals
 

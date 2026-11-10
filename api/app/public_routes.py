@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.auth import desk_token_from
+from app.auth import client_ip, desk_token_from
 from app.db import db, one
 from app.tools_common import indian_mobile
 
@@ -20,7 +20,7 @@ def _desk(request: Request):
 
 
 def _limited(request: Request):
-    host = request.client.host if request.client else "unknown"
+    host = client_ip(request)
     now = datetime.now(timezone.utc).timestamp()
     recent = [stamp for stamp in _hits.get(host, []) if now - stamp < 3600]
     if len(recent) >= 8:

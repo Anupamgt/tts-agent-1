@@ -65,3 +65,13 @@ TRANSFER_TO_NUMBER = _transfer_number(env("TRANSFER_TO_NUMBER", ""))
 DATA_DIR = ROOT / "data"
 TRACE_DIR = DATA_DIR / "traces"
 RECORDING_DIR = DATA_DIR / "recordings"
+
+# LiveKit agent dispatched into browser calls (voice/agent.py AGENT_NAME).
+VOICE_AGENT_NAME = env("VOICE_AGENT_NAME", "deskie")
+
+# Public demo phone: lets anyone on the internet list personas and start a browser
+# call (POST /api/calls). Each call spends LiveKit, Gnani and LLM credits, so it
+# is off by default and rate limited per IP and overall when on.
+PUBLIC_DEMO = os.getenv("PUBLIC_DEMO", "").lower() in {"1", "true", "yes"}
+PUBLIC_DEMO_CALLS_PER_IP_HOUR = int(os.getenv("PUBLIC_DEMO_CALLS_PER_IP_HOUR", "6"))
+PUBLIC_DEMO_CALLS_PER_HOUR = int(os.getenv("PUBLIC_DEMO_CALLS_PER_HOUR", "60"))

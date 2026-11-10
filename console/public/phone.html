@@ -9,48 +9,75 @@
   <link rel="apple-touch-icon" href="brand/png/favicon-180.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/console.css">
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.7/dist/livekit-client.umd.min.js"></script>
 </head>
 <body>
   <main style="max-width: 36rem; margin: 2rem auto; padding: 0 1rem;">
     <h1>Demo phone</h1>
-    <p>Starts a clinic call. With a Bolna agent id and the web-call SDK loaded, it places the audio call. Otherwise it still creates the call so the desk can see it.</p>
+    <p>Calls the clinic from this browser. The call runs in a LiveKit room: Deskie hears you through Gnani Prisma and answers in Gnani Timbre. Pick who is calling, allow the microphone, and speak after the greeting.</p>
     <div id="people"></div>
+    <p id="status" style="margin: 0.5rem 0;">Not in a call.</p>
+    <button type="button" id="hangup" class="bn-btn" style="display: none; margin-bottom: 0.5rem;">Hang up</button>
     <pre id="log" style="white-space: pre-wrap;"></pre>
+    <div id="audio"></div>
   </main>
   <script>
     var logEl = document.getElementById('log');
+    var statusEl = document.getElementById('status');
+    var hangupBtn = document.getElementById('hangup');
+    var room = null;
     function log(line) { logEl.textContent += line + '\n'; }
-    async function api(path, body) {
+    function status(text) { statusEl.textContent = text; }
+    async function api(path, body, headers) {
       var res = await fetch(path, {
         method: body ? 'POST' : 'GET',
         credentials: 'same-origin',
-        headers: body ? { 'Content-Type': 'application/json' } : {},
+        headers: Object.assign(body ? { 'Content-Type': 'application/json' } : {}, headers || {}),
         body: body ? JSON.stringify(body) : undefined
       });
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok) throw new Error(data.detail || res.statusText);
       return data;
     }
+    var STATES = { initializing: 'Deskie is joining…', listening: 'Deskie is listening', thinking: 'Deskie is thinking…', speaking: 'Deskie is speaking' };
     async function start(persona) {
-      log('Starting ' + persona + '…');
+      if (room) { log('Hang up the current call first.'); return; }
+      if (!window.LivekitClient) { log('The LiveKit client did not load. Check the network and reload.'); return; }
+      var LK = window.LivekitClient;
+      log('Calling as ' + persona + '…');
       var call = await api('/api/calls', { persona_key: persona });
-      var headers = { 'Content-Type': 'application/json', 'X-Caller-Token': call.caller_token };
-      var session = await fetch('/api/calls/' + call.call_id + '/bolna-session', { method: 'POST', credentials: 'same-origin', headers: headers });
-      var sessionBody = await session.json().catch(function () { return {}; });
       log('Call ' + call.call_id + ' · files on this number: ' + call.patient_count);
-      if (!session.ok) {
-        log('Bolna session was not minted. Check BOLNA_AGENT_ID and that the API can reach Bolna.');
-        log(JSON.stringify(sessionBody));
-        return;
-      }
-      await fetch('/api/calls/' + call.call_id + '/phase', { method: 'POST', credentials: 'same-origin', headers: headers, body: JSON.stringify({ phase: 'ai_active' }) });
-      if (window.BolnaWebCall && typeof window.BolnaWebCall.start === 'function') {
-        await window.BolnaWebCall.start(sessionBody);
-        log('Web call started. Speak after the assistant introduces itself.');
-      } else {
-        log('Session minted. Load the Bolna web-call SDK on this page to attach the microphone.');
-      }
+      room = new LK.Room({ adaptiveStream: true, dynacast: true });
+      room.on(LK.RoomEvent.TrackSubscribed, function (track) {
+        if (track.kind === 'audio') document.getElementById('audio').appendChild(track.attach());
+      });
+      room.on(LK.RoomEvent.ParticipantConnected, function (p) {
+        if (p.kind === LK.ParticipantKind.AGENT || p.identity.indexOf('agent') === 0) log('Deskie joined the call.');
+        else log(p.identity + ' joined the call.');
+      });
+      room.on(LK.RoomEvent.ParticipantAttributesChanged, function (changed, p) {
+        if (changed['lk.agent.state'] && STATES[changed['lk.agent.state']]) status(STATES[changed['lk.agent.state']]);
+      });
+      room.on(LK.RoomEvent.TranscriptionReceived, function (segments, p) {
+        segments.forEach(function (s) {
+          if (s.final) log((p && p.identity === room.localParticipant.identity ? 'You: ' : 'Deskie: ') + s.text);
+        });
+      });
+      room.on(LK.RoomEvent.Disconnected, function () {
+        log('Call ended.');
+        status('Not in a call.');
+        hangupBtn.style.display = 'none';
+        document.getElementById('audio').innerHTML = '';
+        room = null;
+      });
+      status('Connecting…');
+      await room.connect(call.livekit_url, call.livekit_token);
+      await room.startAudio();
+      await room.localParticipant.setMicrophoneEnabled(true);
+      hangupBtn.style.display = '';
+      status('Connected. Waiting for Deskie…');
     }
+    hangupBtn.addEventListener('click', function () { if (room) room.disconnect(); });
     api('/api/personas').then(function (rows) {
       var box = document.getElementById('people');
       rows.forEach(function (row) {
@@ -59,7 +86,9 @@
         button.className = 'bn-btn bn-btn-primary';
         button.style.margin = '0 0.5rem 0.5rem 0';
         button.textContent = row.display_name;
-        button.addEventListener('click', function () { start(row.key).catch(function (err) { log(err.message); }); });
+        button.addEventListener('click', function () {
+          start(row.key).catch(function (err) { log(err.message); status('Not in a call.'); if (room) room.disconnect(); });
+        });
         box.appendChild(button);
       });
     }).catch(function (err) { log(err.message); });

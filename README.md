@@ -1,8 +1,53 @@
-# bolnai-helpdesk
+# Deskie: the clinic phone desk that never misses a call
 
-Voice AI phone help desk for a local clinic (Bolna + admin console + Google Calendar + Postgres).
+**A Hinglish voice front desk for small Indian clinics, built on Gnani AI's Prisma and Timbre with LiveKit Agents.**
 
-- `agent/` - Bolna agent: system prompt, fixed welcome message, the 21 custom functions, and `check_agent.py` (static checks against the backend)
+📞 **Talk to it in your browser:** https://deskie-clinic.vercel.app/phone · 🌐 https://deskie-clinic.vercel.app
+📄 **Full product + technical report:** [submission/REPORT.md](submission/REPORT.md)
+
+When the doctor is with a patient and the receptionist is at the counter, the phone rings out and the patient books elsewhere. Deskie answers it. It speaks English, Hindi and Hinglish, books arrival windows from the clinic's own records, answers "is the doctor late?", checks report status after verifying the caller, never gives medical advice, sends emergencies straight to people, and puts everything on the receptionist's live console.
+
+## Built for The Great Indian AI Internship Challenge (Gnani AI)
+
+| Gnani AI model | How Deskie uses it |
+|---|---|
+| **Prisma v2.5** (speech to text) | Streams every caller turn (`en-IN`, 16 kHz) through `livekit-plugins-gnani`; Hinglish comes back as natural Roman script |
+| **Timbre v2.5** (text to speech) | Speaks every reply, streamed over SSE, voice **Poorvi** (made for Hinglish) |
+| **Evon v3.3** (reasoning) | The LLM slot is an OpenAI-compatible client built for Evon (`EVON_BASE_URL`, `EVON_THINKING`). The live demo runs gpt-4o-mini through that slot because Evon is open weights only and doesn't fit our 4 GB GPU; a vLLM server running Evon drops in with no code change |
+
+**LiveKit** runs the call: a named agent worker (`deskie`), one room per call, `AgentSession` with VAD and the multilingual turn detector, 21 clinic function tools, session memory and transcripts, and SIP telephony (Vobiz inbound trunk with Krisp, dispatch rule, outbound calls, transfer to a person).
+
+```text
+Phone ─ Vobiz SIP ─┐
+Browser ─ WebRTC ──┴─► LiveKit Cloud room ◄─► Deskie worker ─ Gnani Prisma (STT)
+                                                 │            ─ LLM + 21 tools ─► Clinic API (FastAPI) ─► Postgres
+                                                 │            ─ Gnani Timbre (TTS)               └─► Desk console
+```
+
+### Tested
+
+| Test | Result |
+|---|---|
+| End-to-end voice calls over LiveKit Cloud (`voice/tests/e2e_call.py`) | Pass, English and Hinglish, locally and through the public path |
+| Conversation evals with an AI-played caller (`voice/tests/conv_eval.py`) | 6 / 6 scenarios pass |
+| Static agent checks (`agent/check_agent.py`) | 91 checks pass |
+| Proxy and demo-line auth (`api/tests/test_proxy_auth.py`) | 12 / 12 pass |
+
+### Submission pack
+
+- [submission/REPORT.md](submission/REPORT.md): product and technical report
+- [submission/demo-video-script.md](submission/demo-video-script.md): 60-second and 2:30 demo scripts
+- [submission/x-post.md](submission/x-post.md), [submission/linkedin-post.md](submission/linkedin-post.md), [submission/medium-blog.md](submission/medium-blog.md)
+
+### Run it locally
+
+See [voice/README.md](voice/README.md) for the worker, [docs/livekit-local-plan.md](docs/livekit-local-plan.md) for the full local stack (PGlite, API, console, worker, tunnel), and `deploy/vercel-sync.sh <backend-url> --prod` to point the Vercel site at a backend.
+
+## Repository map
+
+- `voice/` - the voice agent: LiveKit Agents worker on Gnani Prisma (STT), an OpenAI-compatible LLM slot built for Evon v3.3, and Gnani Timbre (TTS), Vobiz SIP trunk setup and test-call script. Start at `voice/README.md`
+
+- `agent/` - agent definition shared by the LiveKit worker (previously Bolna): system prompt, fixed welcome message, the 21 custom functions, and `check_agent.py` (static checks against the backend)
 - `docs/prd/TECHNICAL_PRD.md` - local prototype runtime (Bolna web call, LiveKit, Kafka, traces, handoff)
 - `docs/scope.md` - scope and open questions
 - `docs/gtm.md` - go-to-market decisions the product depends on (full plan: https://claude.ai/artifact/BjosXcjEXwY6SnBRMTF6Ud)
