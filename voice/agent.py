@@ -65,6 +65,9 @@ FUNCTIONS = json.loads((REPO / "agent" / "functions.json").read_text(encoding="u
 
 HOLD_LINE = os.getenv("HOLD_LINE", "Please stay on the line, I am connecting you to the desk.")
 
+FILLER_LINE = os.getenv("FILLER_LINE", "One moment.")
+FILLER_AFTER_S = float(os.getenv("FILLER_AFTER_S", "1.2"))
+
 LIVEKIT_ADDENDUM = """
 
 ## THIS CALL RUNS ON LIVEKIT
@@ -73,6 +76,32 @@ LIVEKIT_ADDENDUM = """
 - If request_human returns status "accepted", say its say and then stay silent: a person from the desk is now on the line.
 - Words in capitals such as DATA LINE are names of lines in this prompt. Speak the line's text, never its name.
 - Never read out JSON, field names, tool names or ids other than the caller's own booking or patient id.
+- Call match_patient only once the caller has given their full name and either the card id or the date of
+  birth. If they gave only a first name, ask for the rest first; an early call wastes one of the two tries.
+- A caller who says they are new and wants a regular visit follows NEW PATIENT to the end: register_patient,
+  then offer windows and book. Do not hand a new caller to create_callback just because they are new.
+- Reply in the caller's script: Hinglish typed in Roman letters gets Roman-letter Hinglish back.
+- Clinic records are in English letters. Always pass names to tools in Roman letters (मीरा डेमो → Meera Demo,
+  கார்த்திக் → Karthik), whatever script the caller speaks in.
+- OTHER LANGUAGE: the first time a caller speaks a language you do not offer, call create_callback right away
+  (priority P3, reason "Caller speaks <language>"), then speak the OTHER LANGUAGE line. Do not first ask them to
+  switch to English or Hindi.
+"""
+
+
+def language_addendum() -> str:
+    """When Prisma listens for more than English and Hindi, widen prompt rule R11."""
+    extra = [LANG_NAMES.get(c, c) for c in STT_LANGUAGES if c not in ("en-IN", "hi-IN")]
+    if not extra:
+        return ""
+    names = ", ".join(extra)
+    return f"""
+- LANGUAGES ON THIS LINE: besides English, Hindi and Hinglish you also speak {names}. This replaces R11's
+  English-or-Hindi limit and the OTHER LANGUAGE line for these languages: answer a {names} caller in their
+  language, in its own script, and translate each tool's say faithfully as R3 asks. Keep names, ids, dates,
+  times and amounts exact; say numbers as words. A caller in any other language (for example Bengali or
+  Telugu) still gets OTHER LANGUAGE and a create_callback with priority P3, even if you understand them:
+  the desk cannot follow up in that language.
 """
 
 
@@ -147,13 +176,33 @@ def build_tools(desk: Desk, call: dict[str, Any], on_handoff) -> list:
                 args["call_id"] = call["call_id"]
                 args["from_number"] = call["contact_number"]
                 started = time.perf_counter()
+                if tool_name == "match_patient":
+                    name = str(args.get("full_name") or "")
+                    if not (args.get("patient_code") or args.get("date_of_birth")) or len(name.split()) < 2:
+                        # A half-filled check would burn one of the caller's two tries at the desk.
+                        return json.dumps({"ok": False, "next": "ask",
+                                           "say": "Ask for the full name and the card id (or date of birth) before checking."})
+                    if not name.isascii():
+                        return json.dumps({"ok": False, "next": "retry_now", "say": "",
+                                           "note": "Internal, do not speak and do not ask the caller anything. Records are in "
+                                                   "English letters: transliterate the name yourself (मीरा डेमो → Meera Demo, "
+                                                   "கார்த்திக் டெஸ்ட் → Karthik Test) and call match_patient again right now."})
                 if tool_name == "request_human":
                     # The desk can take up to HANDOFF_WAIT_SECONDS to pick up; don't leave dead air.
                     try:
                         context.session.say(HOLD_LINE, allow_interruptions=False, add_to_chat_ctx=False)
                     except Exception:
                         log.debug("hold line not spoken", exc_info=True)
-                body = await desk.tool(tool_name, args)
+                job = asyncio.ensure_future(desk.tool(tool_name, args))
+                if FILLER_LINE and tool_name != "request_human":
+                    # Fill the gap only when the desk is slow, so quick answers stay quick.
+                    done, _ = await asyncio.wait({job}, timeout=FILLER_AFTER_S)
+                    if not done:
+                        try:
+                            context.session.say(FILLER_LINE, allow_interruptions=False, add_to_chat_ctx=False)
+                        except Exception:
+                            log.debug("filler not spoken", exc_info=True)
+                body = await job
                 log.info("tool %s ok=%s %.0fms", tool_name, body.get("ok"), (time.perf_counter() - started) * 1000)
                 if tool_name == "request_human" and (body.get("data") or {}).get("status") == "accepted":
                     on_handoff()
@@ -207,11 +256,48 @@ class Deskie(Agent):
 # ---------------------------------------------------------------- models
 
 
+STT_LANGUAGES = [x.strip() for x in os.getenv("GNANI_STT_LANGUAGE", "en-IN").split(",") if x.strip()]
+# evals/RESULTS.md: with the language known, v2.5 is the most accurate on phone audio;
+# only v3.0 can detect the language (indic-auto), so a multilingual line needs v3.0.
+STT_MODEL = os.getenv("GNANI_STT_MODEL") or ("prisma-v3.0" if len(STT_LANGUAGES) > 1 else "prisma-v2.5")
+LANG_NAMES = {"en-IN": "English", "hi-IN": "Hindi", "ta-IN": "Tamil", "kn-IN": "Kannada", "te-IN": "Telugu",
+              "bn-IN": "Bengali", "mr-IN": "Marathi", "gu-IN": "Gujarati", "ml-IN": "Malayalam", "pa-IN": "Punjabi"}
+
+
+def _patch_prisma_headers() -> None:
+    """The LiveKit plugin opens Prisma's stream without a model header, so it is
+    always v2.5 with one language. Prisma v3.0 with language indic-auto detects
+    which Indian language the caller speaks; add the headers here."""
+    import websockets
+
+    if getattr(websockets.connect, "_deskie", False):
+        return
+    real = websockets.connect
+
+    def connect(uri, *a, **kw):
+        if "vachana.ai/stt" in str(uri):
+            h = dict(kw.get("additional_headers") or {})
+            h["model"] = STT_MODEL
+            # The live API rejects a locale list ("exactly one locale is required"),
+            # so several languages means indic-auto: v3.0 detects the language per utterance.
+            h["language_code"] = STT_LANGUAGES[0] if len(STT_LANGUAGES) == 1 else "indic-auto"
+            h["lang_code"] = h["language_code"]
+            if h.get("x-sample-rate") == "8000":
+                h.update({"x-vad-threshold": "0.7", "x-min-speech-ms": "200", "x-min-silence-ms": "500"})
+            kw["additional_headers"] = h
+        return real(uri, *a, **kw)
+
+    connect._deskie = True
+    websockets.connect = connect
+
+
 def stt():
-    # Prisma. en-IN transcribes English and romanised Hinglish; hi-IN gives Devanagari.
-    # (A comma pair like "en-IN,hi-IN" is rejected by the API for the default model.)
+    # Prisma v2.5 (default): en-IN transcribes English and romanised Hinglish.
+    # Prisma v3.0 with GNANI_STT_LANGUAGE="en-IN,hi-IN,ta-IN,kn-IN" hears all four.
+    if STT_MODEL != "prisma-v2.5" or len(STT_LANGUAGES) > 1:
+        _patch_prisma_headers()
     return gnani.STT(
-        language=os.getenv("GNANI_STT_LANGUAGE", "en-IN"),
+        language=STT_LANGUAGES[0],
         sample_rate=int(os.getenv("GNANI_STT_SAMPLE_RATE", "16000")),
     )
 
@@ -268,6 +354,21 @@ def caller_number(participant: rtc.RemoteParticipant) -> str:
     except ValueError:
         pass
     return DEMO_CALLER
+
+
+def cache_friendly(prompt: str) -> str:
+    """Move the lines that change per call (call reference, file count) to the end.
+
+    The LLM provider caches the longest repeated prefix of a request. With the
+    call id on line 4 every call missed that cache after a few dozen tokens; with
+    it last, the tools and ~180 prompt lines are a stable, cacheable prefix.
+    """
+    lines = prompt.splitlines()
+    per_call = [ln for ln in lines if "{call_id}" in ln or "{patient_count}" in ln]
+    if not per_call:
+        return prompt
+    rest = [ln for ln in lines if ln not in per_call]
+    return "\n".join(rest) + "\n\n## THIS CALL\n" + "\n".join(per_call) + "\n"
 
 
 def fill(template: str, values: dict[str, Any]) -> str:
@@ -333,9 +434,22 @@ async def entrypoint(ctx: JobContext) -> None:
         turn_detection=turn_detector(),
         preemptive_generation=True,
         max_tool_steps=6,
+        # Seconds of silence before the turn is closed. LiveKit's defaults are
+        # 0.5 / 6.0; the turn detector keeps the lower bound safe for Hinglish.
+        min_endpointing_delay=float(os.getenv("MIN_ENDPOINTING_DELAY", "0.35")),
+        max_endpointing_delay=float(os.getenv("MAX_ENDPOINTING_DELAY", "3.0")),
     )
 
     handed_off = asyncio.Event()
+
+    @session.on("metrics_collected")
+    def _metrics(ev) -> None:
+        # One line per stage (STT, end of turn, LLM, TTS) so latency can be broken down from the log.
+        m = ev.metrics
+        kind = type(m).__name__
+        fields = {k: round(v, 3) for k in ("end_of_utterance_delay", "transcription_delay", "ttft", "ttfb", "duration")
+                  if isinstance(v := getattr(m, k, None), (int, float))}
+        log.info("metrics %s %s", kind, json.dumps(fields))
 
     def on_handoff() -> None:
         handed_off.set()
@@ -378,12 +492,16 @@ async def entrypoint(ctx: JobContext) -> None:
 
     ctx.add_shutdown_callback(finish)
 
-    instructions = fill(PROMPT, call) + LIVEKIT_ADDENDUM
+    instructions = fill(cache_friendly(PROMPT + LIVEKIT_ADDENDUM + language_addendum()), call)
     agent = Deskie(instructions, build_tools(desk, call, on_handoff), hangup)
     await session.start(agent=agent, room=ctx.room)
 
     welcome = WELCOME_HI if os.getenv("WELCOME_LANGUAGE", "en") == "hi" else WELCOME
-    await session.say(fill(welcome, call), allow_interruptions=False)
+    welcome = fill(welcome, call)
+    extra = [LANG_NAMES.get(c, c) for c in STT_LANGUAGES if c not in ("en-IN", "hi-IN")]
+    if extra:
+        welcome = welcome.replace("English or Hindi", "English, Hindi, " + ", ".join(extra[:-1] + ["or " + extra[-1]]) if len(extra) > 1 else f"English, Hindi or {extra[0]}")
+    await session.say(welcome, allow_interruptions=False)
 
 
 if __name__ == "__main__":

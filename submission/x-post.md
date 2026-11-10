@@ -34,7 +34,7 @@ It's a front desk, not a chatbot on a phone line:
 **4/**
 Stack: LiveKit Agents runs the rooms, sessions, tool calls and SIP telephony. Gnani Prisma + Timbre handle the speech. A FastAPI backend and a live desk console sit behind it.
 
-Tested with automated voice calls and AI-played callers: 6/6 scenarios pass.
+Benchmarked on FLEURS with phone-quality audio: Gnani Prisma makes 55% fewer word errors than whisper-1 across Hindi, Tamil and Kannada (25.7% vs 56.9% WER). It detects the caller's language by itself 95% of the time. Agent pass^3: 85.7% on 14 clinic scenarios.
 
 **5/**
 Try it in your browser 👉 https://deskie-clinic.vercel.app/phone

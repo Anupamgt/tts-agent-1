@@ -20,7 +20,9 @@ For The Great Indian AI Internship Challenge by Gnani AI, we built **Deskie**: a
 • Emergencies go straight to a person, with an alert that stays until someone acknowledges it
 • A caller can ask for a human at any time
 
-⚙️ **Under the hood:** LiveKit Agents runs the rooms, sessions, tool calls and SIP telephony (Vobiz). Gnani Prisma handles speech to text and Gnani Timbre handles text to speech. A FastAPI clinic backend and a live desk console sit behind it. We tested it with automated voice calls over LiveKit Cloud and AI-played callers, and all 6 scenarios pass, from Hinglish booking to emergency routing.
+⚙️ **Under the hood:** LiveKit Agents runs the rooms, sessions, tool calls and SIP telephony (Vobiz). Gnani Prisma handles speech to text and Gnani Timbre handles text to speech. A FastAPI clinic backend and a live desk console sit behind it. We tested it with automated voice calls over LiveKit Cloud and AI-played callers, on 14 scenarios × 3 trials in five languages and scripts (pass^3 85.7%).
+
+📊 **Benchmarks:** on FLEURS audio squeezed through a phone line, Gnani Prisma makes **55% fewer word errors than OpenAI whisper-1** across Hindi, Tamil and Kannada (25.7% vs 56.9% WER, and 35.3% vs 77.7% with waiting-room noise). It picks the caller's language by itself 95% of the time.
 
 👉 Talk to Deskie in your browser: https://deskie-clinic.vercel.app/phone
 👉 Code and full report: https://github.com/Anupamgt/tts-agent-1

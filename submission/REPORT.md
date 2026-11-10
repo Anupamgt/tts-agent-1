@@ -135,10 +135,27 @@ The full reasoning is in `docs/decision-log.md` (decisions D-01 to D-40), `docs/
 
 ## 7. Proof that it works
 
+### Benchmarks
+
+| Benchmark | Deskie (Gnani) | Baseline |
+|---|---|---|
+| FLEURS speech recognition on **phone-line audio** (8 kHz μ-law, 300–3400 Hz), Hindi + Tamil + Kannada, mean WER | **25.7%** (Prisma v2.5) | 56.9% (OpenAI whisper-1) |
+| Same, plus **waiting-room babble at 10 dB SNR** | **35.3%** | 77.7% |
+| FLEURS **Hindi**, phone line | **10.3% WER** | 34.3% |
+| **Language identification**, Prisma v3.0 `indic-auto` never told the language | **95.1%** correct | n/a |
+| **Agent task success**, 14 clinic scenarios × 3 trials (τ-bench pass^k method) | **pass@1 88.1%, pass^3 85.7%** | n/a |
+| **Live latency** over LiveKit Cloud India South, 8 calls (medians) | end of turn 0.65 s · LLM first token 1.1 s · Timbre first audio 0.17 s | n/a |
+
+On phone audio Gnani's Prisma makes **55% fewer word errors** than whisper-1 in all three languages combined, and the gap holds in noise. One finding changed how we deploy: when the language is known, Prisma v2.5 beats v3.0 on phone audio (25.7% vs 31.9% mean WER), so single-language clinics get v2.5 and multilingual lines get v3.0 with automatic language detection. Full tables, method and limits: [voice/evals/RESULTS.md](../voice/evals/RESULTS.md).
+
+What still fails, and stays in the numbers: a Tamil new-patient booking passes 1 of 3 times, and a Bengali caller is told we only speak listed languages but is not yet given a callback (0 of 3). Both are model-behaviour gaps with gpt-4o-mini in the LLM slot.
+
+### Tests
+
 | Test | What it does | Result |
 |---|---|---|
 | **End-to-end voice calls** (`voice/tests/e2e_call.py`) | A bot caller joins a real LiveKit Cloud room and speaks through Gnani Timbre; Deskie hears it through Gnani Prisma, calls tools and answers by voice | **Pass** in English and Hinglish, locally and through the public internet path. The first word comes about 4–5.5 s after the caller stops, measured with 1 s of trailing silence included |
-| **Conversation evals** (`voice/tests/conv_eval.py`) | The real prompt, real tools, real database and a second LLM playing the caller | **6 of 6 pass**: clinic hours, report after verification, Hinglish new-patient booking, emergency, refusing an unknown caller, asking for a human |
+| **Conversation evals** (`voice/tests/conv_eval.py`) | The real prompt, real tools, real database and a second LLM playing the caller | 14 scenarios × 3 trials in five languages and scripts: **pass@1 88.1%, pass^3 85.7%** |
 | **Static agent checks** (`agent/check_agent.py`) | 91 checks between the prompt, the tool schemas and the backend | **All pass** |
 | **Proxy and demo auth** (`api/tests/test_proxy_auth.py`) | Tunnel traffic is never local; demo caps work | **12 of 12 pass** |
 | **Clinic API tests** (`api/tests/`) | Tools, webhooks, handoff | 13 of 13 passed before the deploy-time auth change. **Not re-run since** |
@@ -146,6 +163,8 @@ The full reasoning is in `docs/decision-log.md` (decisions D-01 to D-40), `docs/
 Bugs we found and fixed through testing:
 - The model sometimes read a line's internal label aloud ("DATA LINE: …"). A streaming filter now removes these before speech and transcripts.
 - Up to 25 seconds of silence while the desk was paged. A hold line now plays first.
+- A Hindi-speaking caller could never be verified: the model passed her name in Devanagari (मीरा डेमो) to a database kept in English letters. The tool layer now asks the model to transliterate first (0/3 → 3/3).
+- The model checked identity with only a first name, using up one of the caller's two tries. A guard now holds the call until it has the full details.
 - The tunnel made every internet request look local. Fixed before anything went public.
 
 ## 8. Deployment

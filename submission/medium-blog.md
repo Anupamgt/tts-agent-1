@@ -81,7 +81,16 @@ We didn't want a demo that only works once. We built two kinds of automated test
 > **Caller:** Mera naam Arjun Test hai, meri age tees saal hai.
 > **Deskie:** Maine aapka file bana diya hai aur main aapko patient id SMS ke zariye bhej dungi…
 
-**Conversation evals.** A second LLM plays a caller with a persona and a goal, against the real prompt, tools and database. All six scenarios pass: clinic hours, report after verification, Hinglish new-patient booking, emergency, refusing an unknown caller, and asking for a human.
+**Conversation evals.** A second LLM plays a caller with a persona and a goal, against the real prompt, tools and database. There are 14 scenarios across English, Hindi, Hinglish, Tamil and Kannada, each run three times, scored the τ-bench way: pass^3 counts a scenario only if all three runs succeed. We get **pass@1 88.1% and pass^3 85.7%**. What still fails is in the numbers: a Tamil new-patient booking works 1 time in 3, and a Bengali caller doesn't get a callback yet.
+
+**Speech benchmarks.** We ran Google's FLEURS test set in Hindi, Tamil and Kannada three ways: clean, squeezed through an 8 kHz μ-law phone line, and phone plus waiting-room babble at 10 dB SNR. The same clips went to Gnani Prisma and to OpenAI's whisper-1.
+
+| Mean WER, Hindi + Tamil + Kannada | Prisma v2.5 | whisper-1 |
+|---|---|---|
+| Phone line | **25.7%** | 56.9% |
+| Phone + babble | **35.3%** | 77.7% |
+
+That's 55% fewer word errors on the audio a clinic actually receives. Prisma v3.0's `indic-auto` mode named the language correctly 95% of the time without being told, which is what lets one number serve every caller. Live over LiveKit Cloud, end-of-turn detection takes 0.65 s, the LLM's first token 1.1 s and Timbre's first audio 0.17 s (medians over 8 calls).
 
 Testing found real bugs:
 - **The model read an internal label aloud** ("DATA LINE: …"). We added a streaming filter in the TTS and transcription path.

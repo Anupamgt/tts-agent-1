@@ -1,0 +1,25 @@
+{
+ "calls": 8,
+ "stages": {
+  "End of turn detected (Prisma final + turn detector) after speech stops": {
+   "median": 0.6465000000000001,
+   "p90": 0.721,
+   "n": 8
+  },
+  "LLM first token (per model call; tool turns make two)": {
+   "median": 1.116,
+   "p90": 1.363,
+   "n": 17
+  },
+  "Gnani Timbre first audio byte": {
+   "median": 0.173,
+   "p90": 0.219,
+   "n": 16
+  },
+  "Caller stops → first agent word heard (bot sends 1 s of trailing silence, included)": {
+   "median": 4.88,
+   "p90": 5.39,
+   "n": 8
+  }
+ }
+}

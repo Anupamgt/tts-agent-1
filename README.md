@@ -11,7 +11,7 @@ When the doctor is with a patient and the receptionist is at the counter, the ph
 
 | Gnani AI model | How Deskie uses it |
 |---|---|
-| **Prisma v2.5** (speech to text) | Streams every caller turn (`en-IN`, 16 kHz) through `livekit-plugins-gnani`; Hinglish comes back as natural Roman script |
+| **Prisma v3.0 / v2.5** (speech to text) | Streams every caller turn through `livekit-plugins-gnani`. On the multilingual line, v3.0 `indic-auto` works out whether the caller speaks English, Hindi, Tamil or Kannada; v2.5 serves single-language lines, where it is the most accurate on phone audio |
 | **Timbre v2.5** (text to speech) | Speaks every reply, streamed over SSE, voice **Poorvi** (made for Hinglish) |
 | **Evon v3.3** (reasoning) | The LLM slot is an OpenAI-compatible client built for Evon (`EVON_BASE_URL`, `EVON_THINKING`). The live demo runs gpt-4o-mini through that slot because Evon is open weights only and doesn't fit our 4 GB GPU; a vLLM server running Evon drops in with no code change |
 
@@ -24,12 +24,25 @@ Browser ─ WebRTC ──┴─► LiveKit Cloud room ◄─► Deskie worker �
                                                  │            ─ Gnani Timbre (TTS)               └─► Desk console
 ```
 
+### Benchmarks ([full results](voice/evals/RESULTS.md))
+
+| Benchmark | Deskie (Gnani) | Baseline |
+|---|---|---|
+| **FLEURS speech recognition, phone-line audio** (8 kHz μ-law; Hindi, Tamil, Kannada; mean WER) | **25.7%** Prisma v2.5 | 56.9% OpenAI whisper-1 |
+| **FLEURS, phone + waiting-room babble at 10 dB SNR** (mean WER) | **35.3%** Prisma v2.5 | 77.7% whisper-1 |
+| **FLEURS Hindi, phone line** (WER) | **10.3%** | 34.3% whisper-1 |
+| **Automatic language ID** (Prisma v3.0 `indic-auto`, never told the language) | **95.1%** correct | n/a |
+| **Agent task success** (14 clinic scenarios × 3 trials, τ-bench-style) | **pass@1 88.1%, pass^3 85.7%** | n/a |
+| **Live call latency** over LiveKit Cloud (8 calls) | end of turn **0.65 s**, LLM first token **1.1 s**, Timbre first audio **0.17 s** (medians) | n/a |
+
+Fewer word errors on phone audio than whisper-1: **55%**. Methods, sample sizes and limits are in [voice/evals/README.md](voice/evals/README.md). whisper-1 is a general-purpose reference point, not the strongest Indic system.
+
 ### Tested
 
 | Test | Result |
 |---|---|
 | End-to-end voice calls over LiveKit Cloud (`voice/tests/e2e_call.py`) | Pass, English and Hinglish, locally and through the public path |
-| Conversation evals with an AI-played caller (`voice/tests/conv_eval.py`) | 6 / 6 scenarios pass |
+| Conversation evals with an AI-played caller (`voice/tests/conv_eval.py`), 14 scenarios × 3 trials in English, Hindi, Hinglish, Tamil, Kannada | pass^3 85.7% (12 / 14 scenarios pass all 3 trials) |
 | Static agent checks (`agent/check_agent.py`) | 91 checks pass |
 | Proxy and demo-line auth (`api/tests/test_proxy_auth.py`) | 12 / 12 pass |
 
@@ -37,6 +50,7 @@ Browser ─ WebRTC ──┴─► LiveKit Cloud room ◄─► Deskie worker �
 
 - [submission/REPORT.md](submission/REPORT.md): product and technical report
 - [submission/demo-video-script.md](submission/demo-video-script.md): 60-second and 2:30 demo scripts
+- [voice/evals/RESULTS.md](voice/evals/RESULTS.md): benchmark results; [submission/engagement-kit.md](submission/engagement-kit.md): posting plan
 - [submission/x-post.md](submission/x-post.md), [submission/linkedin-post.md](submission/linkedin-post.md), [submission/medium-blog.md](submission/medium-blog.md)
 
 ### Run it locally
