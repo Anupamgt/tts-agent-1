@@ -98,4 +98,6 @@ Checked in a browser at 1366px, 375px and 360px with the console in sample mode,
 | 14 | Fixed | Demo-call status and transcript are announced. |
 | 16 | Fixed | Site section links wrap to a second row on phones. |
 
-Not done, waiting on a decision: **#2** hard-coded desk PIN, **#9** temporary tunnel host, **#17** self-hosting fonts, **#18** script integrity, **#15** captions file, **#21** copy, **#19, #23, #24** (Low). Known gap: the assistant role can still collect and mark fees paid, as before.
+Also fixed after the review: **#17** console and demo-phone fonts are served from `/fonts` (same Anek files), **#21** the "Records" sentence on the site.
+
+Not done: **#2** hard-coded desk PIN (the PIN pad checks PINs for every role, including admin codes, against `console/public/js/data.js`, and the shared server login is what the doctor and assistant live views use; fixing it properly needs per-staff server authentication, not a patch), **#9** temporary tunnel host (needs a real stable hostname), **#18** script integrity (jsDelivr's `.min.js` is generated on the fly and is not in the npm package, so no verifiable hash was available offline; a wrong hash would break the call page), **#15** captions (needs real timings and a transcript), the site's Outfit font (no font file in the repo), and the Low items #19, #23, #24. Known gap: the assistant role can still collect and mark fees paid, as before.
