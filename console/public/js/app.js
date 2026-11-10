@@ -736,6 +736,9 @@
     if (!cabin && !state.staffOnDesk && !state.dismissed.desk) {
       html += '<div class="banner"><p>Staff on desk is off. Callers who ask for a person get a callback instead of a transfer.</p><button type="button" class="bn-btn" data-act="dismiss" data-id="desk">' + e('Close') + '</button></div>';
     }
+    if (state.live && state.offline) {
+      html += '<div class="banner" role="status"><p><strong>Connection lost.</strong> This screen shows the last update' + (state.lastSyncLabel ? ' from ' + esc(state.lastSyncLabel) : '') + '. Changes may not save until it comes back.</p><button type="button" class="bn-btn" data-act="retry-pull">' + e('Retry') + '</button></div>';
+    }
     if (state.poorNetwork && !state.dismissed.offline) {
       html += '<div class="banner"><p>Offline: changes will sync.</p><button type="button" class="bn-btn" data-act="dismiss" data-id="offline">' + e('Close') + '</button></div>';
     }
@@ -793,7 +796,7 @@
       '<a class="counter" href="#messages"><strong>' + failedMsgs().length + '</strong> <span class="caption">Failed</span></a></div>';
     return '<header class="topbar"><div class="clinic-lockup"><div class="heading">' + esc(state.clinic) + '</div><div class="product-line"><img class="brand-mark" src="brand/deskie-mark.svg" alt="" width="200" height="200"><span class="caption bn-muted">Deskie</span></div></div>' +
       '<div class="when"><span class="body-strong bn-num">' + esc(state.dateLabel) + '</span><span class="caption bn-muted bn-num" data-live-clock>' + esc(liveClockText(false)) + '</span></div>' +
-      '<span class="live-pill" title="' + (state.live ? 'Connected to the clinic API' : 'Demo clock is running') + '"><i aria-hidden="true"></i>' + (state.live ? 'Live API' : 'Live') + '</span>' +
+      '<span class="live-pill' + (state.live && state.offline ? ' is-offline' : '') + '" title="' + (state.live ? (state.offline ? 'Connection lost' : 'Connected to the clinic API') : 'Demo clock is running') + '"><i aria-hidden="true"></i>' + (state.live ? (state.offline ? 'Offline' : 'Live API') : 'Live') + '</span>' +
       staff +
       '<div class="chip-row" aria-label="Doctors in session">' + chips + '</div>' +
       agent +
@@ -2526,6 +2529,7 @@
       render(); return;
     }
     if (act === 'clear-cell') { state.cell = null; render(); return; }
+    if (act === 'retry-pull') { toast('Checking the connection…'); if (state.reload) state.reload(); return; }
     if (act === 'retry-sync') { state.syncOk = true; audit('Retried the calendar mirror. It is up to date.'); render(); return; }
     if (act === 'doctor-open') { state.focusDoctor = id; state.phoneMode = 'doctor'; go('doctor'); return; }
     if (act === 'phone-mode') { state.phoneMode = value; render(); return; }
@@ -2637,6 +2641,9 @@
   document.body.addEventListener('change', onChange);
   document.body.addEventListener('input', onInput);
   document.body.addEventListener('focusout', onFocusOut);
+  document.body.addEventListener('focusout', function () {
+    setTimeout(function () { if (state._stale && !uiBusy()) { state._stale = false; render({ keepFocus: true }); } }, 0);
+  });
   document.addEventListener('keydown', onKey);
   document.body.addEventListener('dragstart', onDragStart);
   document.body.addEventListener('dragover', function (e) { if (e.target.closest('[data-drop]')) e.preventDefault(); });
@@ -2829,11 +2836,17 @@
     if (snap.week && snap.week.length) state.week = snap.week;
     state.live = true;
     state.syncOk = true;
+    state.offline = false;
+    state._pullFails = 0;
+    state.lastSyncLabel = state.timeLabel;
     if (!state._liveUser && snap.users && snap.users.length) {
       state.userId = snap.users[0].id;
       state._liveUser = true;
     }
-    if (!state.drawer && !state.modal) render();
+    // Never re-render under someone who is typing or has a dialog open; catch up when they leave.
+    if (uiBusy()) { state._stale = true; return; }
+    state._stale = false;
+    render({ keepFocus: true });
   }
   if (!/[?&]sample=1(?:&|$)/.test(location.search)) {
     function pull() {
@@ -2857,7 +2870,14 @@
           });
         }
         return r;
-      }).then(function (r) { return r.json(); }).then(applyLive).catch(function () { state.syncOk = false; });
+      }).then(function (r) { return r.json(); }).then(applyLive).catch(function () {
+        state.syncOk = false;
+        state._pullFails = (state._pullFails || 0) + 1;
+        if (state._pullFails >= 2 && !state.offline) {
+          state.offline = true;
+          if (!uiBusy()) render({ keepFocus: true }); else state._stale = true;
+        }
+      });
     }
     state.reload = pull;
     pull();
