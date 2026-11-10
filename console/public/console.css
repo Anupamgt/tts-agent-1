@@ -220,6 +220,7 @@ button.bn-badge { border: 0; font: inherit; cursor: pointer; }
   position: fixed; right: var(--space-3); bottom: 84px; z-index: 40;
   display: flex; flex-direction: column; gap: var(--space-2);
   min-width: 240px; max-width: calc(100% - 24px);
+  max-height: calc(100vh - 84px - var(--emergency-h) - var(--space-3)); overflow-y: auto;
   padding: var(--space-3); background: var(--surface);
   border: 1px solid var(--line); border-radius: var(--radius-lg);
   box-shadow: var(--shadow-overlay);
@@ -337,12 +338,13 @@ button.bn-badge { border: 0; font: inherit; cursor: pointer; }
 .live-pill i {
   width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--ok);
   box-shadow: 0 0 0 0 rgba(47, 138, 99, 0.55);
-  animation: live-dot 1.6s ease-out infinite;
 }
 .live-pill.is-offline { background: var(--attention-soft); color: var(--attention-ink); }
 .live-pill.is-offline i { background: var(--attention-ink); animation: none; box-shadow: none; }
 .agent-live { color: var(--ok-ink); font-weight: 600; }
-.bn-chip.is-ticking .bn-chip-dot { animation: live-dot 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: no-preference) {
+  .live-pill i, .bn-chip.is-ticking .bn-chip-dot { animation: live-dot 1.6s ease-out infinite; }
+}
 @keyframes live-dot {
   0% { box-shadow: 0 0 0 0 rgba(47, 138, 99, 0.5); }
   70% { box-shadow: 0 0 0 8px rgba(47, 138, 99, 0); }
@@ -394,7 +396,9 @@ button.bn-badge { border: 0; font: inherit; cursor: pointer; }
 .activity-item.is-fresh {
   border-color: var(--accent);
   background: var(--accent-soft);
-  animation: slide-in 0.35s ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .activity-item.is-fresh { animation: slide-in 0.35s ease; }
 }
 @keyframes slide-in {
   from { opacity: 0; transform: translateY(-6px); }
@@ -639,13 +643,20 @@ table.data tr[data-act]:hover { background: var(--accent-soft); }
   }
   .brand, .rail-foot { display: none; }
   .rail-more {
-    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 0; min-width: 72px; min-height: var(--touch-min); padding: 4px 6px;
-    border: 0; background: transparent; color: var(--ink); font-size: 11px; line-height: 14px; font-weight: 500;
+    display: inline-flex; flex: 0 0 72px; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0; min-width: 0; min-height: var(--touch-min); padding: 4px 2px;
+    border: 0; background: transparent; color: var(--ink); font-size: 12px; line-height: 14px; font-weight: 500;
   }
   .rail-more[aria-expanded="true"] { color: var(--accent); font-weight: 600; }
-  .nav { flex-direction: row; }
-  .nav a { flex-direction: column; justify-content: center; gap: 0; min-width: 72px; font-size: 11px; line-height: 14px; padding: 4px 6px; }
+  .nav { flex-direction: row; flex: 1 1 0; min-width: 0; }
+  .nav a { flex: 1 1 0; flex-direction: column; justify-content: center; gap: 0; min-width: 0; font-size: 12px; line-height: 14px; padding: 4px 2px; }
+  .nav a.nav-extra { display: none; }
+  .nav.nav-more { flex-direction: column; flex: none; }
+  .nav.nav-more a { flex: none; flex-direction: row; justify-content: flex-start; gap: var(--space-2); font-size: 15px; line-height: 22px; padding: 0 var(--space-3); }
+  button.bn-badge { position: relative; }
+  button.bn-badge::after { content: ''; position: absolute; inset: -10px -4px; }
+  .check-line { min-height: var(--touch-min); align-items: center; }
+  .check-line input { margin-top: 0; }
   .nav-count { margin-left: 0; }
   .main { padding-bottom: 76px; }
   .page { padding: var(--space-4); }
@@ -662,6 +673,10 @@ table.data tr[data-act]:hover { background: var(--accent-soft); }
 }
 @media (max-width: 560px) {
   .timeline li { grid-template-columns: 1fr; gap: 0; }
+  .bn-btn { height: var(--control-lg); }
+  .search input, .field input, .field select, .settings-search { height: var(--control-lg); }
+  .seg button, .counter { min-height: var(--touch-min); }
+  .staff-row { height: auto; }
 }
 
 /* checkbox and radio lines in the refill approval (flow 11) */

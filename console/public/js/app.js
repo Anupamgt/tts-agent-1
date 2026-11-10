@@ -762,18 +762,19 @@
       if (u.role === 'assistant') return n[0] === 'today' || n[0] === 'settings';
       return true;
     });
-    var links = items.map(function (n) {
+    var links = items.map(function (n, idx) {
       var count = '';
       if (n[0] === 'callbacks') count = '<span class="nav-count bn-num">' + openCallbacks().length + '</span>';
       if (n[0] === 'payments') count = '<span class="nav-count bn-num">' + waitingRefunds().length + '</span>';
       if (n[0] === 'messages') count = '<span class="nav-count bn-num">' + failedMsgs().length + '</span>';
       var cur = route() === n[0] ? ' aria-current="page"' : '';
-      return '<a href="#' + n[0] + '"' + cur + '>' + icon(n[2]) + '<span>' + e(n[1]) + '</span>' + count + '</a>';
+      return '<a href="#' + n[0] + '"' + cur + (idx >= 4 && items.length > 5 ? ' class="nav-extra"' : '') + '>' + icon(n[2]) + '<span>' + e(n[1]) + '</span>' + count + '</a>';
     }).join('');
+    state._moreLinks = items.length > 5 ? links.split('</a>').slice(0, -1).map(function (x) { return x + '</a>'; }).filter(function (x) { return x.indexOf('nav-extra') >= 0 && x.indexOf('href="#settings"') < 0; }).join('').replace(/ class="nav-extra"/g, '') : '';
     return '<aside class="rail"><div class="brand">' + brandLogo() + '<div class="caption bn-muted">' + esc(roleName(u.role)) + '</div></div>' +
       '<nav class="nav" aria-label="Console">' + links + '</nav>' +
       '<div class="rail-foot">' + accountControls() + '</div>' +
-      '<button type="button" class="rail-more" data-act="account-menu" aria-expanded="' + (state.accountOpen ? 'true' : 'false') + '">' + icon('user') + '<span>' + e('Account') + '</span></button></aside>';
+      '<button type="button" class="rail-more" data-act="account-menu" aria-expanded="' + (state.accountOpen ? 'true' : 'false') + '">' + icon('user') + '<span>' + e(state._moreLinks ? 'More' : 'Account') + '</span></button></aside>';
   }
   function roleName(r) {
     return { receptionist: 'Reception', assistant: 'Cabin assistant', doctor: 'Doctor', admin: 'Admin' }[r] || r;
@@ -1812,7 +1813,7 @@
     else if (route() === 'settings') inner = shell(screen());
     else if (u.role === 'doctor' || route() === 'doctor') inner = doctorScreen();
     else inner = shell(screen());
-    return '<div class="shell">' + emergencyBanner() + inner + drawer() + modal() + switchSheet() + (state.accountOpen && deskOpen() ? '<div class="account-pop">' + accountControls() + '</div>' : '') + (state.toast ? '<div class="toast" role="status">' + esc(state.toast) + '</div>' : '') + '</div>';
+    return '<div class="shell">' + emergencyBanner() + inner + drawer() + modal() + switchSheet() + (state.accountOpen && deskOpen() ? '<div class="account-pop">' + (state._moreLinks ? '<nav class="nav nav-more" aria-label="More">' + state._moreLinks + '</nav>' : '') + accountControls() + '</div>' : '') + (state.toast ? '<div class="toast" role="status">' + esc(state.toast) + '</div>' : '') + '</div>';
   }
 
   // Replacing the page can blur a focused input, whose change handler renders again while the first
