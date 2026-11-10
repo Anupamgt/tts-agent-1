@@ -19,6 +19,7 @@ cat > vercel.json <<JSON
     { "source": "/phone", "destination": "$BACKEND/phone.html" },
     { "source": "/console", "destination": "$BACKEND/?live=1" },
     { "source": "/js/:path*", "destination": "$BACKEND/js/:path*" },
+    { "source": "/fonts/:path*", "destination": "$BACKEND/fonts/:path*" },
     { "source": "/console.css", "destination": "$BACKEND/console.css" },
     { "source": "/brand/:path*", "destination": "$BACKEND/brand/:path*" }
   ],
