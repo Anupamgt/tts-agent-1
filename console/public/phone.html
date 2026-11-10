@@ -15,10 +15,10 @@
   <main style="max-width: 36rem; margin: 2rem auto; padding: 0 1rem;">
     <h1>Demo phone</h1>
     <p>Calls the clinic from this browser. The call runs in a LiveKit room: Deskie hears you through Gnani Prisma and answers in Gnani Timbre. Pick who is calling, allow the microphone, and speak after the greeting.</p>
-    <div id="people"></div>
-    <p id="status" style="margin: 0.5rem 0;">Not in a call.</p>
+    <div id="people" role="group" aria-label="Who is calling"></div>
+    <p id="status" role="status" aria-live="polite" style="margin: 0.5rem 0;">Not in a call.</p>
     <button type="button" id="hangup" class="bn-btn" style="display: none; margin-bottom: 0.5rem;">Hang up</button>
-    <pre id="log" style="white-space: pre-wrap;"></pre>
+    <pre id="log" role="log" aria-live="polite" aria-label="Call transcript" style="white-space: pre-wrap;"></pre>
     <div id="audio"></div>
   </main>
   <script>
