@@ -260,7 +260,7 @@ async def bootstrap(conn) -> dict:
             })
     payments = await many(
         conn,
-        """SELECT p.id, p.amount_inr, p.status, p.method, p.link_url, b.patient_id, b.doctor_id, w.starts_at
+        """SELECT p.id, p.booking_id, p.amount_inr, p.status, p.method, p.link_url, b.patient_id, b.doctor_id, w.starts_at
              FROM payments p JOIN bookings b ON b.id = p.booking_id JOIN windows w ON w.id = b.window_id
             ORDER BY p.id DESC LIMIT 30""",
     )
@@ -378,7 +378,7 @@ async def bootstrap(conn) -> dict:
                 "state": "paid" if row["status"] == "paid" else "link" if row["status"] == "link_sent" else row["status"],
                 "expires": "",
                 "reminders": "0/1",
-                "bookingId": "",
+                "bookingId": str(row["booking_id"]),
             }
             for row in payments
         ],

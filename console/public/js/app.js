@@ -1861,6 +1861,29 @@
     });
     render();
   }
+  function markPaid(id, method) {
+    var pb = booking(id);
+    state.modal = null;
+    if (!pb || !pb.fee || pb.fee.state === 'paid') { render(); return; }
+    if (state.live) {
+      var pay = state.payments.filter(function (p) { return String(p.bookingId) === String(id); })[0];
+      if (!pay) { toast('No payment record for this visit yet. Nothing was changed.'); render(); return; }
+      if (state._paying) return;
+      state._paying = true;
+      liveSend('POST', '/api/payments/' + pay.id + '/mark-paid').then(function (res) {
+        state._paying = false;
+        if (!res.ok) { toast((res.data && res.data.detail) || 'Could not record the payment. Try again.'); render(); return; }
+        pb.fee.state = 'paid'; pb.fee.method = method;
+        toast('Marked paid ' + money(pb.fee.amount) + ' (' + method + ')');
+        if (state.reload) state.reload();
+      }).catch(function () { state._paying = false; toast('No connection. The payment was not recorded.'); render(); });
+      return;
+    }
+    pb.fee.state = 'paid'; pb.fee.method = method;
+    pb.timeline.push({ at: state.timeLabel, text: 'Paid ' + money(pb.fee.amount) + ' (' + method + ') · ' + user().name });
+    audit('Marked fee paid');
+    render();
+  }
   function markArrived(id) {
     if (state.live) {
       liveSend('POST', '/api/bookings/' + id + '/arrive').then(function (res) {
@@ -2209,10 +2232,12 @@
     }
     if (act === 'collect-cash' || act === 'mark-paid') {
       var pb = booking(id);
-      if (pb && pb.fee) { pb.fee.state = 'paid'; pb.fee.method = act === 'collect-cash' ? 'Cash' : 'UPI'; pb.timeline.push({ at: state.timeLabel, text: 'Paid ' + money(pb.fee.amount) + ' (' + pb.fee.method + ') · ' + user().name }); }
-      audit('Marked fee paid');
+      if (!pb || !pb.fee) return;
+      var cashAct = act === 'collect-cash';
+      state.modal = { kind: 'confirm', title: (cashAct ? 'Collect ' : 'Mark paid ') + money(pb.fee.amount) + (cashAct ? ' in cash' : ' by UPI') + '?', body: 'For ' + patient(pb.patientId).name + '. This records the fee as paid. It cannot be undone from the console.', confirm: cashAct ? 'Collect cash' : 'Mark paid', confirmAct: cashAct ? 'pay-confirm-cash' : 'pay-confirm-upi', id: id };
       render(); return;
     }
+    if (act === 'pay-confirm-cash' || act === 'pay-confirm-upi') { markPaid(id, act === 'pay-confirm-cash' ? 'Cash' : 'UPI'); return; }
     if (act === 'show-qr') { state.form.showQr = true; render(); return; }
     if (act === 'pause') { doctor(id).status = 'paused'; audit('Paused ' + doctor(id).name); render(); return; }
     if (act === 'resume') { doctor(id).status = 'started'; audit('Resumed ' + doctor(id).name); render(); return; }
