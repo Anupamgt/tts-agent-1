@@ -987,9 +987,9 @@
     var who = c.caller || 'Unknown caller';
     var meta = [c.number, c.language, c.verified ? 'verified' : 'not verified'].join(' · ');
     var sel = c.id === state.callbackId ? ' is-selected' : '';
-    return '<div class="bn-cbrow' + (c.overdue ? ' is-overdue' : '') + sel + '" data-act="pick-callback" data-id="' + c.id + '" role="button" tabindex="0">' +
+    return '<div class="bn-cbrow' + (c.overdue ? ' is-overdue' : '') + sel + '" data-act="pick-callback" data-id="' + c.id + '">' +
       prio(c.priority, quiet) +
-      '<div class="bn-cbrow-who"><span class="body-strong">' + esc(who) + '</span><span class="caption bn-muted bn-num">' + esc(meta) + '</span></div>' +
+      '<div class="bn-cbrow-who"><button type="button" class="body-strong bn-card-open" data-act="pick-callback" data-id="' + c.id + '">' + esc(who) + '</button><span class="caption bn-muted bn-num">' + esc(meta) + '</span></div>' +
       '<p class="body bn-cbrow-reason">' + esc(c.reason) + (c.callId ? ' <button type="button" class="bn-btn bn-btn-quiet" data-act="open-call" data-id="' + c.callId + '">' + e('Via agent') + '</button>' : '') + '</p>' +
       '<div class="bn-cbrow-due">' + badge(dueTone, c.dueText, c.overdue ? 'alert' : 'clock') +
       (c.differs ? badge('attention', 'Different number', 'phone') : '') +
