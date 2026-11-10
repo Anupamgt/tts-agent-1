@@ -1,4 +1,6 @@
 /* Deskie helpdesk console. Colours, type and component classes follow design-system tokens. */
+@font-face { font-family: "Anek Latin"; src: url("/fonts/anek-latin-wght.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Anek Devanagari"; src: url("/fonts/anek-devanagari-wght.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
 :root {
   --canvas: #edf2f4;
   --surface: #ffffff;
