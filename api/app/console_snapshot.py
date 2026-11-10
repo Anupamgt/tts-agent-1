@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from app.config import ADMIN_OTP, CONSOLE_EXPOSE_PINS
 from app.db import many, one
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -309,8 +310,8 @@ async def bootstrap(conn) -> dict:
                 "id": str(person["id"]),
                 "name": person["name"].replace("Demo ", ""),
                 "role": person["role"],
-                "pin": person["pin"] or "",
-                "otp": "190026" if person["role"] == "admin" else "",
+                "pin": (person["pin"] or "") if CONSOLE_EXPOSE_PINS else "",
+                "otp": ADMIN_OTP if CONSOLE_EXPOSE_PINS and person["role"] == "admin" else "",
                 "doctorId": str(person["doctor_id"]) if person["doctor_id"] else "",
             }
             for person in staff

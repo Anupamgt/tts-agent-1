@@ -100,4 +100,21 @@ Checked in a browser at 1366px, 375px and 360px with the console in sample mode,
 
 Also fixed after the review: **#17** console and demo-phone fonts are served from `/fonts` (same Anek files), **#21** the "Records" sentence on the site.
 
-Not done: **#2** hard-coded desk PIN (the PIN pad checks PINs for every role, including admin codes, against `console/public/js/data.js`, and the shared server login is what the doctor and assistant live views use; fixing it properly needs per-staff server authentication, not a patch), **#9** temporary tunnel host (needs a real stable hostname), **#18** script integrity (jsDelivr's `.min.js` is generated on the fly and is not in the npm package, so no verifiable hash was available offline; a wrong hash would break the call page), **#15** captions (needs real timings and a transcript), the site's Outfit font (no font file in the repo), and the Low items #19, #23, #24. Known gap: the assistant role can still collect and mark fees paid, as before.
+## Status after Phase 3 (second batch: per-staff sign-in)
+
+**#2 is fixed.** The console no longer contains a PIN or logs in on its own.
+
+- `GET /api/desk/staff` lists names and roles for the sign-in picker (no PINs).
+- `POST /api/desk/staff-login` checks one staff member's PIN on the server (scrypt hash when `pin_hash` is set, the existing plain column otherwise). Admins also need the code, now checked on the server (`ADMIN_OTP`, default `190026`, change it in a real deployment). Five wrong tries lock that person from that address for a minute.
+- `POST /api/desk/logout` ends the session, so Sign out really does.
+- `/api/console/bootstrap` no longer sends PINs or the admin code. `CONSOLE_EXPOSE_PINS=1` restores the old behaviour for an old console build.
+- The shared `/api/desk/login` and `X-Desk-Pin` paths are unchanged, so tools and existing tests keep working.
+- **Collect cash now works in live mode** (`POST /api/bookings/{id}/collect-cash`): walk-ins have a fee but no payment row, so the earlier fix could not save them. It records a `cash_desk` payment, who collected it, and marks the booking paid. Repeating it changes nothing.
+
+Verified against the real API and database: 36 API tests pass (11 new); in a browser, wrong and right PINs, the admin code, no data before sign-in, no PINs in any response, sign-out ending the session, and a walk-in fee collected as cash landing in the database.
+
+**Deploy order matters.** Restart the API first, then publish the console. A new console talking to an old API cannot reach `/api/desk/staff` and falls back to the built-in demo data.
+
+Not done: **#9** temporary tunnel host (needs a real stable hostname), **#18** script integrity (jsDelivr's `.min.js` is generated on the fly and is not in the npm package, so no verifiable hash was available offline; a wrong hash would break the call page), **#15** captions (needs real timings and a transcript), the site's Outfit font (no font file in the repo), and the Low items #19, #23, #24.
+
+Known limits: staff PINs are still stored in plain text in `staff_users.pin` unless the hash migration and `STAFF_DEV_PINS` seeding are used; the admin code is one shared value, not a per-person authenticator; sessions live in API memory and end when the API restarts; the console's emergency banner is scripted demo content. The server test `migration adds hashes and does not insert pins` still fails on an older assertion about compose services that no longer exist.

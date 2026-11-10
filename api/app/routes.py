@@ -676,6 +676,41 @@ async def mark_paid(payment_id: int, request: Request):
     return {"ok": True, "payment_id": payment_id, "status": "paid"}
 
 
+@router.post("/api/bookings/{booking_id}/collect-cash")
+async def collect_cash(booking_id: int, request: Request):
+    """Record a cash fee taken at the desk. A walk-in has a fee but no payment row yet, so this makes one."""
+    _loopback_or_404(request)
+    _desk_or_401(request)
+    token = desk_token_from(request)
+    staff_id = (desk_sessions.get(token) or {}).get("staff_id") if token else None
+    async with db.connection() as conn:
+        async with conn.transaction():
+            booking = await one(
+                conn,
+                """SELECT id, appointment_fee_inr, priority_fee_inr, payment_status
+                     FROM bookings WHERE id = %s FOR UPDATE""",
+                (booking_id,),
+            )
+            if booking is None:
+                raise HTTPException(status_code=404, detail="unknown booking")
+            if booking["payment_status"] == "paid":
+                return {"ok": True, "booking_id": booking_id, "status": "paid"}
+            total = int(booking["appointment_fee_inr"] or 0) + int(booking["priority_fee_inr"] or 0)
+            if booking["payment_status"] != "pending" or total <= 0:
+                raise HTTPException(status_code=409, detail="no fee is due on this booking")
+            await conn.execute(
+                "UPDATE payments SET status = 'cancelled' WHERE booking_id = %s AND status IN ('link_sent', 'pending')",
+                (booking_id,),
+            )
+            await conn.execute(
+                """INSERT INTO payments (booking_id, amount_inr, method, status, paid_at, collected_by)
+                   VALUES (%s, %s, 'cash_desk', 'paid', now(), %s)""",
+                (booking_id, total, staff_id),
+            )
+            await conn.execute("UPDATE bookings SET payment_status = 'paid' WHERE id = %s", (booking_id,))
+    return {"ok": True, "booking_id": booking_id, "status": "paid"}
+
+
 @router.get("/api/refunds")
 async def list_refunds(request: Request):
     _loopback_or_404(request)

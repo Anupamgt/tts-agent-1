@@ -1,11 +1,24 @@
 import re
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from psycopg import errors
 
-from app.auth import desk_token_from, is_loopback
+from app.auth import (
+    client_ip,
+    desk_sessions,
+    desk_token_from,
+    digest_equal,
+    is_loopback,
+    login_failed,
+    login_succeeded,
+    login_wait,
+    new_desk_session,
+    verify_pin_hash,
+)
+from app.config import ADMIN_OTP
 from app.console_snapshot import bootstrap
-from app.db import db, one
+from app.db import db, many, one
 from app.jobs import note_call_next, run_jobs
 
 router = APIRouter()
@@ -21,6 +34,66 @@ def _guard(request: Request):
 
 async def _staff_by_pin(conn, pin: str):
     return await one(conn, "SELECT * FROM staff_users WHERE pin = %s AND active", (pin,))
+
+
+def _public_staff(person) -> dict:
+    return {
+        "id": str(person["id"]),
+        "name": person["name"].replace("Demo ", ""),
+        "role": person["role"],
+        "doctorId": str(person["doctor_id"]) if person["doctor_id"] else "",
+    }
+
+
+@router.get("/api/desk/staff")
+async def desk_staff():
+    """Names and roles for the sign-in picker. No PINs, no codes."""
+    async with db.connection() as conn:
+        rows = await many(conn, "SELECT id, name, role, doctor_id FROM staff_users WHERE active ORDER BY id")
+    return [_public_staff(row) for row in rows]
+
+
+@router.post("/api/desk/staff-login")
+async def desk_staff_login(request: Request):
+    """Per-staff sign-in. The PIN (and the admin code) are checked here, never in the browser."""
+    body = await request.json()
+    staff_id = str(body.get("staff_id") or "")
+    pin = str(body.get("pin") or "")
+    otp = str(body.get("otp") or "")
+    key = f"{client_ip(request)}|{staff_id}"
+    wait = login_wait(key)
+    if wait:
+        raise HTTPException(status_code=429, detail="too many tries", headers={"Retry-After": str(wait)})
+    staff = None
+    if staff_id.isdigit():
+        async with db.connection() as conn:
+            staff = await one(conn, "SELECT * FROM staff_users WHERE id = %s AND active", (int(staff_id),))
+    ok = False
+    if staff and pin:
+        if staff.get("pin_hash"):
+            ok = verify_pin_hash(pin, staff["pin_hash"])
+        elif staff.get("pin"):
+            ok = digest_equal(pin, staff["pin"])
+        if ok and staff["role"] == "admin":
+            ok = digest_equal(otp, ADMIN_OTP)
+    if not ok:
+        login_failed(key)
+        raise HTTPException(status_code=401, detail="invalid pin")
+    login_succeeded(key)
+    response = JSONResponse({"ok": True, "user": _public_staff(staff)})
+    secure = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+    response.set_cookie("desk_session", new_desk_session(staff), httponly=True, samesite="lax", secure=secure)
+    return response
+
+
+@router.post("/api/desk/logout")
+async def desk_logout(request: Request):
+    token = request.cookies.get("desk_session")
+    if token:
+        desk_sessions.pop(token, None)
+    response = JSONResponse({"ok": True})
+    response.delete_cookie("desk_session")
+    return response
 
 
 @router.get("/api/console/bootstrap")

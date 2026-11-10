@@ -124,3 +124,19 @@ def sql(statement, params=()):
         return []
     finally:
         conn.close()
+
+
+from contextlib import contextmanager  # noqa: E402
+
+
+@contextmanager
+def clean_cookies(client):
+    """Run a block with an empty cookie jar, then put the harness's own session cookies back."""
+    saved = list(client.cookies.jar)
+    client.cookies.clear()
+    try:
+        yield
+    finally:
+        client.cookies.clear()
+        for cookie in saved:
+            client.cookies.jar.set_cookie(cookie)

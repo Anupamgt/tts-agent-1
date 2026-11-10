@@ -47,6 +47,10 @@ BOLNA_ENFORCE_SOURCE_IP = env("BOLNA_ENFORCE_SOURCE_IP", "0") == "1"
 BOLNA_SOURCE_IPS = {"13.203.39.153", "13.126.9.249", "13.202.133.53"}
 INTERNAL_TOKEN = env("INTERNAL_TOKEN", "dev-internal-token")
 DESK_PIN = env("DESK_PIN", "2468")
+# Admin second step for per-staff sign-in. Demo value; set ADMIN_OTP in any real deployment.
+ADMIN_OTP = env("ADMIN_OTP", "190026")
+# Legacy escape hatch: the console used to receive every staff PIN in its data snapshot.
+CONSOLE_EXPOSE_PINS = env("CONSOLE_EXPOSE_PINS", "0") == "1"
 PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "http://127.0.0.1:8000")
 SIMULATOR_ENABLED = env("SIMULATOR_ENABLED", "1") == "1"
 HANDOFF_WAIT_SECONDS = float(env("HANDOFF_WAIT_SECONDS", "25"))

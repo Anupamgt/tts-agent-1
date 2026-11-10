@@ -1,6 +1,8 @@
+import base64
 import hashlib
 import hmac
 import secrets
+import time
 
 from fastapi import Request
 
@@ -72,10 +74,61 @@ def is_loopback(request: Request) -> bool:
     return host in {"127.0.0.1", "::1", "localhost"}
 
 
-def new_desk_session() -> str:
+def new_desk_session(staff: dict | None = None) -> str:
     token = secrets.token_urlsafe(24)
-    desk_sessions[token] = {"role": "receptionist"}
+    session = {"role": "receptionist"}
+    if staff:
+        session = {"role": staff["role"], "staff_id": staff["id"]}
+    desk_sessions[token] = session
     return token
+
+
+def _b64url(value: str) -> bytes:
+    return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
+
+def verify_pin_hash(pin: str, stored: str) -> bool:
+    """Check a PIN against the scrypt$N$r$p$salt$hash string the Node side writes (server/src/pins.js)."""
+    parts = (stored or "").split("$")
+    if len(parts) != 6 or parts[0] != "scrypt":
+        return False
+    try:
+        n, r, p = int(parts[1]), int(parts[2]), int(parts[3])
+        salt, expect = _b64url(parts[4]), _b64url(parts[5])
+        got = hashlib.scrypt(pin.encode(), salt=salt, n=n, r=r, p=p, dklen=len(expect), maxmem=128 * n * r * 2 + 1024 * 1024)
+    except (ValueError, TypeError):
+        return False
+    return hmac.compare_digest(got, expect)
+
+
+# Four-digit PINs need a brake. Five wrong tries lock that staff member from that address for a minute.
+LOGIN_MAX_FAILS = 5
+LOGIN_LOCK_SECONDS = 60
+_login_fails: dict[str, list] = {}
+
+
+def login_wait(key: str) -> int:
+    entry = _login_fails.get(key)
+    if not entry:
+        return 0
+    remaining = int(entry[1] - time.monotonic())
+    if remaining > 0:
+        return remaining
+    if entry[1]:
+        _login_fails.pop(key, None)
+    return 0
+
+
+def login_failed(key: str) -> None:
+    entry = _login_fails.setdefault(key, [0, 0.0])
+    entry[0] += 1
+    if entry[0] >= LOGIN_MAX_FAILS:
+        entry[1] = time.monotonic() + LOGIN_LOCK_SECONDS
+        entry[0] = 0
+
+
+def login_succeeded(key: str) -> None:
+    _login_fails.pop(key, None)
 
 
 def desk_token_from(request: Request) -> str | None:
