@@ -23,7 +23,7 @@ For The Great Indian AI Internship Challenge by Gnani AI, we built **Deskie**: a
 ⚙️ **Under the hood:** LiveKit Agents runs the rooms, sessions, tool calls and SIP telephony (Vobiz). Gnani Prisma handles speech to text and Gnani Timbre handles text to speech. A FastAPI clinic backend and a live desk console sit behind it. We tested it with automated voice calls over LiveKit Cloud and AI-played callers, and all 6 scenarios pass, from Hinglish booking to emergency routing.
 
 👉 Talk to Deskie in your browser: https://deskie-clinic.vercel.app/phone
-👉 Code and full report: https://github.com/Anupamgt/bolnai-helpdesk-
+👉 Code and full report: https://github.com/Anupamgt/tts-agent-1
 
 Thank you, Gnani AI, for opening up models built for Indian speech. Building on them showed us how much changes when a voice agent understands India by default.
 

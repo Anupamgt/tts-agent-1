@@ -98,7 +98,7 @@ Testing found real bugs:
 ## Try it
 
 📞 Talk to Deskie in your browser: **https://deskie-clinic.vercel.app/phone**
-💻 Code and full technical report: **https://github.com/Anupamgt/bolnai-helpdesk-**
+💻 Code and full technical report: **https://github.com/Anupamgt/tts-agent-1**
 
 Built on Gnani AI's Prisma and Timbre, with LiveKit, for The Great Indian AI Internship Challenge.
 

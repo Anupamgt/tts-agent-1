@@ -38,7 +38,7 @@ Tested with automated voice calls and AI-played callers: 6/6 scenarios pass.
 
 **5/**
 Try it in your browser 👉 https://deskie-clinic.vercel.app/phone
-Code 👉 https://github.com/Anupamgt/bolnai-helpdesk-
+Code 👉 https://github.com/Anupamgt/tts-agent-1
 
 #GnaniAI #GreatIndianAIInternshipChallenge
 

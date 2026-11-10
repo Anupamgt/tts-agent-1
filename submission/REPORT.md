@@ -4,7 +4,7 @@
 > Deskie is a voice front desk for small Indian clinics. It speaks English, Hindi and Hinglish, books visits from the clinic's own records, refuses to give medical advice, sends emergencies straight to people, and puts a person on the line when a caller asks for one.
 > It is built on **Gnani AI's Prisma (speech to text) and Timbre (text to speech)**, runs on **LiveKit Agents** and connects to real phone lines over **SIP (Vobiz)**.
 
-**Live:** https://deskie-clinic.vercel.app · **Talk to it in your browser:** https://deskie-clinic.vercel.app/phone · **Code:** https://github.com/Anupamgt/bolnai-helpdesk-
+**Live:** https://deskie-clinic.vercel.app · **Talk to it in your browser:** https://deskie-clinic.vercel.app/phone · **Code:** https://github.com/Anupamgt/tts-agent-1
 
 ---
 
