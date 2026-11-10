@@ -611,7 +611,7 @@
     if (!cabin && b.status === 'arrived') action = '<div class="bn-card-actions"><button type="button" class="bn-btn bn-btn-primary" data-act="send-in" data-id="' + b.id + '">' + e('Send in') + '</button></div>';
     var note = b.delayChoice === 'keep' ? 'Delay call: chose to keep place' : b.delayChoice === 'unconfirmed' ? 'Delay call: unconfirmed' : '';
     return '<article class="bn-card bn-card-' + st + (b.priority ? ' is-priority' : '') + '" data-act="open-booking" data-id="' + b.id + '">' +
-      '<div class="bn-card-main"><div class="bn-card-who"><span class="body-strong bn-card-name" title="' + esc(p ? p.name : '') + '">' + esc(p ? p.name : 'Patient') + '</span>' +
+      '<div class="bn-card-main"><div class="bn-card-who"><button type="button" class="body-strong bn-card-name bn-card-open" data-act="open-booking" data-id="' + b.id + '">' + esc(p ? p.name : 'Patient') + '</button>' +
       (meta ? '<span class="caption bn-muted bn-num">' + esc(meta) + '</span>' : '') + '</div>' +
       '<div class="bn-card-state">' + badge(STATUS[st][0], STATUS[st][1]) +
       (b.status === 'held' ? '<span class="caption bn-muted bn-num" data-live-hold>' + esc(holdNote()) + '</span>' : (b.statusNote ? '<span class="caption bn-muted bn-num">' + esc(b.statusNote) + '</span>' : '')) + '</div></div>' +
@@ -1830,7 +1830,25 @@
     var focusId = keep && keep.id;
     var pos = keep ? keep.selectionStart : null;
     state.doctors.forEach(function (d) { d.threshold = Number(state.settings.delayThreshold) || 20; });
+    var hadDialog = !!document.querySelector('[role="dialog"]');
+    if (!hadDialog) {
+      var opener = document.activeElement;
+      state._opener = opener && opener.dataset && opener.dataset.act ? { act: opener.dataset.act, id: opener.dataset.id || '' } : null;
+    }
     document.getElementById('app').innerHTML = view();
+    var dlg = document.querySelector('[role="dialog"]');
+    if (dlg) {
+      var heading = dlg.querySelector('h1, h2, h3');
+      if (heading && !dlg.hasAttribute('aria-labelledby')) {
+        if (!heading.id) heading.id = 'dlg-title';
+        dlg.setAttribute('aria-labelledby', heading.id);
+      }
+      if (!hadDialog) { dlg.setAttribute('tabindex', '-1'); dlg.focus(); }
+    } else if (hadDialog && state._opener) {
+      var back = document.querySelector('button[data-act="' + state._opener.act + '"][data-id="' + state._opener.id + '"]') || document.querySelector('[data-act="' + state._opener.act + '"][data-id="' + state._opener.id + '"]');
+      if (back) back.focus();
+      state._opener = null;
+    }
     var bar = document.querySelector('.emergency-wrap');
     document.documentElement.style.setProperty('--emergency-h', (bar ? bar.offsetHeight : 0) + 'px');
     if (focusId) {
@@ -2300,8 +2318,13 @@
       render(); return;
     }
     if (act === 'clear-lockout') {
-      cbBy(id).lockout = false;
-      audit('Cleared a verification lockout after an in-person check');
+      state.modal = { kind: 'confirm', title: 'Clear the phone verification lockout?', body: 'Only do this after you have checked the patient in person. Callers on this number will be able to try identity checks again. This is recorded under your name.', confirm: 'Clear lockout', confirmAct: 'lockout-confirm', id: id };
+      render(); return;
+    }
+    if (act === 'lockout-confirm') {
+      state.modal = null;
+      if (cbBy(id)) cbBy(id).lockout = false;
+      audit('Cleared a verification lockout after an in-person check, by ' + user().name);
       render(); return;
     }
     if (act === 'pick-call') { state.callId = id; state.playing = false; render(); return; }
@@ -2591,7 +2614,21 @@
     maybeAuditSettings(el);
   }
   function typing(el) { return el && el.matches && el.matches('input, textarea, select'); }
+  function trapTab(e) {
+    var dlg = document.querySelector('[role="dialog"]');
+    if (!dlg || e.key !== 'Tab') return false;
+    var sel = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    var wrap = document.querySelector('.emergency-wrap');
+    var items = Array.prototype.slice.call(dlg.querySelectorAll(sel)).concat(wrap ? Array.prototype.slice.call(wrap.querySelectorAll(sel)) : []);
+    if (!items.length) return false;
+    var i = items.indexOf(document.activeElement);
+    var next = e.shiftKey ? (i <= 0 ? items.length - 1 : i - 1) : (i < 0 || i === items.length - 1 ? 0 : i + 1);
+    e.preventDefault();
+    items[next].focus();
+    return true;
+  }
   function onKey(e) {
+    if (trapTab(e)) return;
     if (pinPadOpen() && !typing(e.target)) {
       if (/^[0-9]$/.test(e.key)) {
         e.preventDefault();
