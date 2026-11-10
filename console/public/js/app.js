@@ -1903,16 +1903,22 @@
     state.modal = null;
     if (!pb || !pb.fee || pb.fee.state === 'paid') { render(); return; }
     if (state.live) {
-      var pid = pb.fee.paymentId;
-      if (!pid) {
-        var pay = state.payments.filter(function (p) { return String(p.bookingId) === String(id); })[0];
-        pid = pay && pay.id;
+      var url;
+      if (method === 'Cash') {
+        url = '/api/bookings/' + id + '/collect-cash';
+      } else {
+        var pid = pb.fee.paymentId;
+        if (!pid) {
+          var pay = state.payments.filter(function (p) { return String(p.bookingId) === String(id); })[0];
+          pid = pay && pay.id;
+        }
+        if (!pid) { toast('No payment record for this visit yet. Nothing was changed.'); render(); return; }
+        url = '/api/payments/' + pid + '/mark-paid';
       }
-      if (!pid) { toast('No payment record for this visit yet. Nothing was changed.'); render(); return; }
       if (state._paying) { render(); return; }
       state._paying = true;
       render();
-      liveSend('POST', '/api/payments/' + pid + '/mark-paid').then(function (res) {
+      liveSend('POST', url).then(function (res) {
         state._paying = false;
         if (!res.ok) { toast((res.data && res.data.detail) || 'Could not record the payment. Try again.'); render(); return; }
         pb.fee.state = 'paid';
@@ -2117,9 +2123,38 @@
     audit((source === 'walk_in' ? 'Walk-in booked for ' : 'Booked ') + patient(pid).name + ' · ' + dayLabel(dateKey) + ', ' + windowShown(docId, label, dateKey), { patientId: pid });
     render();
   }
+  function sessionEnded() {
+    state._desk = false;
+    state.signedIn = false;
+    state.locked = false;
+    state.userId = '';
+    state.pin = '';
+    state.otp = '';
+    state.needOtp = false;
+    state.pinError = 'Your session ended. Sign in again.';
+    render();
+  }
+  function serverPin(u) {
+    // Admins give a PIN and then a code; both are checked together on the server.
+    if (u.role === 'admin' && !state.needOtp) { state.needOtp = true; state.pinError = ''; state.otp = ''; render(); return; }
+    if (state._signingIn) return;
+    state._signingIn = true;
+    liveSend('POST', '/api/desk/staff-login', { staff_id: u.id, pin: state.pin, otp: state.otp }).then(function (res) {
+      state._signingIn = false;
+      if (res.ok) { state._desk = true; state._pullFails = 0; finishSignIn(u); if (state.reload) state.reload(); return; }
+      state.pin = ''; state.otp = ''; state.needOtp = false;
+      state.pinError = res.status === 429 ? 'Too many tries. Wait a minute, then try again.' : (u.role === 'admin' ? 'That PIN or code does not match.' : 'That PIN does not match.');
+      render();
+    }).catch(function () {
+      state._signingIn = false; state.pin = ''; state.otp = ''; state.needOtp = false;
+      state.pinError = 'No connection. Try again.';
+      render();
+    });
+  }
   function tryPin() {
     var u = state.users.filter(function (x) { return x.id === (state.pinFor || (state.locked ? state.userId : '')); })[0];
     if (!u) return;
+    if (state._serverAuth) { serverPin(u); return; }
     if (!state.needOtp) {
       if (u.pin !== state.pin) { state.pin = ''; state.pinError = 'That PIN does not match.'; render(); return; }
       if (u.role === 'admin') { state.needOtp = true; state.pinError = ''; state.otp = ''; render(); return; }
@@ -2225,7 +2260,7 @@
     if (act === 'refresh') { render({ keepFocus: true }); return; }
     if (act === 'lang') { state.lang = value; render(); return; }
     if (act === 'lock') { state.locked = true; state.pin = ''; state.pinFor = state.userId; state.needOtp = false; state.pinError = ''; render(); return; }
-    if (act === 'signout') { state.signedIn = false; state.locked = false; state.switchOpen = false; state.userId = ''; state.pendingEmergency = null; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; state.deskOpenedAt = 0; state.demoFired = {}; state.accountOpen = false; state.emergencyCompact = false; clearTimeout(state._emTimer); state._emTimer = null; render(); return; }
+    if (act === 'signout') { if (state._desk) { liveSend('POST', '/api/desk/logout'); state._desk = false; } state.signedIn = false; state.locked = false; state.switchOpen = false; state.userId = ''; state.pendingEmergency = null; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.drawer = null; state.modal = null; state.deskOpenedAt = 0; state.demoFired = {}; state.accountOpen = false; state.emergencyCompact = false; clearTimeout(state._emTimer); state._emTimer = null; render(); return; }
     if (act === 'switch-open') { state.switchOpen = true; state.pin = ''; state.pinFor = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'switch-close' || act === 'pin-cancel') { state.switchOpen = false; state.pinFor = ''; state.pin = ''; state.needOtp = false; state.pinError = ''; render(); return; }
     if (act === 'pick-user') { state.pinFor = id; state.pin = ''; state.otp = ''; state.needOtp = false; state.pinError = ''; render(); return; }
@@ -2918,30 +2953,26 @@
   }
   if (!/[?&]sample=1(?:&|$)/.test(location.search)) {
     function pull() {
-      var login = state._desk ? Promise.resolve() : fetch('/api/desk/login', {
-        method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: '2468' })
-      }).then(function () { state._desk = true; });
-      login.then(function () {
-        return fetch('/api/console/bootstrap', { credentials: 'same-origin' });
-      }).then(function (r) {
-        if (r.status === 401) {
-          state._desk = false;
-          return fetch('/api/desk/login', {
-            method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pin: '2468' })
-          }).then(function () {
-            state._desk = true;
-            return fetch('/api/console/bootstrap', { credentials: 'same-origin' });
-          });
-        }
-        return r;
-      }).then(function (r) { return r.json(); }).then(applyLive).catch(function () {
+      // Staff names come from the server for the sign-in picker. No PIN is ever sent to the browser.
+      var ready = state._serverAuth ? Promise.resolve() : fetch('/api/desk/staff', { credentials: 'same-origin' }).then(function (r) {
+        if (!r.ok) throw new Error('staff list unavailable');
+        return r.json();
+      }).then(function (list) {
+        state.users = list.map(function (p) { return { id: p.id, name: p.name, role: p.role, doctorId: p.doctorId, pin: '', otp: '' }; });
+        state._serverAuth = true;
+        state._liveUser = true;
+        if (!state.signedIn) render({ keepFocus: true });
+      });
+      ready.then(function () {
+        if (!state._desk) return null; // data loads after a staff member signs in
+        return fetch('/api/console/bootstrap', { credentials: 'same-origin' }).then(function (r) {
+          if (r.status === 401) { sessionEnded(); return null; }
+          return r.json();
+        });
+      }).then(function (snap) { if (snap) applyLive(snap); }).catch(function () {
         state.syncOk = false;
         state._pullFails = (state._pullFails || 0) + 1;
-        if (state._pullFails >= 2 && !state.offline) {
+        if (state._pullFails >= 2 && !state.offline && state._desk) {
           state.offline = true;
           if (!uiBusy()) render({ keepFocus: true }); else state._stale = true;
         }
