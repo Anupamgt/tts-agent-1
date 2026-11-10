@@ -187,13 +187,21 @@ async def bootstrap(conn) -> dict:
             WHERE w.ends_at > now() - interval '2 days'
             ORDER BY w.starts_at, b.id""",
     )
+    payment_ids = {}
+    if bookings:
+        for row in await many(
+            conn,
+            "SELECT booking_id, max(id) AS id FROM payments WHERE booking_id = ANY(%s) GROUP BY booking_id",
+            ([b["id"] for b in bookings],),
+        ):
+            payment_ids[row["booking_id"]] = str(row["id"])
     booking_rows = []
     for booking in bookings:
         total = int(booking["appointment_fee_inr"] or 0) + int(booking["priority_fee_inr"] or 0)
         fee = None
         if total:
             state = "paid" if booking["payment_status"] == "paid" else "due"
-            fee = {"state": state, "amount": total, "method": "UPI link"}
+            fee = {"state": state, "amount": total, "method": "UPI link", "paymentId": payment_ids.get(booking["id"], "")}
         booking_rows.append({
             "id": str(booking["id"]),
             "patientId": str(booking["patient_id"]),

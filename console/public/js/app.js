@@ -1826,27 +1826,39 @@
     try { renderNow(opts); } finally { rendering = false; }
     if (renderAgain) { var again = renderAgain; renderAgain = null; render(again); }
   }
+  function dialogsNow() { return Array.prototype.slice.call(document.querySelectorAll('[role="dialog"]')); }
+  function focusKey(el) {
+    if (!el || !el.dataset || !el.dataset.act) return null;
+    return { act: el.dataset.act, id: el.dataset.id || '', value: el.dataset.value || '' };
+  }
+  function findByKey(k) {
+    var base = '[data-act="' + k.act + '"][data-id="' + k.id + '"]' + (k.value ? '[data-value="' + k.value + '"]' : '');
+    return document.querySelector('button' + base) || document.querySelector(base);
+  }
   function renderNow(opts) {
+    state._stale = false;
     var keep = opts && opts.keepFocus ? document.activeElement : null;
     var focusId = keep && keep.id;
+    var focusBtn = keep && !focusId ? focusKey(keep) : null;
     var pos = keep ? keep.selectionStart : null;
     state.doctors.forEach(function (d) { d.threshold = Number(state.settings.delayThreshold) || 20; });
-    var hadDialog = !!document.querySelector('[role="dialog"]');
-    if (!hadDialog) {
-      var opener = document.activeElement;
-      state._opener = opener && opener.dataset && opener.dataset.act ? { act: opener.dataset.act, id: opener.dataset.id || '' } : null;
-    }
+    var before = dialogsNow().length;
+    if (!before) state._opener = focusKey(document.activeElement);
     document.getElementById('app').innerHTML = view();
-    var dlg = document.querySelector('[role="dialog"]');
-    if (dlg) {
-      var heading = dlg.querySelector('h1, h2, h3');
-      if (heading && !dlg.hasAttribute('aria-labelledby')) {
-        if (!heading.id) heading.id = 'dlg-title';
-        dlg.setAttribute('aria-labelledby', heading.id);
+    var dlgs = dialogsNow();
+    dlgs.forEach(function (d, i) {
+      var heading = d.querySelector('h1, h2, h3');
+      if (heading && !d.hasAttribute('aria-labelledby')) {
+        if (!heading.id) heading.id = 'dlg-title-' + i;
+        d.setAttribute('aria-labelledby', heading.id);
       }
-      if (!hadDialog) { dlg.setAttribute('tabindex', '-1'); dlg.focus(); }
-    } else if (hadDialog && state._opener) {
-      var back = document.querySelector('button[data-act="' + state._opener.act + '"][data-id="' + state._opener.id + '"]') || document.querySelector('[data-act="' + state._opener.act + '"][data-id="' + state._opener.id + '"]');
+    });
+    if (dlgs.length > before) {
+      var top = dlgs[dlgs.length - 1];
+      top.setAttribute('tabindex', '-1');
+      top.focus();
+    } else if (!dlgs.length && before && state._opener) {
+      var back = findByKey(state._opener);
       if (back) back.focus();
       state._opener = null;
     }
@@ -1860,6 +1872,9 @@
           try { node.setSelectionRange(pos, pos); } catch (err) { /* number inputs */ }
         }
       }
+    } else if (focusBtn) {
+      var again = findByKey(focusBtn);
+      if (again) again.focus();
     }
   }
 
@@ -1888,15 +1903,21 @@
     state.modal = null;
     if (!pb || !pb.fee || pb.fee.state === 'paid') { render(); return; }
     if (state.live) {
-      var pay = state.payments.filter(function (p) { return String(p.bookingId) === String(id); })[0];
-      if (!pay) { toast('No payment record for this visit yet. Nothing was changed.'); render(); return; }
-      if (state._paying) return;
+      var pid = pb.fee.paymentId;
+      if (!pid) {
+        var pay = state.payments.filter(function (p) { return String(p.bookingId) === String(id); })[0];
+        pid = pay && pay.id;
+      }
+      if (!pid) { toast('No payment record for this visit yet. Nothing was changed.'); render(); return; }
+      if (state._paying) { render(); return; }
       state._paying = true;
-      liveSend('POST', '/api/payments/' + pay.id + '/mark-paid').then(function (res) {
+      render();
+      liveSend('POST', '/api/payments/' + pid + '/mark-paid').then(function (res) {
         state._paying = false;
         if (!res.ok) { toast((res.data && res.data.detail) || 'Could not record the payment. Try again.'); render(); return; }
-        pb.fee.state = 'paid'; pb.fee.method = method;
-        toast('Marked paid ' + money(pb.fee.amount) + ' (' + method + ')');
+        pb.fee.state = 'paid';
+        toast('Marked paid ' + money(pb.fee.amount));
+        render();
         if (state.reload) state.reload();
       }).catch(function () { state._paying = false; toast('No connection. The payment was not recorded.'); render(); });
       return;
@@ -2616,7 +2637,8 @@
   }
   function typing(el) { return el && el.matches && el.matches('input, textarea, select'); }
   function trapTab(e) {
-    var dlg = document.querySelector('[role="dialog"]');
+    var all = dialogsNow();
+    var dlg = all[all.length - 1];
     if (!dlg || e.key !== 'Tab') return false;
     var sel = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
     var wrap = document.querySelector('.emergency-wrap');
@@ -2679,8 +2701,16 @@
   document.body.addEventListener('change', onChange);
   document.body.addEventListener('input', onInput);
   document.body.addEventListener('focusout', onFocusOut);
-  document.body.addEventListener('focusout', function () {
-    setTimeout(function () { if (state._stale && !uiBusy()) { state._stale = false; render({ keepFocus: true }); } }, 0);
+  var pointerDown = false;
+  function catchUp() {
+    if (state._stale && !pointerDown && !uiBusy()) render({ keepFocus: true });
+  }
+  document.body.addEventListener('pointerdown', function () { pointerDown = true; });
+  document.addEventListener('pointerup', function () { pointerDown = false; setTimeout(catchUp, 80); });
+  document.addEventListener('pointercancel', function () { pointerDown = false; });
+  document.body.addEventListener('focusout', function (e) {
+    if (e.relatedTarget) return;
+    setTimeout(catchUp, 80);
   });
   document.addEventListener('keydown', onKey);
   document.body.addEventListener('dragstart', onDragStart);
