@@ -424,6 +424,42 @@ async def transcript(call_id: int, request: Request):
     return [_public_row(row) for row in rows]
 
 
+# Tools whose spoken sentence the demo page may show back to the same caller. Each one only
+# repeats what Deskie already said on this call.
+PROGRESS_SAY_TOOLS = {
+    "get_clinic_info", "get_doctor_delay", "get_available_windows", "hold_window", "create_booking",
+    "reschedule_booking", "cancel_booking", "get_booking_status", "get_report_status",
+    "request_human", "create_callback",
+}
+
+
+@router.get("/api/calls/{call_id}/progress")
+async def call_progress(call_id: int, request: Request):
+    """What the agent has done on this call so far, for the live demo walkthrough.
+    Readable only with this call's caller token (or a desk session). Tool names, ok, and the
+    sentence already spoken to this caller; never request arguments or record data."""
+    token = request.headers.get("x-caller-token") or request.query_params.get("token")
+    if caller_call_id(token) != call_id and not desk_token_from(request):
+        raise HTTPException(status_code=401, detail="caller token required")
+    try:
+        after = int(request.query_params.get("after") or 0)
+    except ValueError:
+        after = 0
+    async with db.connection() as conn:
+        rows = await many(
+            conn,
+            """SELECT id, tool_name, ok, response_json FROM tool_invocations
+                WHERE call_id = %s AND id > %s ORDER BY id LIMIT 100""",
+            (call_id, after),
+        )
+    events = []
+    for row in rows:
+        body = row["response_json"] if isinstance(row["response_json"], dict) else {}
+        say = body.get("say") if row["tool_name"] in PROGRESS_SAY_TOOLS else ""
+        events.append({"id": row["id"], "tool": row["tool_name"], "ok": bool(row["ok"]), "say": str(say or "")[:280]})
+    return events
+
+
 @router.get("/api/calls/{call_id}/traces")
 async def traces(call_id: int, request: Request):
     _loopback_or_404(request)
