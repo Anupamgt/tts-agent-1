@@ -2,96 +2,493 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Demo phone · Deskie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Talk to Deskie · Live demo</title>
+  <meta name="description" content="Call a demo clinic from your browser. Deskie answers in English or Hindi, books from the clinic's records, and puts a person on the line when you ask.">
   <link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="brand/png/favicon-32.png" type="image/png" sizes="32x32">
-  <link rel="icon" href="brand/png/favicon-16.png" type="image/png" sizes="16x16">
   <link rel="apple-touch-icon" href="brand/png/favicon-180.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/console.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.15.7/dist/livekit-client.umd.min.js"></script>
+  <style>
+    /* Same palette, type and shapes as the public site (site/styles.css). Added: --danger, --danger-ink, --amber. */
+    :root {
+      --bg: #050505;
+      --ink: #f4f7f4;
+      --muted: #a3aea3;
+      --green: #82db82;
+      --green-deep: #14301a;
+      --card: #101410;
+      --line: rgba(130, 219, 130, 0.22);
+      --line-soft: rgba(255, 255, 255, 0.08);
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --danger: #f28b82;
+      --danger-ink: #1c0603;
+      --amber: #f0c56a;
+      font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--ink); font-size: 17px; line-height: 1.5; min-height: 100vh; }
+    a { color: inherit; }
+    button { font: inherit; color: inherit; }
+    .dots {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: radial-gradient(rgba(130, 219, 130, 0.16) 1.1px, transparent 1.2px);
+      background-size: 22px 22px;
+      mask-image: linear-gradient(90deg, #000 0%, transparent 18%, transparent 82%, #000 100%);
+    }
+    .wrap { position: relative; z-index: 1; width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    a:focus-visible, button:focus-visible, input:focus-visible + .caller { outline: 3px solid var(--green); outline-offset: 3px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+    /* top bar */
+    .top { display: flex; align-items: center; gap: 16px; padding: 22px 0; flex-wrap: wrap; }
+    .word { font-weight: 700; letter-spacing: -0.04em; font-size: 22px; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
+    .tag { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--green); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .tag i { width: 8px; height: 8px; border-radius: 999px; background: var(--green); }
+    .top-links { margin-left: auto; display: flex; gap: 20px; align-items: center; }
+    .top-links a { color: var(--muted); text-decoration: none; font-size: 15px; display: inline-flex; align-items: center; min-height: 44px; }
+    .top-links a:hover { color: var(--ink); }
+
+    /* buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 48px; padding: 0 22px; border-radius: 999px; border: 0;
+      background: var(--green); color: #071207; font-weight: 600; text-decoration: none; cursor: pointer;
+      transition: filter 120ms ease, background-color 120ms ease;
+    }
+    .btn:hover { filter: brightness(1.06); }
+    .btn:active { filter: brightness(0.92); }
+    .btn:disabled { cursor: not-allowed; background: #2a332a; color: var(--muted); filter: none; }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    .btn.ghost[aria-pressed="true"] { background: var(--green-deep); border-color: var(--green); }
+    .btn.end { background: var(--danger); color: var(--danger-ink); }
+    .btn.big { min-height: 56px; padding: 0 30px; font-size: 18px; }
+    .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+    /* intro */
+    .intro { padding: 36px 0 28px; max-width: 46rem; }
+    .kicker { margin: 0 0 12px; color: var(--green); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
+    h1 { margin: 0 0 16px; font-size: clamp(40px, 6vw, 64px); line-height: 1; letter-spacing: -0.045em; font-weight: 600; }
+    h1 { text-wrap: balance; }
+    h1 em { font-style: normal; color: var(--green); }
+    .lede { margin: 0; color: var(--muted); font-size: 18px; max-width: 38rem; }
+
+    /* demo */
+    .demo { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 18px; align-items: stretch; }
+    .panel {
+      background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow);
+      padding: 24px; min-width: 0; display: flex; flex-direction: column; gap: 20px;
+    }
+    .step { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--ink); }
+    .step span { color: var(--green); margin-right: 6px; }
+    fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .callers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .callers input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .caller {
+      display: flex; flex-direction: column; gap: 4px; height: 100%;
+      padding: 14px 16px; border-radius: 16px; border: 1px solid var(--line-soft);
+      background: rgba(0, 0, 0, 0.35); cursor: pointer; transition: border-color 120ms ease, background-color 120ms ease;
+    }
+    .caller:hover { border-color: var(--line); }
+    .caller strong { font-weight: 600; }
+    .caller small { color: var(--muted); font-size: 14px; line-height: 1.4; }
+    .caller .chip { align-self: flex-start; margin-top: 4px; font-size: 12px; letter-spacing: 0.04em; color: var(--green); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+    input:checked + .caller { border-color: var(--green); background: var(--green-deep); }
+    input:checked + .caller strong::after { content: " · selected"; font-weight: 400; color: var(--green); font-size: 13px; }
+    input:disabled + .caller { cursor: not-allowed; opacity: 0.55; }
+    .skeleton { height: 92px; border-radius: 16px; background: linear-gradient(90deg, #0d110d, #151b15, #0d110d); }
+
+    .stage { display: flex; align-items: center; gap: 18px; padding: 16px; border-radius: 18px; border: 1px solid var(--line-soft); background: rgba(0, 0, 0, 0.35); }
+    .orb { position: relative; width: 72px; height: 72px; flex: none; display: grid; place-items: center; }
+    .orb::before, .orb::after { content: ""; position: absolute; inset: 0; border-radius: 999px; }
+    .orb::before { background: radial-gradient(circle at 35% 30%, #b9f0b9, var(--green) 45%, #2d6a35 100%); transform: scale(0.62); opacity: 0.35; transition: transform 200ms ease, opacity 200ms ease; }
+    .orb::after { border: 2px solid var(--line); }
+    .orb[data-state="connecting"]::before, .orb[data-state="initializing"]::before, .orb[data-state="thinking"]::before { opacity: 0.6; transform: scale(0.7); }
+    .orb[data-state="listening"]::before { opacity: 0.9; transform: scale(0.78); }
+    .orb[data-state="speaking"]::before { opacity: 1; transform: scale(0.92); }
+    .orb[data-state="error"]::before { background: radial-gradient(circle at 35% 30%, #ffd2cd, var(--danger) 55%, #7a2a24 100%); opacity: 0.9; }
+    .orb svg { position: relative; width: 26px; height: 26px; fill: none; stroke: #071207; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    @media (prefers-reduced-motion: no-preference) {
+      .orb[data-state="speaking"]::before { animation: speak 0.9s ease-in-out infinite; }
+      .orb[data-state="listening"]::after { animation: ring 1.8s ease-out infinite; }
+      .orb[data-state="connecting"]::after, .orb[data-state="initializing"]::after, .orb[data-state="thinking"]::after { animation: ring 1.1s ease-out infinite; }
+      .skeleton { animation: shimmer 1.4s ease-in-out infinite; background-size: 200% 100%; }
+    }
+    @keyframes speak { 0%, 100% { transform: scale(0.82); } 50% { transform: scale(0.98); } }
+    @keyframes ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+    @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+    .stage-text { min-width: 0; flex: 1; }
+    .status { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+    .sub { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
+    .timer { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 15px; flex: none; }
+    .alert { margin: 0; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(242, 139, 130, 0.45); background: rgba(242, 139, 130, 0.08); color: var(--ink); font-size: 15px; }
+    .alert[hidden] { display: none; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    .controls .btn.big { flex: 1 1 220px; }
+    .fine { margin: 0; color: var(--muted); font-size: 14px; }
+
+    .transcript { gap: 0; padding: 0; }
+    .t-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px; border-bottom: 1px solid var(--line-soft); }
+    .t-head h2 { margin: 0; font-size: 17px; font-weight: 600; }
+    .t-head span { color: var(--muted); font-size: 14px; }
+    .t-body { flex: 1; min-height: 340px; max-height: 520px; overflow-y: auto; padding: 20px 24px; }
+    .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+    .msg { max-width: 88%; display: flex; flex-direction: column; gap: 2px; }
+    .msg b { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; color: var(--muted); }
+    .msg p { margin: 0; padding: 10px 14px; border-radius: 16px; }
+    .msg.agent p { background: #172117; border: 1px solid var(--line); border-top-left-radius: 6px; }
+    .msg.you { align-self: flex-end; text-align: right; }
+    .msg.you p { background: #1b1f1b; border: 1px solid var(--line-soft); border-top-right-radius: 6px; text-align: left; }
+    .msg.pending p { color: var(--muted); }
+    .msg.system { align-self: center; max-width: 100%; }
+    .msg.system p { padding: 2px 0; color: var(--muted); font-size: 14px; text-align: center; }
+    .try h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+    .try ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .try li { padding: 10px 14px; border-radius: 14px; border: 1px dashed var(--line); color: var(--ink); font-size: 15px; }
+    .try li span { display: block; color: var(--muted); font-size: 13px; }
+
+    /* proof */
+    .proof { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 56px 0 8px; }
+    .proof div { border-top: 1px solid var(--line); padding-top: 16px; }
+    .proof strong { display: block; font-weight: 600; font-size: 18px; margin-bottom: 4px; }
+    .proof p { margin: 0; color: var(--muted); font-size: 15px; }
+    .cta {
+      margin: 40px 0 56px; padding: 24px 28px; border-radius: 22px; border: 1px solid var(--line);
+      background: radial-gradient(600px 180px at 15% 0%, rgba(130, 219, 130, 0.16), transparent 60%), #0c1a10;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    }
+    .cta p { margin: 0; color: var(--muted); }
+    .cta strong { color: var(--ink); display: block; font-size: 20px; font-weight: 600; }
+    .cta .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    @media (max-width: 900px) {
+      .demo { grid-template-columns: 1fr; }
+      .proof { grid-template-columns: 1fr; padding-top: 40px; }
+      .t-body { min-height: 260px; }
+      .top-links .hide-sm { display: none; }
+      body.in-call #callers-set { display: none; }
+    }
+    @media (max-width: 520px) {
+      .callers { grid-template-columns: 1fr; }
+      .panel { padding: 18px; border-radius: 18px; }
+      .t-head, .t-body { padding-left: 18px; padding-right: 18px; }
+      .stage { gap: 14px; }
+      .orb { width: 60px; height: 60px; }
+    }
+  </style>
 </head>
 <body>
-  <main style="max-width: 36rem; margin: 2rem auto; padding: 0 1rem;">
-    <h1>Demo phone</h1>
-    <p>Calls the clinic from this browser. The call runs in a LiveKit room: Deskie hears you through Gnani Prisma and answers in Gnani Timbre. Pick who is calling, allow the microphone, and speak after the greeting.</p>
-    <div id="people" role="group" aria-label="Who is calling"></div>
-    <p id="status" role="status" aria-live="polite" style="margin: 0.5rem 0;">Not in a call.</p>
-    <button type="button" id="hangup" class="bn-btn" style="display: none; margin-bottom: 0.5rem;">Hang up</button>
-    <pre id="log" role="log" aria-live="polite" aria-label="Call transcript" style="white-space: pre-wrap;"></pre>
-    <div id="audio"></div>
+  <div class="dots" aria-hidden="true"></div>
+  <header class="wrap top">
+    <a class="word" href="/">Deskie</a>
+    <span class="tag"><i aria-hidden="true"></i>Live demo</span>
+    <nav class="top-links" aria-label="Site">
+      <a href="/" class="hide-sm">How it works</a>
+      <a href="/#contact">Put Deskie on your number</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <p class="kicker">Talk to it in your browser · English, Hindi, Hinglish</p>
+      <h1>Call the clinic. <em>Deskie picks up.</em></h1>
+      <p class="lede">This is the phone agent a small clinic runs while the doctor is with someone. It answers, books the visit from the clinic’s own records, and brings a person on the line when you ask.</p>
+    </section>
+
+    <section class="demo" aria-label="Live demo call">
+      <div class="panel">
+        <fieldset id="callers-set">
+          <legend class="step"><span>1</span>Choose who is calling</legend>
+          <div class="callers" id="callers">
+            <div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div>
+            <div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div>
+          </div>
+        </fieldset>
+
+        <div>
+          <p class="step"><span>2</span>Start the call and speak after the greeting</p>
+          <div class="stage">
+            <div class="orb" id="orb" data-state="idle" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg>
+            </div>
+            <div class="stage-text">
+              <p class="status" id="status" role="status" aria-live="polite">Ready when you are</p>
+              <p class="sub" id="sub">Your browser will ask to use the microphone.</p>
+            </div>
+            <span class="timer" id="timer" aria-hidden="true"></span>
+          </div>
+        </div>
+
+        <p class="alert" id="alert" role="alert" hidden></p>
+
+        <div class="controls">
+          <button type="button" class="btn big" id="start" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.8 2Z"/></svg>
+            <span id="start-label">Start the call</span>
+          </button>
+          <button type="button" class="btn ghost" id="mute" aria-pressed="false" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg>
+            <span id="mute-label">Mute</span>
+          </button>
+          <button type="button" class="btn end" id="hangup" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            End call
+          </button>
+        </div>
+
+        <p class="fine">A demo clinic with fictional patients. Please don’t share real health details. Calls are recorded, and Deskie says so when it answers.</p>
+      </div>
+
+      <div class="panel transcript">
+        <div class="t-head">
+          <h2>Live transcript</h2>
+          <span id="t-meta">Waiting for a call</span>
+        </div>
+        <div class="t-body" id="t-body">
+          <div class="try" id="try">
+            <h3>Things to try</h3>
+            <ul>
+              <li>“What time is the clinic open on Saturday?”<span>Answered from the clinic’s records, no name needed</span></li>
+              <li>“I’d like to book with Dr Kaur.”<span>Checks a real arrival window and confirms the fee first</span></li>
+              <li>“Kya aap Hindi mein baat kar sakte hain?”<span>Switches language mid-call</span></li>
+              <li>“Can I talk to someone at the desk?”<span>Hands the call to a person</span></li>
+            </ul>
+          </div>
+          <ol class="log" id="log" role="log" aria-live="polite" aria-label="Call transcript"></ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="proof" aria-label="What Deskie does">
+      <div><strong>Answers every call</strong><p>Picks up while the doctor is busy and the desk is full. Says it is the clinic’s automated assistant.</p></div>
+      <div><strong>Books from your records</strong><p>Hours, fees and free arrival windows come from the clinic’s database, never from guesswork.</p></div>
+      <div><strong>Hands off to your desk</strong><p>Ask for a person and the call rings through, or a callback lands on the staff console.</p></div>
+    </section>
+
+    <section class="cta" aria-label="Next steps">
+      <p><strong>Prefer a real phone?</strong><span id="cta-line">Call the same demo clinic from any phone.</span></p>
+      <div class="actions">
+        <a class="btn ghost" id="cta-call" href="/" hidden>Call the demo number</a>
+        <a class="btn" href="/#contact">Put Deskie on your number</a>
+      </div>
+    </section>
   </main>
+
+  <div id="audio" hidden></div>
+  <script src="/config.js" onerror="this.remove()"></script>
   <script>
-    var logEl = document.getElementById('log');
-    var statusEl = document.getElementById('status');
-    var hangupBtn = document.getElementById('hangup');
-    var room = null;
-    function log(line) { logEl.textContent += line + '\n'; }
-    function status(text) { statusEl.textContent = text; }
-    async function api(path, body, headers) {
-      var res = await fetch(path, {
-        method: body ? 'POST' : 'GET',
-        credentials: 'same-origin',
-        headers: Object.assign(body ? { 'Content-Type': 'application/json' } : {}, headers || {}),
-        body: body ? JSON.stringify(body) : undefined
-      });
-      var data = await res.json().catch(function () { return {}; });
-      if (!res.ok) throw new Error(data.detail || res.statusText);
-      return data;
+  (function () {
+    var cfg = window.DESKIE || {};
+    var $ = function (id) { return document.getElementById(id); };
+    var els = {
+      callers: $('callers'), set: $('callers-set'), start: $('start'), startLabel: $('start-label'),
+      mute: $('mute'), muteLabel: $('mute-label'), hangup: $('hangup'), orb: $('orb'), status: $('status'),
+      sub: $('sub'), timer: $('timer'), alert: $('alert'), log: $('log'), body: $('t-body'), tryBox: $('try'), meta: $('t-meta')
+    };
+    // Friendly scenarios for the seeded demo callers. Unknown keys fall back to the server's name.
+    var SCENES = {
+      unknown: { name: 'New caller', what: 'First time calling. Ask the hours, then book a visit.', chip: 'No file yet', order: 0 },
+      meera: { name: 'Meera, returning patient', what: 'Ask if her blood test report is ready, or book with Dr Kaur.', chip: 'Has a file', order: 1 },
+      kabir: { name: 'Kabir’s parent', what: 'Calling for a child whose test is still pending.', chip: 'Child patient', order: 2 },
+      family: { name: 'Family phone', what: 'Two patients share this number. Deskie has to ask who is calling.', chip: 'Shared number', order: 3 }
+    };
+    var STATES = {
+      connecting: ['Connecting…', 'Setting up a secure line.'],
+      initializing: ['Deskie is joining…', 'The clinic line is ringing.'],
+      listening: ['Deskie is listening', 'Go ahead and speak.'],
+      thinking: ['Deskie is thinking…', 'Checking the clinic’s records.'],
+      speaking: ['Deskie is speaking', 'You can interrupt at any time.']
+    };
+    var room = null, startedAt = 0, tick = null, muted = false, lines = {}, stick = true;
+
+    if (cfg.callTel) {
+      els.ctaCall = $('cta-call');
+      els.ctaCall.href = 'tel:' + cfg.callTel;
+      els.ctaCall.textContent = 'Call ' + (cfg.callDisplay || cfg.callTel);
+      els.ctaCall.hidden = false;
     }
-    var STATES = { initializing: 'Deskie is joining…', listening: 'Deskie is listening', thinking: 'Deskie is thinking…', speaking: 'Deskie is speaking' };
-    async function start(persona) {
-      if (room) { log('Hang up the current call first.'); return; }
-      if (!window.LivekitClient) { log('The LiveKit client did not load. Check the network and reload.'); return; }
+
+    function setState(key, title, sub) {
+      els.orb.setAttribute('data-state', key);
+      var preset = STATES[key] || [];
+      els.status.textContent = title || preset[0] || els.status.textContent;
+      els.sub.textContent = sub || preset[1] || '';
+    }
+    function showAlert(text) { els.alert.textContent = text; els.alert.hidden = !text; }
+    function fmt(sec) { var m = Math.floor(sec / 60), s = sec % 60; return m + ':' + (s < 10 ? '0' : '') + s; }
+    function selectedKey() { var r = els.callers.querySelector('input:checked'); return r ? r.value : ''; }
+    function lockCallers(locked) { els.callers.querySelectorAll('input').forEach(function (i) { i.disabled = locked; }); }
+
+    els.body.addEventListener('scroll', function () {
+      stick = els.body.scrollHeight - els.body.scrollTop - els.body.clientHeight < 40;
+    });
+    function scrollDown() { if (stick) els.body.scrollTop = els.body.scrollHeight; }
+    function addLine(kind, who, text, id) {
+      els.tryBox.hidden = true;
+      var li = id && lines[id];
+      if (!li) {
+        li = document.createElement('li');
+        li.className = 'msg ' + kind;
+        if (who) { var b = document.createElement('b'); b.textContent = who; li.appendChild(b); }
+        li.appendChild(document.createElement('p'));
+        els.log.appendChild(li);
+        if (id) lines[id] = li;
+      }
+      li.querySelector('p').textContent = text;
+      scrollDown();
+      return li;
+    }
+    function system(text) { addLine('system', '', text); }
+
+    function renderCallers(rows) {
+      rows.sort(function (a, b) { return ((SCENES[a.key] || {}).order ?? 9) - ((SCENES[b.key] || {}).order ?? 9); });
+      els.callers.innerHTML = '';
+      rows.forEach(function (row, i) {
+        var s = SCENES[row.key] || { name: row.display_name, what: 'A demo caller.', chip: '' };
+        var id = 'caller-' + row.key;
+        var input = document.createElement('input');
+        input.type = 'radio'; input.name = 'caller'; input.value = row.key; input.id = id;
+        if (i === 0) input.checked = true;
+        var label = document.createElement('label');
+        label.className = 'caller'; label.htmlFor = id;
+        var strong = document.createElement('strong'); strong.textContent = s.name;
+        var small = document.createElement('small'); small.textContent = s.what;
+        label.appendChild(strong); label.appendChild(small);
+        if (s.chip) { var chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = s.chip; label.appendChild(chip); }
+        var cell = document.createElement('div');
+        cell.appendChild(input); cell.appendChild(label);
+        els.callers.appendChild(cell);
+      });
+      els.start.disabled = !rows.length;
+      if (!rows.length) showAlert('No demo callers are set up on this line yet.');
+    }
+    function loadCallers() {
+      showAlert('');
+      fetch('/api/personas', { credentials: 'same-origin' }).then(function (r) {
+        if (!r.ok) throw new Error('status ' + r.status);
+        return r.json();
+      }).then(renderCallers).catch(function () {
+        els.callers.innerHTML = '';
+        var retry = document.createElement('button');
+        retry.type = 'button'; retry.className = 'btn ghost'; retry.textContent = 'Try again';
+        retry.addEventListener('click', loadCallers);
+        els.callers.appendChild(retry);
+        showAlert('The demo line is not answering right now. Try again in a moment, or call the number below.');
+      });
+    }
+
+    function api(path, body) {
+      return fetch(path, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) { var e = new Error(data.detail || 'The call could not start.'); e.status = res.status; throw e; }
+          return data;
+        });
+      });
+    }
+
+    function inCall(on) {
+      els.start.hidden = on;
+      els.mute.hidden = !on;
+      els.hangup.hidden = !on;
+      document.body.classList.toggle('in-call', on);
+      lockCallers(on);
+    }
+    function startTimer() {
+      startedAt = Date.now();
+      els.timer.textContent = '0:00';
+      tick = setInterval(function () { els.timer.textContent = fmt(Math.floor((Date.now() - startedAt) / 1000)); }, 1000);
+    }
+    function stopTimer() { clearInterval(tick); tick = null; }
+
+    function ended(note) {
+      var secs = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
+      stopTimer();
+      $('audio').innerHTML = '';
+      room = null; muted = false;
+      els.mute.setAttribute('aria-pressed', 'false'); els.muteLabel.textContent = 'Mute';
+      inCall(false);
+      els.start.disabled = false;
+      els.startLabel.textContent = 'Call again';
+      if (note) { setState('error', 'Call did not connect', 'Nothing was recorded. See the note below.'); }
+      else { setState('idle', 'Call ended', secs ? 'Lasted ' + fmt(secs) + '. Pick another caller to try a different path.' : ''); system('Call ended'); }
+      els.meta.textContent = secs ? 'Ended · ' + fmt(secs) : 'Not in a call';
+      els.timer.textContent = '';
+      startedAt = 0;
+    }
+
+    async function start() {
+      var key = selectedKey();
+      if (!key || room) return;
+      showAlert('');
+      if (!window.LivekitClient) { showAlert('The call software did not load. Check your connection and reload the page.'); return; }
       var LK = window.LivekitClient;
-      log('Calling as ' + persona + '…');
-      var call = await api('/api/calls', { persona_key: persona });
-      log('Call ' + call.call_id + ' · files on this number: ' + call.patient_count);
-      room = new LK.Room({ adaptiveStream: true, dynacast: true });
-      room.on(LK.RoomEvent.TrackSubscribed, function (track) {
-        if (track.kind === 'audio') document.getElementById('audio').appendChild(track.attach());
-      });
-      room.on(LK.RoomEvent.ParticipantConnected, function (p) {
-        if (p.kind === LK.ParticipantKind.AGENT || p.identity.indexOf('agent') === 0) log('Deskie joined the call.');
-        else log(p.identity + ' joined the call.');
-      });
-      room.on(LK.RoomEvent.ParticipantAttributesChanged, function (changed, p) {
-        if (changed['lk.agent.state'] && STATES[changed['lk.agent.state']]) status(STATES[changed['lk.agent.state']]);
-      });
-      room.on(LK.RoomEvent.TranscriptionReceived, function (segments, p) {
-        segments.forEach(function (s) {
-          if (s.final) log((p && p.identity === room.localParticipant.identity ? 'You: ' : 'Deskie: ') + s.text);
+      els.start.disabled = true; lockCallers(true);
+      els.log.innerHTML = ''; lines = {}; stick = true;
+      setState('connecting');
+      els.meta.textContent = 'Connecting…';
+      try {
+        var call = await api('/api/calls', { persona_key: key });
+        room = new LK.Room({ adaptiveStream: true, dynacast: true });
+        room.on(LK.RoomEvent.TrackSubscribed, function (track) {
+          if (track.kind === 'audio') $('audio').appendChild(track.attach());
         });
-      });
-      room.on(LK.RoomEvent.Disconnected, function () {
-        log('Call ended.');
-        status('Not in a call.');
-        hangupBtn.style.display = 'none';
-        document.getElementById('audio').innerHTML = '';
-        room = null;
-      });
-      status('Connecting…');
-      await room.connect(call.livekit_url, call.livekit_token);
-      await room.startAudio();
-      await room.localParticipant.setMicrophoneEnabled(true);
-      hangupBtn.style.display = '';
-      status('Connected. Waiting for Deskie…');
+        room.on(LK.RoomEvent.ParticipantConnected, function (p) {
+          if (p.kind === LK.ParticipantKind.AGENT || p.identity.indexOf('agent') === 0) { setState('initializing'); system('Deskie joined the call'); }
+        });
+        room.on(LK.RoomEvent.ParticipantAttributesChanged, function (changed) {
+          var st = changed['lk.agent.state'];
+          if (st && STATES[st]) setState(st);
+        });
+        room.on(LK.RoomEvent.TranscriptionReceived, function (segments, p) {
+          var mine = p && room && p.identity === room.localParticipant.identity;
+          segments.forEach(function (s) {
+            var li = addLine(mine ? 'you' : 'agent', mine ? 'You' : 'Deskie', s.text, s.id);
+            li.classList.toggle('pending', !s.final);
+          });
+        });
+        room.on(LK.RoomEvent.Disconnected, function () { ended(); });
+        await room.connect(call.livekit_url, call.livekit_token);
+        await room.startAudio();
+        await room.localParticipant.setMicrophoneEnabled(true);
+        inCall(true);
+        startTimer();
+        setState('initializing');
+        els.meta.textContent = 'Live · ' + ((SCENES[key] || {}).name || key);
+        system('Connected as ' + ((SCENES[key] || {}).name || key));
+        els.hangup.focus();
+      } catch (err) {
+        var msg = err && err.name === 'NotAllowedError'
+          ? 'Microphone blocked. Allow it from the icon in the address bar, then start again.'
+          : err && err.status === 429 ? (err.message || 'The demo line is busy. Try again in a while.')
+          : (err && err.message) || 'The call could not start.';
+        if (room) { var r = room; room = null; try { r.disconnect(); } catch (e) { /* already closed */ } }
+        showAlert(msg);
+        ended(msg);
+        els.start.focus();
+      }
     }
-    hangupBtn.addEventListener('click', function () { if (room) room.disconnect(); });
-    api('/api/personas').then(function (rows) {
-      var box = document.getElementById('people');
-      rows.forEach(function (row) {
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'bn-btn bn-btn-primary';
-        button.style.margin = '0 0.5rem 0.5rem 0';
-        button.textContent = row.display_name;
-        button.addEventListener('click', function () {
-          start(row.key).catch(function (err) { log(err.message); status('Not in a call.'); if (room) room.disconnect(); });
-        });
-        box.appendChild(button);
-      });
-    }).catch(function (err) { log(err.message); });
+
+    els.start.addEventListener('click', start);
+    els.hangup.addEventListener('click', function () { if (room) room.disconnect(); });
+    els.mute.addEventListener('click', function () {
+      if (!room) return;
+      muted = !muted;
+      room.localParticipant.setMicrophoneEnabled(!muted);
+      els.mute.setAttribute('aria-pressed', String(muted));
+      els.muteLabel.textContent = muted ? 'Unmute' : 'Mute';
+      els.sub.textContent = muted ? 'You are muted. Deskie cannot hear you.' : (STATES[els.orb.getAttribute('data-state')] || [])[1] || '';
+    });
+    window.addEventListener('beforeunload', function () { if (room) room.disconnect(); });
+    loadCallers();
+  })();
   </script>
 </body>
 </html>
