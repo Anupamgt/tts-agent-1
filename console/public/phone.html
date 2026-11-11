@@ -26,7 +26,7 @@
     .intro h1 { margin: 0; }
     .intro .lede { color: var(--ink-muted); max-width: 40rem; }
 
-    .demo { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: var(--space-4); align-items: stretch; }
+    .demo { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: var(--space-4); align-items: start; }
     .demo .panel { display: flex; flex-direction: column; }
     .pane { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
     .step { margin: 0 0 var(--space-2); }
@@ -73,7 +73,7 @@
 
     .t-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line); }
     .t-head h2 { margin: 0; }
-    .t-body { flex: 1; min-height: 340px; max-height: 540px; overflow-y: auto; padding: var(--space-4); }
+    .t-body { flex: 1; min-height: 220px; max-height: 420px; overflow-y: auto; padding: var(--space-4); }
     .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
     .msg { max-width: 88%; display: flex; flex-direction: column; gap: 2px; }
     .msg b { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--ink-muted); }
@@ -84,6 +84,35 @@
     .msg.pending p { color: var(--ink-muted); }
     .msg.system { align-self: center; max-width: 100%; }
     .msg.system p { padding: 0; color: var(--ink-muted); font-size: 12px; line-height: 16px; text-align: center; }
+    .guide { padding: var(--space-4); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: var(--space-3); }
+    .guide-hd { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+    .guide-hd h2 { margin: 0; }
+    .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+    .gstep { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: var(--space-1) var(--space-3); align-items: start; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid transparent; }
+    .gmark { width: 24px; height: 24px; margin-top: 1px; border-radius: var(--radius-pill); border: 1.5px solid var(--line-strong); display: grid; place-items: center; color: var(--ink-muted); background: var(--surface); }
+    .gmark svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .gtext { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .gtext p { margin: 0; }
+    .gsay { color: var(--ink-muted); }
+    .ghi { color: var(--ink-muted); }
+    .gdone-say { color: var(--ok-ink); }
+    .gstep.is-now { background: var(--accent-soft); border-color: var(--accent); }
+    .gstep.is-now .gmark { border-color: var(--accent); color: var(--accent); }
+    .gstep.is-now .gsay { color: var(--ink); }
+    .gstep.is-working .gmark { border-style: dashed; border-color: var(--accent); color: var(--accent); }
+    .gstep.is-done .gmark { background: var(--ok); border-color: var(--ok); color: var(--on-accent); }
+    .gstep.is-done .gtitle { color: var(--ink-muted); }
+    .gstep.is-left .gtitle { color: var(--ink-muted); }
+    .now-tag { margin-left: var(--space-2); }
+    .limit { display: flex; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface-sunken); }
+    .limit svg { width: 18px; height: 18px; flex: none; margin-top: 2px; fill: none; stroke: var(--ink-muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .limit p { margin: 0; }
+    .complete { margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--ok-soft); color: var(--ok-ink); }
+    @media (prefers-reduced-motion: no-preference) {
+      .gstep.is-done .gmark { animation: pop 240ms ease-out; }
+    }
+    @keyframes pop { 0% { transform: scale(0.6); } 100% { transform: scale(1); } }
+    .empty-log { margin: 0; color: var(--ink-muted); text-align: center; padding: var(--space-5) 0; }
     .try { display: flex; flex-direction: column; gap: var(--space-2); }
     .try h3 { margin: 0; }
     .try ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
@@ -179,20 +208,24 @@
       </div>
 
       <div class="panel">
+        <section class="guide" aria-labelledby="guide-title">
+          <div class="guide-hd">
+            <h2 class="heading" id="guide-title">What to try</h2>
+            <span class="caption bn-muted bn-num" id="guide-count" aria-live="polite"></span>
+          </div>
+          <ol class="steps body" id="steps"></ol>
+          <p class="complete body" id="complete" role="status" hidden></p>
+          <div class="limit" id="limit" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <p class="body"><span class="body-strong">Out of bounds on purpose.</span> <span id="limit-text"></span></p>
+          </div>
+        </section>
         <div class="t-head">
           <h2 class="heading">Live transcript</h2>
           <span class="caption bn-muted" id="t-meta">Waiting for a call</span>
         </div>
         <div class="t-body" id="t-body">
-          <div class="try" id="try">
-            <h3 class="body-strong">Things to try</h3>
-            <ul class="body">
-              <li>“What time is the clinic open on Saturday?”<span>Answered from the clinic’s records, no name needed</span></li>
-              <li>“I’d like to book with Dr Kaur.”<span>Checks a real arrival window and confirms the fee first</span></li>
-              <li lang="hi">“Kya aap Hindi mein baat kar sakte hain?”<span lang="en">Switches language mid-call</span></li>
-              <li>“Can I talk to someone at the desk?”<span>Hands the call to a person</span></li>
-            </ul>
-          </div>
+          <p class="empty-log body" id="try">The conversation appears here as you talk.</p>
           <ol class="log body" id="log" role="log" aria-live="polite" aria-label="Call transcript"></ol>
         </div>
       </div>
@@ -230,6 +263,53 @@
       meera: { name: 'Meera, returning patient', what: 'Ask if her blood test report is ready, or book with Dr Kaur.', chip: 'Has a file', order: 1 },
       kabir: { name: 'Kabir’s parent', what: 'Calling for a child whose test is still pending.', chip: 'Child patient', order: 2 },
       family: { name: 'Family phone', what: 'Two patients share this number. Deskie has to ask who is calling.', chip: 'Shared number', order: 3 }
+    };
+
+    // Guided path per seeded caller. A step ticks when one of its `done` tools succeeds on the call;
+    // `working` tools show it is under way. Lines are suggestions, not a script.
+    var WALKS = {
+      unknown: {
+        steps: [
+          { title: 'Ask when the clinic is open', say: 'When are you open on Saturday?', hi: 'Shanivaar ko clinic kab khula hai?', done: ['get_clinic_info'] },
+          { title: 'Book a visit as a new patient', say: 'I’m new. Can I book with Dr Kaur this evening?', hint: 'Give any name and date of birth, then say yes to the fee.', working: ['register_patient', 'get_available_windows', 'hold_window'], done: ['create_booking'] },
+          { title: 'Ask for a person at the desk', say: 'Can I talk to someone at the desk?', hi: 'Kya main desk par kisi se baat kar sakta hoon?', done: ['request_human', 'create_callback'] }
+        ],
+        limit: 'Ask “Is my report ready?” A new caller has no verified file, so Deskie will not share reports.'
+      },
+      meera: {
+        steps: [
+          { title: 'Confirm who you are', say: 'This is Meera Demo, card number HC/2026/0412.', done: ['match_patient'] },
+          { title: 'Check your report', say: 'Is my blood test report ready?', hi: 'Kya meri blood test report aa gayi?', done: ['get_report_status'] },
+          { title: 'Book a follow-up', say: 'Book me with Dr Kaur, any evening this week.', working: ['get_available_windows', 'hold_window'], done: ['create_booking'] },
+          { title: 'Move the visit', say: 'Can you move that to a later time?', done: ['reschedule_booking', 'cancel_booking'] }
+        ],
+        limit: 'Ask “What does my report mean?” Deskie never gives medical advice. That stays with the doctor.'
+      },
+      kabir: {
+        steps: [
+          { title: 'Say you are calling for your child', say: 'I’m calling for my son Kabir Demo, card HC/2026/0413.', done: ['match_patient'] },
+          { title: 'Check his pending test', say: 'Is his blood test result ready?', done: ['get_report_status'] },
+          { title: 'Ask if the doctor is running late', say: 'Is Dr Kaur running late today?', hi: 'Kya Dr Kaur aaj late chal rahi hain?', done: ['get_doctor_delay'] },
+          { title: 'Book him in', say: 'Please book him with Dr Kaur.', hint: 'Deskie tells you the fee and waits for a clear yes.', working: ['get_available_windows', 'hold_window'], done: ['create_booking'] }
+        ],
+        limit: 'Ask “Which medicine should I give him?” Medicines are the doctor’s decision, never the agent’s.'
+      },
+      family: {
+        steps: [
+          { title: 'Deskie checks the number', say: 'Just say hello.', hint: 'Two patients share this phone, so Deskie asks who is calling instead of guessing.', done: ['lookup_caller'] },
+          { title: 'Say who you are', say: 'I’m Asha Demo, ID 482 915 6.', done: ['match_patient'] },
+          { title: 'Book a visit for Asha', say: 'Book me a general check-up this evening.', working: ['get_available_windows', 'hold_window'], done: ['create_booking'] }
+        ],
+        limit: 'Ask “Who else uses this number?” Deskie never names other people on a shared phone.'
+      },
+      _default: {
+        steps: [
+          { title: 'Ask when the clinic is open', say: 'When are you open on Saturday?', done: ['get_clinic_info'] },
+          { title: 'Book a visit', say: 'Can I book a visit this evening?', working: ['register_patient', 'get_available_windows', 'hold_window'], done: ['create_booking'] },
+          { title: 'Ask for a person at the desk', say: 'Can I talk to someone at the desk?', done: ['request_human', 'create_callback'] }
+        ],
+        limit: 'Ask for medical advice. Deskie leaves that to the doctor.'
+      }
     };
     var STATES = {
       connecting: ['Connecting…', 'Setting up a secure line.'],
@@ -279,6 +359,113 @@
     }
     function system(text) { addLine('system', '', text); }
 
+    // ---- live walkthrough ----
+    var CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg>';
+    var walk = { key: '', done: {}, working: {}, says: {}, lastId: 0, timer: null, call: null, phase: 'preview' };
+    var guide = { steps: $('steps'), count: $('guide-count'), title: $('guide-title'), complete: $('complete'), limit: $('limit'), limitText: $('limit-text') };
+    function walkFor(key) { return WALKS[key] || WALKS._default; }
+    function resetWalk(key) {
+      clearInterval(walk.timer);
+      walk = { key: key, done: {}, working: {}, says: {}, lastId: 0, timer: null, call: null, phase: 'preview' };
+      renderGuide();
+    }
+    function applyEvents(list) {
+      var steps = walkFor(walk.key).steps;
+      (list || []).forEach(function (ev) {
+        walk.lastId = Math.max(walk.lastId, ev.id || 0);
+        if (!ev.ok) return;
+        for (var i = 0; i < steps.length; i++) {
+          if (walk.done[i]) continue;
+          if (steps[i].done.indexOf(ev.tool) >= 0) { walk.done[i] = true; walk.says[i] = ev.say || ''; break; }
+          if ((steps[i].working || []).indexOf(ev.tool) >= 0) { walk.working[i] = true; break; }
+        }
+      });
+      renderGuide();
+    }
+    function line(cls, text, lang) {
+      var p = document.createElement('p');
+      p.className = cls;
+      if (lang) p.lang = lang;
+      p.textContent = text;
+      return p;
+    }
+    function renderGuide() {
+      var w = walkFor(walk.key), steps = w.steps, n = steps.length;
+      var doneCount = steps.filter(function (_, i) { return walk.done[i]; }).length;
+      var now = -1;
+      for (var k = 0; k < n; k++) { if (!walk.done[k]) { now = k; break; } }
+      var who = (SCENES[walk.key] || {}).name || 'this caller';
+      guide.title.textContent = walk.phase === 'preview' ? 'What to try as ' + who : walk.phase === 'live' ? 'Your walkthrough' : 'What Deskie did';
+      guide.count.textContent = walk.phase === 'preview' ? n + ' steps · about 2 minutes' : doneCount + ' of ' + n + ' done';
+      guide.steps.innerHTML = '';
+      steps.forEach(function (st, i) {
+        var li = document.createElement('li');
+        var isDone = !!walk.done[i];
+        var isNow = walk.phase === 'live' && i === now;
+        li.className = 'gstep' + (isDone ? ' is-done' : '') + (isNow ? ' is-now' : '') + (isNow && walk.working[i] ? ' is-working' : '') + (walk.phase === 'ended' && !isDone ? ' is-left' : '');
+        if (isNow) li.setAttribute('aria-current', 'step');
+        var mark = document.createElement('span');
+        mark.className = 'gmark label bn-num';
+        mark.setAttribute('aria-hidden', 'true');
+        if (isDone) mark.innerHTML = CHECK; else mark.textContent = String(i + 1);
+        var text = document.createElement('div');
+        text.className = 'gtext';
+        var title = document.createElement('p');
+        title.className = 'body-strong gtitle';
+        title.textContent = st.title;
+        var sr = document.createElement('span');
+        sr.className = 'sr-only';
+        sr.textContent = isDone ? ' (done)' : isNow ? ' (try now)' : '';
+        title.appendChild(sr);
+        if (isNow) {
+          var tag = document.createElement('span');
+          tag.className = 'bn-badge bn-badge-info label now-tag';
+          tag.setAttribute('aria-hidden', 'true');
+          tag.textContent = walk.working[i] ? 'In progress' : 'Try now';
+          title.appendChild(tag);
+        }
+        text.appendChild(title);
+        if (isDone) {
+          text.appendChild(line('caption gdone-say', walk.says[i] || 'Done.'));
+        } else if (walk.phase === 'ended') {
+          text.appendChild(line('caption bn-muted', 'Not tried on this call.'));
+        } else if (walk.phase === 'preview' || isNow) {
+          text.appendChild(line('gsay', '“' + st.say + '”'));
+          if (isNow && st.hi) text.appendChild(line('caption ghi', 'Or in Hindi: “' + st.hi + '”', 'hi'));
+          if (st.hint && (isNow || walk.phase === 'preview')) text.appendChild(line('caption bn-muted', st.hint));
+        }
+        li.appendChild(mark);
+        li.appendChild(text);
+        guide.steps.appendChild(li);
+      });
+      var all = doneCount === n && n > 0 && walk.phase !== 'preview';
+      guide.complete.hidden = !all;
+      if (all) guide.complete.textContent = 'That is the whole path for ' + who + '. Pick another caller to see a different one.';
+      guide.limitText.textContent = w.limit;
+      guide.limit.hidden = !w.limit;
+    }
+    function poll() {
+      if (!walk.call || !walk.call.caller_token) return Promise.resolve();
+      return fetch('/api/calls/' + walk.call.call_id + '/progress?after=' + walk.lastId, {
+        credentials: 'same-origin', headers: { 'x-caller-token': walk.call.caller_token }
+      }).then(function (r) { return r.ok ? r.json() : []; }).then(applyEvents).catch(function () { /* next poll retries */ });
+    }
+    function beginWalk(key, call) {
+      resetWalk(key);
+      walk.call = call;
+      walk.phase = 'live';
+      renderGuide();
+      walk.timer = setInterval(poll, 1500);
+    }
+    function endWalk() {
+      if (walk.phase !== 'live') return;
+      clearInterval(walk.timer);
+      walk.timer = null;
+      walk.phase = 'ended';
+      renderGuide();
+      poll();
+    }
+
     function renderCallers(rows) {
       rows.sort(function (a, b) { return ((SCENES[a.key] || {}).order ?? 9) - ((SCENES[b.key] || {}).order ?? 9); });
       els.callers.innerHTML = '';
@@ -299,6 +486,7 @@
         els.callers.appendChild(cell);
       });
       els.start.disabled = !rows.length;
+      resetWalk(selectedKey());
       if (!rows.length) showAlert('No demo callers are set up on this line yet.');
     }
     function loadCallers() {
@@ -343,6 +531,7 @@
     function stopTimer() { clearInterval(tick); tick = null; }
 
     function ended(note) {
+      endWalk();
       var secs = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
       stopTimer();
       $('audio').innerHTML = '';
@@ -370,6 +559,7 @@
       els.meta.textContent = 'Connecting…';
       try {
         var call = await api('/api/calls', { persona_key: key });
+        beginWalk(key, call);
         room = new LK.Room({ adaptiveStream: true, dynacast: true });
         room.on(LK.RoomEvent.TrackSubscribed, function (track) {
           if (track.kind === 'audio') $('audio').appendChild(track.attach());
@@ -406,11 +596,13 @@
         if (room) { var r = room; room = null; try { r.disconnect(); } catch (e) { /* already closed */ } }
         showAlert(msg);
         ended(msg);
+        resetWalk(key);
         els.start.focus();
       }
     }
 
     els.start.addEventListener('click', start);
+    els.callers.addEventListener('change', function () { if (!room) resetWalk(selectedKey()); });
     els.hangup.addEventListener('click', function () { if (room) room.disconnect(); });
     els.mute.addEventListener('click', function () {
       if (!room) return;
