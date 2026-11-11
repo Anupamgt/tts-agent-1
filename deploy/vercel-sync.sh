@@ -18,7 +18,8 @@ cat > vercel.json <<JSON
     { "source": "/healthz", "destination": "$BACKEND/healthz" },
     { "source": "/phone", "destination": "$BACKEND/phone.html" },
     { "source": "/console.css", "destination": "$BACKEND/console.css" },
-    { "source": "/brand/:path*", "destination": "$BACKEND/brand/:path*" }
+    { "source": "/brand/:path*", "destination": "$BACKEND/brand/:path*" },
+    { "source": "/fonts/:path*", "destination": "$BACKEND/fonts/:path*" }
   ],
   "headers": [
     { "source": "/phone", "headers": [{ "key": "Permissions-Policy", "value": "microphone=(self)" }] }
