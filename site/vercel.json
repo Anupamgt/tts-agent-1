@@ -2,12 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/api/:path*" },
-    { "source": "/healthz", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/healthz" },
-    { "source": "/phone", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/phone.html" },
-    { "source": "/console.css", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/console.css" },
-    { "source": "/brand/:path*", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/brand/:path*" },
-    { "source": "/fonts/:path*", "destination": "https://margaret-johns-contests-eventually.trycloudflare.com/fonts/:path*" }
+    { "source": "/api/:path*", "destination": "https://poems-address-cook-veteran.trycloudflare.com/api/:path*" },
+    { "source": "/healthz", "destination": "https://poems-address-cook-veteran.trycloudflare.com/healthz" },
+    { "source": "/phone", "destination": "https://poems-address-cook-veteran.trycloudflare.com/phone.html" },
+    { "source": "/console", "destination": "https://poems-address-cook-veteran.trycloudflare.com/?live=1" },
+    { "source": "/js/:path*", "destination": "https://poems-address-cook-veteran.trycloudflare.com/js/:path*" },
+    { "source": "/fonts/:path*", "destination": "https://poems-address-cook-veteran.trycloudflare.com/fonts/:path*" },
+    { "source": "/console.css", "destination": "https://poems-address-cook-veteran.trycloudflare.com/console.css" },
+    { "source": "/brand/:path*", "destination": "https://poems-address-cook-veteran.trycloudflare.com/brand/:path*" }
   ],
   "headers": [
     { "source": "/phone", "headers": [{ "key": "Permissions-Policy", "value": "microphone=(self)" }] }
